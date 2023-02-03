@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BaseOutputPath>$(SolutionDir)\_build</BaseOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="SilKitd.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="SilKitd.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="IF EXIST &quot;$(ProjectDir)\SilKitd.dll&quot; (&#xD;&#xA;EXIT 0&#xD;&#xA;) ELSE (&#xD;&#xA;ECHO ERROR: SilKitd.dll not found. Please add it to the SilKitBridge source folder before building.&#xD;&#xA;EXIT 2&#xD;&#xA;)" />
+  </Target>
+
+</Project>
