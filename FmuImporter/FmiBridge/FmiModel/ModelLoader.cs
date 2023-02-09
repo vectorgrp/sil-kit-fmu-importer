@@ -9,14 +9,14 @@ namespace Fmi.FmiModel
 {
   public class ModelLoader
   {
-    internal enum FmiVersions
+    public enum FmiVersions
     {
       Invalid,
       Fmi2,
       Fmi3
     }
 
-    public static string ExtractFmu(string fmuPath)
+    internal static string ExtractFmu(string fmuPath)
     {
       // check if the directory exists
       var targetFolderPath = 
@@ -39,7 +39,7 @@ namespace Fmi.FmiModel
       return dir.FullName;
     }
 
-    public static void RemoveExtractedFmu(string fmuPath)
+    internal static void RemoveExtractedFmu(string fmuPath)
     {
       var dir = $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}";
       if (Directory.Exists(dir))
@@ -48,7 +48,7 @@ namespace Fmi.FmiModel
       }
     }
 
-    public static ModelDescription LoadModelFromExtractedPath(string extractedFmuPath)
+    internal static ModelDescription LoadModelFromExtractedPath(string extractedFmuPath)
     {
       var modelDescriptionPath = $"{extractedFmuPath}/modelDescription.xml";
       if (!File.Exists(modelDescriptionPath))
@@ -97,16 +97,33 @@ namespace Fmi.FmiModel
       return commonDescription;
     }
 
-    private static FmiVersions FindFmiVersion(string modelDescriptionPath)
+    public static FmiVersions FindFmiVersion(string fmuPath)
     {
-      using var fileStream = File.Open(modelDescriptionPath, FileMode.Open);
+      Stream stream;
+      if (Path.GetExtension(fmuPath) == ".xml")
+      {
+        stream = File.Open(fmuPath, FileMode.Open);
+      }
+      else
+      {
+        ZipArchive zip = ZipFile.Open(fmuPath, ZipArchiveMode.Read);
+        var zipEntry = zip.GetEntry("modelDescription.xml");
+        if (zipEntry == null)
+        {
+          throw new NullReferenceException("fmu does not have a model description.");
+        }
+        stream = zipEntry.Open();
+      }
+
       XmlDocument doc = new XmlDocument();
-      doc.Load(fileStream);
+      doc.Load(stream);
 
       XmlElement? root = doc.DocumentElement;
       XmlNode? node = root?.SelectSingleNode("//fmiModelDescription");
       var attr = node?.Attributes?.GetNamedItem("fmiVersion");
       var returnValue = attr?.Value;
+
+      stream.Dispose();
 
       switch (returnValue)
       {

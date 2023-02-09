@@ -36,6 +36,11 @@ namespace SilKit
     {
       return new Participant(configuration, participantName, registryUri);
     }
+
+    public Participant CreateParticipant(ParticipantConfiguration configuration, string participantName)
+    {
+      return CreateParticipant(configuration, participantName, "silkit://127.0.0.1:8500");
+    }
   }
 
   #region object version

@@ -128,7 +128,7 @@ namespace Prototype
     private void DoStep(double currentTime, double stepSize, IFmi2Binding binding)
     {
       stepComplete = new TaskCompletionSource<int>();
-      binding.DoStep(currentTime, stepSize);
+      binding.DoStep(currentTime, stepSize, out _);
     }
     #endregion FMI 2.x
 

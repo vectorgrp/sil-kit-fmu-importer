@@ -4,7 +4,17 @@ using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
-internal abstract class FmiBindingBase : IDisposable
+public interface IFmiBindingCommon
+{
+  public void DoStep(
+    double currentCommunicationPoint,
+    double communicationStepSize,
+    out double lastSuccessfulTime);
+
+  public void Terminate();
+}
+
+internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 {
   public ModelDescription ModelDescription { get; private set; }
 
@@ -70,6 +80,13 @@ internal abstract class FmiBindingBase : IDisposable
       
     deleg = (T)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
   }
+
+  public abstract void DoStep(
+    double currentCommunicationPoint,
+    double communicationStepSize,
+    out double lastSuccessfulTime);
+
+  public abstract void Terminate();
 
 
   ~FmiBindingBase()

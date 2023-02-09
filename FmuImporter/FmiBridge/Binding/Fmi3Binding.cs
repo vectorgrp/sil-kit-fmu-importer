@@ -27,7 +27,7 @@ public static class Fmi3BindingFactory
   }
 }
 
-public interface IFmi3Binding : IDisposable
+public interface IFmi3Binding : IDisposable, IFmiBindingCommon
 {
   public ModelDescription GetModelDescription();
 
@@ -41,12 +41,6 @@ public interface IFmi3Binding : IDisposable
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime);
   public void ExitInitializationMode();
-  public void Terminate();
-  public void EnterStepMode();
-  public void DoStep(
-    double currentCommunicationPoint,
-    double communicationStepSize,
-    out double lastSuccessfulTime);
 
   // Getters & Setters
   public ReturnVariable<float> GetFloat32(fmi3ValueReference[] valueReferences);
@@ -261,7 +255,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3EnterStepModeTYPE(IntPtr instance);
 
-  public void DoStep(
+  public override void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
     out double lastSuccessfulTime)
@@ -303,7 +297,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     out bool earlyReturn,
     out double lastSuccessfulTime);
 
-  public void Terminate()
+  public override void Terminate()
   {
     var fmi3Status = fmi3Terminate(component);
     if (fmi3Status != 0)
@@ -727,8 +721,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-
-    // TODO/FIXME initialize correctly
+    
     var result = new fmi3Binary[valueReferences.Length];
     size_t[] valueSizes = new size_t[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);

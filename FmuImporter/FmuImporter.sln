@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prototype", "Prototype\Prot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SilKitBridge", "SilKitBridge\SilKitBridge.csproj", "{087B1571-A27C-47C8-BF48-14AAE23EE72F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmiBridge", "FmiBridge\FmiBridge.csproj", "{E88B3F7A-2596-42D9-9054-25CF7276A442}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmiBridge", "FmiBridge\FmiBridge.csproj", "{E88B3F7A-2596-42D9-9054-25CF7276A442}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuImporter", "FmuImporter\FmuImporter.csproj", "{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +33,10 @@ Global
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

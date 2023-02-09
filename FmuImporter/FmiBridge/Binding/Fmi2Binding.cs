@@ -83,7 +83,7 @@ public enum Fmi2Statuses : int
   Pending
 }
   
-public interface IFmi2Binding : IDisposable
+public interface IFmi2Binding : IDisposable, IFmiBindingCommon
 {
   public ModelDescription GetModelDescription();
 
@@ -98,10 +98,8 @@ public interface IFmi2Binding : IDisposable
   public void SetupExperiment(double? tolerance, double startTime, double? stopTime);
   public void EnterInitializationMode();
   public void ExitInitializationMode();
-  public void Terminate();
 
   // Functions for FMI2 for Co-Simulation
-  public void DoStep(double currentTime, double stepSize);
   public void CancelStep();
 
   // Getters & Setters
@@ -314,7 +312,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   internal delegate int fmi2ExitInitializationModeTYPE(IntPtr c);
 
 
-  public void Terminate()
+  public override void Terminate()
   {
     var fmi2Status = fmi2Terminate(component);
     if (fmi2Status != 0)
@@ -330,12 +328,17 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi2TerminateTYPE(IntPtr c);
   
-  public void DoStep(double currentTime, double stepSize)
+  public override void DoStep(
+    double currentCommunicationPoint,
+    double communicationStepSize,
+    out double lastSuccessfulTime)
   {
-    var fmi2Status = fmi2DoStep(component, currentTime, stepSize, out _);
+    var fmi2Status = fmi2DoStep(component, currentCommunicationPoint, communicationStepSize, out _);
     if (fmi2Status == 0)
     {
       // synchronous call - skip to new time retrieval
+      // FMI 2 can never return early -> return calculated time
+      lastSuccessfulTime = currentCommunicationPoint + communicationStepSize;
     }
     else if (fmi2Status == 5)
     {
