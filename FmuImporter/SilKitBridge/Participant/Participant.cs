@@ -7,6 +7,8 @@ namespace SilKit
 {
   public class Participant
   {
+    private HashSet<GCHandle> pinnedHandles;
+
     private readonly ParticipantConfiguration configuration;
     private IntPtr participantPtr;
     internal IntPtr ParticipantPtr
@@ -18,6 +20,8 @@ namespace SilKit
     #region ctor & dtor
     public Participant(ParticipantConfiguration configuration, string participantName, string registryUri)
     {
+      this.pinnedHandles = new HashSet<GCHandle>();
+
       this.configuration = configuration;
       SilKit_Participant_Create(out participantPtr, configuration.ParticipantConfigurationPtr, participantName, registryUri);
     }
@@ -40,7 +44,14 @@ namespace SilKit
     ~Participant()
     {
       // TODO change to dispose pattern
+      // TODO free GCHandlers for DataContext
       SilKit_Participant_Destroy(ParticipantPtr);
+      foreach (var pinnedHandle in pinnedHandles)
+      {
+        pinnedHandle.Free();
+      }
+      pinnedHandles.Clear();
+
       ParticipantPtr = IntPtr.Zero;
     }
 
@@ -62,9 +73,9 @@ namespace SilKit
       return new DataPublisher(this, controllerName, dataSpec, history);
     }
 
-    public IDataSubscriber CreateDataSubscriber(string controllerName, PubSubSpec dataSpec, DataMessageHandler dataMessageHandler)
+    public IDataSubscriber CreateDataSubscriber(string controllerName, PubSubSpec dataSpec, IntPtr context, DataMessageHandler dataMessageHandler)
     {
-      return new DataSubscriber(this, controllerName, dataSpec, IntPtr.Zero, dataMessageHandler);
+      return new DataSubscriber(this, controllerName, dataSpec, context, dataMessageHandler);
     }
   }
 }

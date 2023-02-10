@@ -4,7 +4,7 @@ namespace SilKit.Services.PubSub
 {
   public interface IDataPublisher
   {
-    public void Publish(List<byte> data);
+    public void Publish(byte[] data);
   }
 
   public class DataPublisher : IDataPublisher
@@ -42,14 +42,14 @@ namespace SilKit.Services.PubSub
         [In] SilKit_DataSpec dataSpec,
         [In] byte history);
 
-    public void Publish(List<byte> data)
+    public void Publish(byte[] data)
     {
-      GCHandle handle = GCHandle.Alloc(data.ToArray(), GCHandleType.Pinned);
+      GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
       var dataPtr = handle.AddrOfPinnedObject();
       var byteVector = new SilKit_ByteVector()
       {
         data = dataPtr,
-        size = (IntPtr)data.Count
+        size = (IntPtr)data.Length
       };
       SilKit_DataPublisher_Publish(DataPublisherPtr, byteVector);
       handle.Free();

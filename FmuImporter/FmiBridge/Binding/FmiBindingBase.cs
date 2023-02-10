@@ -6,6 +6,23 @@ namespace Fmi.Binding;
 
 public interface IFmiBindingCommon
 {
+  public void GetValue(uint[] valueRefs, out ReturnVariable<float> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<double> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<byte> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<short> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<int> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<uint> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<long> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<bool> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<string> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result);
+
+  public void SetValue(uint valueRef, byte[] data);
+  public void SetValue(uint valueRef, byte[] data, int[] binSizes);
+
   public void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
@@ -16,7 +33,11 @@ public interface IFmiBindingCommon
 
 internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 {
-  public ModelDescription ModelDescription { get; private set; }
+  public ModelDescription ModelDescription
+  {
+    get { return modelDescription; }
+    private set { modelDescription = value; }
+  }
 
   public string FullFmuLibraryPath { get; }
 
@@ -81,6 +102,23 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     deleg = (T)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
   }
 
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<float> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<double> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<byte> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<short> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<int> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<uint> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<long> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<bool> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<string> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result);
+
+  public abstract void SetValue(uint valueRef, byte[] data);
+  public abstract void SetValue(uint valueRef, byte[] data, int[] binSizes);
+
   public abstract void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
@@ -99,6 +137,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   }
 
   private bool mDisposedValue;
+  protected ModelDescription modelDescription;
+
   protected virtual void Dispose(bool disposing)
   {
     if (!mDisposedValue)

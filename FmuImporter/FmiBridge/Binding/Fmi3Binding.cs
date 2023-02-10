@@ -255,6 +255,335 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3EnterStepModeTYPE(IntPtr instance);
 
+
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
+  {
+    result = GetFloat32(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<double> result)
+  {
+    result = GetFloat64(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result)
+  {
+    result = GetInt8(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<byte> result)
+  {
+    result = GetUInt8(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<short> result)
+  {
+    result = GetInt16(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result)
+  {
+    result = GetUInt16(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<int> result)
+  {
+    result = GetInt32(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<uint> result)
+  {
+    result = GetUInt32(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<long> result)
+  {
+    result = GetInt64(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result)
+  {
+    result = GetUInt64(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<bool> result)
+  {
+    result = GetBoolean(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<string> result)
+  {
+    result = GetString(valueRefs);
+  }
+
+  public override void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result)
+  {
+    result = GetBinary(valueRefs);
+  }
+
+  public override void SetValue(uint valueRef, byte[] data)
+  {
+    var mdVar = ModelDescription.Variables[valueRef];
+    var type = mdVar.VariableType;
+
+    var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
+
+    int arraySize = 1;
+    if (!isScalar)
+    {
+      arraySize = BitConverter.ToInt32(data, 0);
+      data = data.Skip(4).ToArray();
+    }
+
+    if (type == typeof(float))
+    {
+      var sizeMatches = (data.Length / sizeof(float)) == arraySize;
+
+      var values = new float[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToSingle(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetFloat32(new[] { valueRef }, values);
+    }
+    else if (type == typeof(double))
+    {
+      var values = new double[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToDouble(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetFloat64(new[] { valueRef }, values);
+    }
+    else if (type == typeof(sbyte))
+    {
+      if (isScalar)
+      {
+        if (data.Length > 1)
+        {
+          throw new NotSupportedException("Unexpected size of data type");
+        }
+      }
+
+      var values = new sbyte[arraySize];
+      Buffer.BlockCopy(data, 0, values, 0, data.Length);
+
+      SetInt8(new[] { valueRef }, new[] { (sbyte)data[0] });
+    }
+    else if (type == typeof(byte))
+    {
+      if (isScalar)
+      {
+        if (data.Length > 1)
+        {
+          throw new NotSupportedException("Unexpected size of data type");
+        }
+      }
+
+      var values = new sbyte[arraySize];
+
+      SetUInt8(new[] { valueRef }, data);
+    }
+    else if (type == typeof(short))
+    {
+      var values = new short[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToInt16(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetInt16(new[] { valueRef }, values);
+    }
+    else if (type == typeof(ushort))
+    {
+      var values = new ushort[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToUInt16(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetUInt16(new[] { valueRef }, values);
+    }
+    else if (type == typeof(int))
+    {
+      var values = new int[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToInt32(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetInt32(new[] { valueRef }, values);
+    }
+    else if (type == typeof(uint))
+    {
+      var values = new uint[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToUInt32(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetUInt32(new[] { valueRef }, values);
+    }
+    else if (type == typeof(long))
+    {
+      var values = new long[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToInt64(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetInt64(new[] { valueRef }, values);
+    }
+    else if (type == typeof(ulong))
+    {
+      var values = new ulong[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToUInt64(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetUInt64(new[] { valueRef }, values);
+    }
+    else if (type == typeof(bool))
+    {
+      var values = new bool[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToBoolean(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetBoolean(new[] { valueRef }, values);
+    }
+    else if (type == typeof(string))
+    {
+      var values = new string[arraySize];
+
+      if (isScalar)
+      {
+        var value = BitConverter.ToString(data);
+        values = new[] { value };
+      }
+      else
+      {
+        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      SetString(new[] { valueRef }, values);
+    }
+    else if (type == typeof(IntPtr))
+    {
+      throw new NotSupportedException("Must be called with binSizes argument!");
+    }
+  }
+
+  public override void SetValue(uint valueRef, byte[] data, int[] binSizes)
+  {
+    var mdVar = ModelDescription.Variables[valueRef];
+    var type = mdVar.VariableType;
+
+    var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
+
+    int arraySize = 1;
+    if (!isScalar)
+    {
+      arraySize = BitConverter.ToInt32(data, 0);
+      data = data.Skip(4).ToArray();
+
+      if (binSizes.Sum() != data.Length)
+      {
+        throw new ArgumentOutOfRangeException(
+          $"The expected data length ({binSizes.Sum()}) does not match the received data length ({data.Length}).");
+      }
+    }
+
+    if (type == typeof(IntPtr))
+    {
+      var values = new IntPtr[arraySize];
+      var handlers = new GCHandle[arraySize];
+
+      if (isScalar)
+      {
+        var handler = GCHandle.Alloc(data, GCHandleType.Pinned);
+        handlers[0] = handler;
+        values = new[] { handler.AddrOfPinnedObject() };
+      }
+      else
+      {
+        int offset = 0;
+        for (int i = 0; i < arraySize; i++)
+        {
+          var currentBinary = new byte[binSizes[i]]; 
+          Buffer.BlockCopy(data, offset, currentBinary, 0, binSizes[i]);
+          offset += binSizes[i];
+
+          var handler = GCHandle.Alloc(currentBinary, GCHandleType.Pinned);
+          handlers[i] = handler;
+          values[i] = handler.AddrOfPinnedObject();
+        }
+      }
+      SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
+
+      // TODO/FIXME this is leaking memory, as the objects will never be freed
+    }
+  }
+
   public override void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
@@ -325,13 +654,13 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-
-    var result = new float[valueReferences.Length];
+    
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new float[(int)nValues];
 
     fmi3GetFloat32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<float>(result, nValues);
+    return ReturnVariable<float>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetFloat32TYPE(
@@ -359,12 +688,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new double[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new double[(int)nValues];
 
     fmi3GetFloat64(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<double>(result, nValues);
+    return ReturnVariable<double>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetFloat64TYPE(
@@ -392,12 +721,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new sbyte[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new sbyte[(int)nValues];
 
     fmi3GetInt8(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<sbyte>(result, nValues);
+    return ReturnVariable<sbyte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetInt8TYPE(
@@ -425,12 +754,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new byte[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new byte[(int)nValues];
 
     fmi3GetUInt8(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<byte>(result, nValues);
+    return ReturnVariable<byte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetUInt8TYPE(
@@ -458,12 +787,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new short[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new short[(int)nValues];
 
     fmi3GetInt16(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<short>(result, nValues);
+    return ReturnVariable<short>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetInt16TYPE(
@@ -491,12 +820,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new ushort[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new ushort[(int)nValues];
 
     fmi3GetUInt16(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<ushort>(result, nValues);
+    return ReturnVariable<ushort>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetUInt16TYPE(
@@ -524,12 +853,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new int[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new int[(int)nValues];
 
     fmi3GetInt32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<int>(result, nValues);
+    return ReturnVariable<int>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetInt32TYPE(
@@ -557,12 +886,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new uint[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new uint[(int)nValues];
 
     fmi3GetUInt32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<uint>(result, nValues);
+    return ReturnVariable<uint>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetUInt32TYPE(
@@ -590,12 +919,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new long[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new long[(int)nValues];
 
     fmi3GetInt64(component, valueReferences, (IntPtr)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<long>(result, nValues);
+    return ReturnVariable<long>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetInt64TYPE(
@@ -623,12 +952,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new ulong[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new ulong[(int)nValues];
 
     fmi3GetUInt64(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<ulong>(result, nValues);
+    return ReturnVariable<ulong>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetUInt64TYPE(
@@ -656,12 +985,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new bool[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new bool[(int)nValues];
 
     fmi3GetBoolean(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<bool>(result, nValues);
+    return ReturnVariable<bool>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetBooleanTYPE(
@@ -689,12 +1018,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new string[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new string[(int)nValues];
 
     fmi3GetString(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
 
-    return new ReturnVariable<string>(result, nValues);
+    return ReturnVariable<string>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
   /*
     typedef fmi3Status fmi3GetStringTYPE(
@@ -722,12 +1051,13 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
     
-    var result = new fmi3Binary[valueReferences.Length];
     size_t[] valueSizes = new size_t[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
+    var result = new fmi3Binary[(int)nValues];
+
     fmi3GetBinary(component, valueReferences, (size_t)valueReferences.Length, valueSizes, result, (size_t)nValues);
-    
-    return new ReturnVariable<fmi3Binary>(result, nValues, valueSizes);
+
+    return ReturnVariable<fmi3Binary>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription, valueSizes);
   }
   /*
     typedef fmi3Status fmi3GetBinaryTYPE(
@@ -760,7 +1090,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetFloat32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -788,7 +1118,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetFloat64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -816,7 +1146,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetInt8(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -844,7 +1174,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetUInt8(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -872,7 +1202,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetInt16(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -900,7 +1230,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetUInt16(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -928,7 +1258,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetInt32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -956,7 +1286,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetUInt32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -984,7 +1314,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetInt64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -1012,7 +1342,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetUInt64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -1040,7 +1370,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetBoolean(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -1068,7 +1398,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetString(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
   }
   /*
@@ -1096,7 +1426,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     fmi3SetBinary(component, valueReferences, (size_t)valueReferences.Length, valueSizes, values, (size_t)values.Length);
   }
   /*
@@ -1118,7 +1448,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)]
     IntPtr[] /* size_t */ valueSizes,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)]
-    IntPtr[] values, // FIXME 
+    IntPtr[] values,
     size_t nValues);
 
   #endregion Getters & Setters

@@ -6,7 +6,7 @@ namespace Fmi.FmiModel.Internal
 {
   public class Variable
   {
-    private Fmi3.fmi3AbstractVariable originalVariable;
+    private Fmi3.fmi3AbstractVariable originalVariable = null!;
 
     public enum Causalities
     {
@@ -44,6 +44,8 @@ namespace Fmi.FmiModel.Internal
     public Variabilities Variability { get; set; }
     public InitialValues InitialValue { get; set; }
 
+    public Type VariableType { get; private set; }
+
     public object[] Start { get; set; }
 
     private ulong[]? dimensions;
@@ -54,7 +56,7 @@ namespace Fmi.FmiModel.Internal
       {
         dimensions = value;
         FlattenedArrayLength = 1;
-        if (value == null)
+        if (value == null || value.Length == 0)
         {
           return;
         }
@@ -65,7 +67,7 @@ namespace Fmi.FmiModel.Internal
       }
     }
 
-    public ulong FlattenedArrayLength { get; private set; }
+    public ulong FlattenedArrayLength { get; private set; } = 1;
 
     public Variable(Fmi3.fmi3AbstractVariable input)
     {
@@ -74,6 +76,52 @@ namespace Fmi.FmiModel.Internal
       Name = input.name;
       ValueReference = input.valueReference;
       Description = input.description;
+
+      switch (input)
+      {
+        case Fmi3.fmi3Float32:
+          VariableType = typeof(float);
+          break;
+        case Fmi3.fmi3Float64:
+          VariableType = typeof(double);
+          break;
+        case Fmi3.fmi3Int8:
+          VariableType = typeof(sbyte);
+          break;
+        case Fmi3.fmi3UInt8:
+          VariableType = typeof(byte);
+          break;
+        case Fmi3.fmi3Int16:
+          VariableType = typeof(short);
+          break;
+        case Fmi3.fmi3UInt16:
+          VariableType = typeof(ushort);
+          break;
+        case Fmi3.fmi3Int32:
+          VariableType = typeof(int);
+          break;
+        case Fmi3.fmi3UInt32:
+          VariableType = typeof(uint);
+          break;
+        case Fmi3.fmi3Int64:
+          VariableType = typeof(long);
+          break;
+        case Fmi3.fmi3UInt64:
+          VariableType = typeof(ulong);
+          break;
+        case Fmi3.fmi3Boolean:
+          VariableType = typeof(bool);
+          break;
+        case Fmi3.fmi3String:
+          VariableType = typeof(string);
+          break;
+        case Fmi3.fmi3Binary:
+          VariableType = typeof(IntPtr);
+          break;
+        default: 
+          throw new ArgumentOutOfRangeException("The FMI 3 datatype is unknown");
+      }
+
       switch (input.causality)
       {
         case fmi3AbstractVariableCausality.parameter:
@@ -135,6 +183,25 @@ namespace Fmi.FmiModel.Internal
       Name = input.name;
       ValueReference = input.valueReference;
       Description = input.description;
+      
+      switch (input.Item)
+      {
+        case Fmi2.fmi2ScalarVariableInteger:
+          VariableType = typeof(Int32);
+          break;
+        case Fmi2.fmi2ScalarVariableReal:
+          VariableType = typeof(double);
+          break;
+        case Fmi2.fmi2ScalarVariableBoolean:
+          VariableType = typeof(bool);
+          break;
+        case Fmi2.fmi2ScalarVariableString:
+          VariableType = typeof(string);
+          break;
+        default:
+          throw new ArgumentOutOfRangeException("Unexpected FMI 2 variable type");
+      }
+
       switch (input.causality)
       {
         case fmi2ScalarVariableCausality.parameter:
@@ -268,7 +335,7 @@ namespace Fmi.FmiModel.Internal
         if (dimensions == null)
         {
           // this variable is a scalar -> ArraySize = 1; skip array processing
-          Dimensions = new[] { 1UL };
+          Dimensions = null;
           return;
         }
         if (dimensions is fmi3ArrayableVariableDimension[] dims)

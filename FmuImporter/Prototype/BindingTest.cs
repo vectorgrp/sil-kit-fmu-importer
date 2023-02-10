@@ -181,9 +181,9 @@ namespace Prototype
           // retrieve variables
           var output = binding.GetFloat64(new uint[] { 0, 1 });
 
-          currentTime = output.Values[0];
+          currentTime = output.ResultArray[0].Values[0];
 
-          Console.WriteLine($"{String.Format("{0:0.00}", Math.Round(currentTime, 2))};\t{output.Values[1]}");
+          Console.WriteLine($"{String.Format("{0:0.00}", Math.Round(currentTime, 2))};\t{output.ResultArray[1].Values[0]}");
         }
         catch (Exception e)
         {
@@ -280,26 +280,26 @@ namespace Prototype
       {
         binding.DoStep(currentTime, internalStepSize, out currentTime);
 
-        f32Out = binding.GetFloat32(new uint[] { 2, 4 }).Values;
-        f64Out = binding.GetFloat64(new uint[] { 6, 8, 10 }).Values;
-
-        int8Out = binding.GetInt8(new uint[] { 12 }).Values;
-        uint8Out = binding.GetUInt8(new uint[] { 14 }).Values;
-        int16Out = binding.GetInt16(new uint[] { 16 }).Values;
-        uint16Out = binding.GetUInt16(new uint[] { 18 }).Values;
-        int32Out = binding.GetInt32(new uint[] { 20 }).Values;
-        uint32Out = binding.GetUInt32(new uint[] { 22 }).Values;
-        int64Out = binding.GetInt64(new uint[] { 24 }).Values;
-        uint64Out = binding.GetUInt64(new uint[] { 26 }).Values;
-
-        boolOut = binding.GetBoolean(new uint[] { 28 }).Values;
-        binaryOut = binding.GetBinary(new uint[] { 31 });
-
-        var valueSize = binaryOut.NValueSizes?[0];
-        if (valueSize == null)
-          throw new ArgumentOutOfRangeException("ValueSize must be > 0");
-        var outBytes = new byte[(int)valueSize];
-        Marshal.Copy(binaryOut.Values[0], outBytes, 0, outBytes.Length);
+        //f32Out = binding.GetFloat32(new uint[] { 2, 4 }).Values;
+        //f64Out = binding.GetFloat64(new uint[] { 6, 8, 10 }).Values;
+        //
+        //int8Out = binding.GetInt8(new uint[] { 12 }).Values;
+        //uint8Out = binding.GetUInt8(new uint[] { 14 }).Values;
+        //int16Out = binding.GetInt16(new uint[] { 16 }).Values;
+        //uint16Out = binding.GetUInt16(new uint[] { 18 }).Values;
+        //int32Out = binding.GetInt32(new uint[] { 20 }).Values;
+        //uint32Out = binding.GetUInt32(new uint[] { 22 }).Values;
+        //int64Out = binding.GetInt64(new uint[] { 24 }).Values;
+        //uint64Out = binding.GetUInt64(new uint[] { 26 }).Values;
+        //
+        //boolOut = binding.GetBoolean(new uint[] { 28 }).Values;
+        //binaryOut = binding.GetBinary(new uint[] { 31 });
+        //
+        //var valueSize = binaryOut.NValueSizes?[0];
+        //if (valueSize == null)
+        //  throw new ArgumentOutOfRangeException("ValueSize must be > 0");
+        //var outBytes = new byte[(int)valueSize];
+        //Marshal.Copy(binaryOut.Values[0], outBytes, 0, outBytes.Length);
 
         ;
 

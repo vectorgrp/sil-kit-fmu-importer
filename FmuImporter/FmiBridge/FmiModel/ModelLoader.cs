@@ -34,7 +34,6 @@ namespace Fmi.FmiModel
       var dir = Directory.CreateDirectory(
           $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}");
 
-      // TODO Extract only the relevant parts of the FMU
       ZipFile.ExtractToDirectory(fmuPath, dir.FullName);
       return dir.FullName;
     }

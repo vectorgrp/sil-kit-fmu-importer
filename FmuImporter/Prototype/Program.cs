@@ -2,6 +2,8 @@
 using SilKit;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
+using SilKit.Supplements.VendorData;
+
 #pragma warning disable CS0162
 
 namespace Prototype
@@ -80,15 +82,19 @@ namespace Prototype
       var participant = wrapper.CreateParticipant(config, "Test", "silkit://127.0.0.1:8500");
 
       // configure PubSub
-      var spec = new PubSubSpec("CommonTopic", "Blub");
+      var spec = new PubSubSpec("CommonTopic", Vector.MediaTypeData);
       var publisher = participant.CreateDataPublisher("PublisherTest", spec, 1);
-      var subscriber = participant.CreateDataSubscriber("SubscriberTest", spec, (DataMessageEvent e) =>
-      {
-        var ts = e.timestampInNs;
-        var data = e.data;
+      var subscriber = participant.CreateDataSubscriber(
+        "SubscriberTest", 
+        spec, 
+        new IntPtr(0), 
+        (IntPtr context, IDataSubscriber dataSubscriber, DataMessageEvent e) =>
+        {
+          var ts = e.timestampInNs;
+          var data = e.data;
 
-        Console.WriteLine($"Received data @ {ts / 1e6}ms: '{string.Join("; ", data)}'");
-      });
+          Console.WriteLine($"Received data @ {ts / 1e6}ms: '{string.Join("; ", data)}'");
+        });
 
       // configure lifecycle service
       var lc = new LifecycleService.LifecycleConfiguration(LifecycleService.LifecycleConfiguration.Modes.Coordinated);
@@ -112,7 +118,7 @@ namespace Prototype
       {
         byte baseCount = (byte)Math.Floor(now / 1e6);
         Console.WriteLine($"Now = {now / 1e6}; duration = {duration / 1e6}");
-        publisher.Publish(new List<byte>() { (byte)(1 + baseCount), (byte)(2 + baseCount), (byte)(3 + baseCount), (byte)(4 + baseCount) });
+        publisher.Publish(new byte[] { (byte)(1 + baseCount), (byte)(2 + baseCount), (byte)(3 + baseCount), (byte)(4 + baseCount) });
         // stop simulation after 10ms
         if (now >= 10 * 1e6)
         {

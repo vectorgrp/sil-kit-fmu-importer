@@ -12,22 +12,25 @@ namespace SilKit.Services.PubSub
     private DataMessageHandler? dataMessageHandler;
 
     private readonly Participant participant;
+    private readonly IntPtr datahandlerContext;
     private IntPtr dataSubscriberPtr;
+
     internal IntPtr DataSubscriberPtr
     {
       get { return dataSubscriberPtr; }
       private set { dataSubscriberPtr = value; }
     }
 
-    internal DataSubscriber(Participant participant, string controllerName, PubSubSpec dataSpec, object dataHandlerContext,
+    internal DataSubscriber(Participant participant, string controllerName, PubSubSpec dataSpec, IntPtr dataHandlerContext,
         DataMessageHandler dataMessageHandler)
     {
       this.participant = participant;
+      this.datahandlerContext = dataHandlerContext;
       this.dataMessageHandler = dataMessageHandler;
       var silKitDataSpec = dataSpec.toSilKitDataSpec();
 
       SilKit_DataSubscriber_Create(out dataSubscriberPtr, participant.ParticipantPtr, controllerName, silKitDataSpec,
-          out _, DataMessageHandlerInternal);
+        dataHandlerContext, DataMessageHandlerInternal);
     }
 
 
@@ -42,7 +45,7 @@ namespace SilKit.Services.PubSub
       if (subscriber != DataSubscriberPtr) { return; }
 
 
-      dataMessageHandler?.Invoke(new DataMessageEvent(dataMessageEvent));
+      dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
     }
 
     /*
@@ -74,7 +77,7 @@ namespace SilKit.Services.PubSub
         [In] IntPtr participant,
         [MarshalAs(UnmanagedType.LPStr)] string controllerName,
         [In] SilKit_DataSpec dataSpec,
-        [Out] out IntPtr context,
+        IntPtr context,
         SilKit_DataMessageHandler_t dataHandler);
   }
 }

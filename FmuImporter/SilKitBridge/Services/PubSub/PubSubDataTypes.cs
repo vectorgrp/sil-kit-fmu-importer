@@ -3,7 +3,7 @@ using static SilKit.SilKitVersion;
 
 namespace SilKit.Services.PubSub
 {
-  public delegate void DataMessageHandler(DataMessageEvent dataMessageEvent);
+  public delegate void DataMessageHandler(IntPtr context, IDataSubscriber subscriber, DataMessageEvent dataMessageEvent);
 
   public struct DataMessageEvent
   {
