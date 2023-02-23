@@ -1,8 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Fmi.FmiModel.Internal;
 
-#pragma warning disable CS8618 // non-nullable field must be initialized in constructor
-
 namespace Fmi.Binding;
 
 public delegate void Logger(
@@ -77,10 +75,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public Fmi3Binding(string fmuPath) : base(fmuPath, "/binaries/x86_64-windows")
   {
-  }
-
-  protected override void InitializeFmiDelegates()
-  {
     // Common functions
     SetDelegate(out fmi3InstantiateCoSimulation);
     SetDelegate(out fmi3FreeInstance);
@@ -89,7 +83,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3EnterStepMode);
     SetDelegate(out fmi3DoStep);
     SetDelegate(out fmi3Terminate);
-
 
     // Variable Getters and Setters
     SetDelegate(out fmi3GetFloat32);
@@ -119,6 +112,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3SetString);
     SetDelegate(out fmi3SetBinary);
   }
+
   public ModelDescription GetModelDescription()
   {
     return ModelDescription;
@@ -251,7 +245,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   /*
     typedef fmi3Status fmi3EnterStepModeTYPE(fmi3Instance instance);
   */
-  internal fmi3EnterStepModeTYPE fmi3EnterStepMode;
+  internal fmi3EnterStepModeTYPE fmi3EnterStepMode = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3EnterStepModeTYPE(IntPtr instance);
 

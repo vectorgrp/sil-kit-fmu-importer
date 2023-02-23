@@ -1,8 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Fmi.FmiModel.Internal;
 
-#pragma warning disable CS8618 // non-nullable field must be initialized in constructor
-
 namespace Fmi.Binding;
 
 public struct Fmi2BindingCallbackFunctions
@@ -129,10 +127,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
 
   public Fmi2Binding(string fmuPath) : base(fmuPath, "/binaries/win64")
-  {
-  }
-
-  protected override void InitializeFmiDelegates()
   {
     // Common Functions
     SetDelegate(out fmi2SetDebugLogging);
@@ -503,7 +497,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /*
     typedef fmi2Status fmi2GetStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Status*  value);
   */
-  internal fmi2GetStatusTYPE fmi2GetStatus;
+  internal fmi2GetStatusTYPE fmi2GetStatus = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi2GetStatusTYPE(
     IntPtr c,
@@ -513,7 +507,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /*
     typedef fmi2Status fmi2GetRealStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Real*    value);
   */
-  internal fmi2GetRealStatusTYPE fmi2GetRealStatus;
+  internal fmi2GetRealStatusTYPE fmi2GetRealStatus = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi2GetRealStatusTYPE(
     IntPtr c,
@@ -523,7 +517,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /*
     typedef fmi2Status fmi2GetIntegerStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Integer* value);
   */
-  internal fmi2GetIntegerStatusTYPE fmi2GetIntegerStatus;
+  internal fmi2GetIntegerStatusTYPE fmi2GetIntegerStatus = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi2GetIntegerStatusTYPE(
     IntPtr c,
@@ -533,7 +527,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /*
     typedef fmi2Status fmi2GetBooleanStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Boolean* value);
   */
-  internal fmi2GetBooleanStatusTYPE fmi2GetBooleanStatus;
+  internal fmi2GetBooleanStatusTYPE fmi2GetBooleanStatus = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi2GetBooleanStatusTYPE(
     IntPtr c,
@@ -543,7 +537,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /*
     typedef fmi2Status fmi2GetStringStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2String*  value);
   */
-  internal fmi2GetStringStatusTYPE fmi2GetStringStatus;
+  internal fmi2GetStringStatusTYPE fmi2GetStringStatus = null!;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi2GetStringStatusTYPE(
     IntPtr c,

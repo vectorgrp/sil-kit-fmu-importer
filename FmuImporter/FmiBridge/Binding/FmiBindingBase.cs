@@ -66,7 +66,6 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   private void InitializeModelBinding(string fullPathToLibrary)
   {
     DllPtr = LoadFmiLibrary(fullPathToLibrary);
-    InitializeFmiDelegates();
   }
 
 
@@ -81,9 +80,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     return res;
   }
 
-  protected abstract void InitializeFmiDelegates();
-
-  protected void SetDelegate<T>(out T deleg) where T : System.Delegate
+  protected void SetDelegate<T>(out T deleg) 
+    where T : System.Delegate
   {
     var delegateTypeName = typeof(T).Name;
     if (string.IsNullOrEmpty(delegateTypeName))
@@ -137,7 +135,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   }
 
   private bool mDisposedValue;
-  protected ModelDescription modelDescription;
+  protected ModelDescription modelDescription = null!;
 
   protected virtual void Dispose(bool disposing)
   {

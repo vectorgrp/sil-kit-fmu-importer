@@ -3,8 +3,6 @@ using System.Xml;
 using System.Xml.Serialization;
 using Fmi.FmiModel.Internal;
 
-#pragma warning disable CS8618 // non-nullable field must be initialized in constructor
-
 namespace Fmi.FmiModel
 {
   public class ModelLoader

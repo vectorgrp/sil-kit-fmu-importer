@@ -46,7 +46,7 @@ namespace Fmi.FmiModel.Internal
 
     public Type VariableType { get; private set; }
 
-    public object[] Start { get; set; }
+    public object[]? Start { get; set; }
 
     private ulong[]? dimensions;
     public ulong[]? Dimensions
@@ -176,6 +176,34 @@ namespace Fmi.FmiModel.Internal
       {
         Variability = Variabilities.Continuous; // default
       }
+
+      var propInfo = input.GetType().GetProperty("start");
+      if (propInfo != null)
+      {
+        var res = propInfo.GetValue(input);
+        if (res != null)
+        {
+          int arrLength;
+          if (res is Array array)
+          {
+            arrLength = array.Length;
+            Start = new object[arrLength];
+            for (int i = 0; i < arrLength; i++)
+            {
+              Start[i] = array.GetValue(i) ?? throw new InvalidOperationException();
+            }
+          }
+          else if (res is List<byte> byteList)
+          {
+            // special case
+            Start = byteList.Select(v => (object)v).ToArray();
+          }
+          else
+          {
+            Start = new[] { res };
+          }
+        }
+      }
     }
 
     public Variable(Fmi2.fmi2ScalarVariable input)
@@ -183,7 +211,7 @@ namespace Fmi.FmiModel.Internal
       Name = input.name;
       ValueReference = input.valueReference;
       Description = input.description;
-      
+
       switch (input.Item)
       {
         case Fmi2.fmi2ScalarVariableInteger:
@@ -226,7 +254,7 @@ namespace Fmi.FmiModel.Internal
           throw new ArgumentOutOfRangeException();
       }
 
-      if (true/*input.variabilitySpecified*/)
+      if (true /*input.variabilitySpecified*/)
       {
         switch (input.variability)
         {
@@ -281,7 +309,7 @@ namespace Fmi.FmiModel.Internal
               InitialValue = InitialValues.Exact;
             }
             break;
-            }
+          }
           case Causalities.CalculatedParameter:
             if (Variability is Variabilities.Fixed or Variabilities.Tunable)
             {
@@ -325,7 +353,18 @@ namespace Fmi.FmiModel.Internal
             break;
         }
       }
+
+      var propInfo = input.Item.GetType().GetProperty("start");
+      if (propInfo != null)
+      {
+        var res = propInfo.GetValue(input.Item);
+        if (res != null)
+        {
+          Start = new[] { res };
+        }
+      }
     }
+
     internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */ , Variable> variables)
     {
       var prop = originalVariable.GetType().GetProperty("Dimension");
@@ -349,7 +388,9 @@ namespace Fmi.FmiModel.Internal
       }
     }
 
-    private ulong[] GetDimensionSizeArray(fmi3ArrayableVariableDimension[] originalDimensions, ref Dictionary<uint /* ValueReference */ , Variable> variables)
+    private ulong[] GetDimensionSizeArray(
+      fmi3ArrayableVariableDimension[] originalDimensions, 
+      ref Dictionary<uint /* ValueReference */ , Variable> variables)
     {
       var res = new ulong[originalDimensions.Length];
       for (int i = 0; i < originalDimensions.Length; i++)
@@ -362,24 +403,36 @@ namespace Fmi.FmiModel.Internal
         {
           var v = variables[originalDimensions[i].valueReference];
 
-          if (v.Causality != Causalities.StructuralParameter)
+          if (v.VariableType != typeof(UInt64))
+          {
+            throw new ArgumentException("The referenced dimension variable must be of type UInt64.");
+          }
+          if (v.Causality == Causalities.StructuralParameter || v.Variability == Variabilities.Constant)
+          {
+            if (v.Start != null)
+            {
+              res[i] = (ulong)v.Start[0];
+            }
+            else
+            {
+              throw new ArgumentNullException("The referenced variable did not have a start value.");
+            }
+          }
+          else
           {
             throw new ArgumentException(
-              "The parameters dimension referenced a variable that does not have structuralParameter as causality.");
+              "The referenced dimension variable must either be a structuralParameter or a constant.");
           }
-
-          res[i] = (ulong)v.Start[0];
 
         }
         else
         {
-          throw new InvalidDataException("The dimension contained neither a start value nor a value reference.");
+          throw new ArgumentException("The dimension contained neither a start value nor a value reference.");
         }
       }
 
       return res;
     }
-
 
     public override string ToString()
     {

@@ -34,13 +34,13 @@ public class FmuImporter
     public Dictionary<uint /* ref */, IDataPublisher> ValueRefToDataPublisher { get; set; }
     public Dictionary<uint /* ref */, IDataSubscriber> ValueRefToDataSubscriber { get; set; }
   }
-  
 
-  ModelDescription ModelDescription { get; set; }
-  private IFmiBindingCommon Binding { get; set; }
+
+  private ModelDescription ModelDescription { get; set; } = null!;
+  private IFmiBindingCommon Binding { get; set; } = null!;
 
   private SilKitInstance silKitInstance;
-  private Dictionary<Type, List<uint>> outputValueReferencesByType;
+  private readonly Dictionary<Type, List<uint>> outputValueReferencesByType;
 
   private Dictionary<uint, byte[]> DataBuffer { get; set; }
   private Dictionary<uint, byte[]> FutureDataBuffer { get; set; }
@@ -316,6 +316,10 @@ public class FmuImporter
   {
     foreach (var varKvp in outputValueReferencesByType)
     {
+      if (varKvp.Value.Count == 0)
+      {
+        continue;
+      }
       var valueRefArr = varKvp.Value.ToArray();
       if (varKvp.Key == typeof(float))
       {
@@ -659,8 +663,8 @@ public class FmuImporter
 
 internal class Program
 {
-  //private static string fmuPath = @"FMUs\FMI3.0\BouncingBall.fmu";
-  private static string fmuPath = @"FMUs\FMI3.0\Feedthrough.fmu";
+  private static string fmuPath = @"FMUs\FMI2.0\BouncingBall.fmu";
+  //private static string fmuPath = @"FMUs\FMI3.0\Feedthrough.fmu";
 
   static void Main(string[] args)
   {

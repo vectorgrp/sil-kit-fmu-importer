@@ -4,7 +4,7 @@ namespace Fmi.FmiModel.Internal
 {
   public class ModelDescription
   {
-    private Dictionary<uint, Variable> variables;
+    private Dictionary<uint, Variable> variables = null!;
 
     // Former attributes
     public string ModelName { get; set; }
@@ -27,7 +27,7 @@ namespace Fmi.FmiModel.Internal
     public ModelDescription(Fmi3.fmiModelDescription input)
     {
       // init of local fields & properties
-      variables = new Dictionary<uint, Variable>();
+      Variables = new Dictionary<uint, Variable>();
 
       // Attribute init
       ModelName = input.modelName;
