@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Diagnostics;
+﻿using System.CommandLine;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,6 +6,7 @@ using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 using SilKit;
+using SilKit.Config;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
 using SilKit.Supplements.VendorData;
@@ -45,7 +45,7 @@ public class FmuImporter
   private Dictionary<uint, byte[]> DataBuffer { get; set; }
   private Dictionary<uint, byte[]> FutureDataBuffer { get; set; }
 
-  public FmuImporter(string fmuPath)
+  public FmuImporter(string fmuPath, string silKitConfigurationPath, string participantName)
   {
     outputValueReferencesByType = new Dictionary<Type, List<uint>>()
     {
@@ -68,7 +68,7 @@ public class FmuImporter
     FutureDataBuffer = new Dictionary<uint, byte[]>();
 
     InitializeFMU(fmuPath);
-    InitializeSilKit();
+    InitializeSilKit(silKitConfigurationPath, participantName);
     PrepareVariableDistribution();
   }
 
@@ -228,20 +228,33 @@ public class FmuImporter
     fmi3Binding.ExitInitializationMode();
   }
 
-  private void InitializeSilKit()
+  private void InitializeSilKit(string silKitConfigurationPath, string participantName)
   {
+    if (string.IsNullOrEmpty(participantName))
+    {
+      participantName = ModelDescription.ModelName;
+    }
+
     Console.WriteLine($"-----------------------\n" +
                       $"Join SIL Kit simulation\n" +
-                      $"Name: {ModelDescription.ModelName}\n" +
+                      $"Name: {participantName}\n" +
                       $"-----------------------\n");
 
     var wrapper = SilKitWrapper.Instance;
-    var config = wrapper.GetConfigurationFromString("");
+    ParticipantConfiguration config;
+    if (String.IsNullOrEmpty(silKitConfigurationPath))
+    {
+      config = wrapper.GetConfigurationFromString("");
+    }
+    else
+    {
+      config = wrapper.GetConfigurationFromFile(silKitConfigurationPath);
+    }
 
     silKitInstance = new SilKitInstance();
 
     var lc = new LifecycleService.LifecycleConfiguration(LifecycleService.LifecycleConfiguration.Modes.Coordinated);
-    silKitInstance.Participant = wrapper.CreateParticipant(config, ModelDescription.ModelName);
+    silKitInstance.Participant = wrapper.CreateParticipant(config, participantName);
     silKitInstance.LifecycleService = silKitInstance.Participant.CreateLifecycleService(lc);
     silKitInstance.TimeSyncService = silKitInstance.LifecycleService.CreateTimeSyncService();
 
@@ -663,15 +676,39 @@ public class FmuImporter
 
 internal class Program
 {
-  private static string fmuPath = @"FMUs\FMI2.0\BouncingBall.fmu";
-  //private static string fmuPath = @"FMUs\FMI3.0\Feedthrough.fmu";
-
-  static void Main(string[] args)
+  static async Task Main(string[] args)
   {
     // Set output to be OS language independent
     CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
     CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-    var instance = new FmuImporter(fmuPath);
-    instance.RunSimulation();
+
+    var rootCommand = new RootCommand("FMU Importer for SIL Kit");
+
+    var fmuPathOption = new Option<string>(
+      name: "--fmu-path",
+      description: "Set the path to the FMU file (.fmu). This is mandatory.");
+    fmuPathOption.AddAlias("-f");
+    fmuPathOption.IsRequired = true;
+    rootCommand.AddOption(fmuPathOption);
+
+    var silKitConfigFileOption = new Option<string>(
+      name: "--sil-kit-config-file",
+      description: "Set the path to the SIL Kit configuration file. Defaults to an empty configuration.");
+    silKitConfigFileOption.AddAlias("-c");
+    rootCommand.AddOption(silKitConfigFileOption);
+
+    var participantNameOption = new Option<string>(
+      name: "--participant-name",
+      description: "Set the name of the SIL Kit participant. Defaults to the FMU's model name.");
+    participantNameOption.AddAlias("-p");
+    rootCommand.AddOption(participantNameOption);
+
+    rootCommand.SetHandler((fmuPath, silKitConfigFile, participantName) =>
+    {
+      var instance = new FmuImporter(fmuPath, silKitConfigFile, participantName);
+      instance.RunSimulation();
+    }, fmuPathOption, silKitConfigFileOption, participantNameOption);
+
+    await rootCommand.InvokeAsync(args);
   }
 }
