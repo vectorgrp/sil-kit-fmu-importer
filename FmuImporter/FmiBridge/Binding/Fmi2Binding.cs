@@ -140,11 +140,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     // Functions for FMI2 for Co-Simulation
     SetDelegate(out fmi2DoStep);
     SetDelegate(out fmi2CancelStep);
-    SetDelegate(out fmi2GetStatus);
-    SetDelegate(out fmi2GetRealStatus);
-    SetDelegate(out fmi2GetIntegerStatus);
-    SetDelegate(out fmi2GetBooleanStatus);
-    SetDelegate(out fmi2GetStringStatus);
 
     // Variable Getters and Setters
     SetDelegate(out fmi2GetReal);
@@ -275,11 +270,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void SetDebugLogging(bool loggingOn, string[] categories)
   {
-    var fmi2Status = fmi2SetDebugLogging(component, loggingOn, (IntPtr)categories.Length, categories);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException($"fmi2SetDebugLogging exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetDebugLogging(component, loggingOn, (IntPtr)categories.Length, categories),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
   typedef fmi2Status  fmi2SetDebugLoggingTYPE(
@@ -309,7 +302,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       instanceName, 
       1 /* Co-Simulation */, 
       fmuGUID, 
-      $"file://{FullFmuLibraryPath}/resources", 
+      $"file://{FullFmuLibPath}/resources", 
       functions.internalCallbackFunctions, 
       visible, 
       loggingOn);
@@ -348,17 +341,15 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void SetupExperiment(double? tolerance, double startTime, double? stopTime)
   {
-    var fmi2Status = fmi2SetupExperiment(
-      component,
-      tolerance.HasValue,
-      (tolerance.HasValue) ? tolerance.Value : double.NaN,
-      startTime,
-      stopTime.HasValue,
-      (stopTime.HasValue) ? stopTime.Value : double.NaN);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException($"fmi2EnterInitializationMode exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetupExperiment(
+        component,
+        tolerance.HasValue,
+        (tolerance.HasValue) ? tolerance.Value : double.NaN,
+        startTime,
+        stopTime.HasValue,
+        (stopTime.HasValue) ? stopTime.Value : double.NaN),
+    System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi2Status fmi2SetupExperimentTYPE(
@@ -381,12 +372,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void EnterInitializationMode()
   {
-    var fmi2Status = fmi2EnterInitializationMode(component);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi2EnterInitializationMode exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2EnterInitializationMode(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi2Status fmi2EnterInitializationModeTYPE(fmi2Component c);
@@ -394,15 +382,13 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   internal fmi2EnterInitializationModeTYPE fmi2EnterInitializationMode;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi2EnterInitializationModeTYPE(IntPtr c);
-    
+
   public void ExitInitializationMode()
   {
-    var fmi2Status = fmi2ExitInitializationMode(component);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi2ExitInitializationMode exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2ExitInitializationMode(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
   }
   /*
     typedef fmi2Status fmi2ExitInitializationModeTYPE(fmi2Component c);
@@ -414,12 +400,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void Terminate()
   {
-    var fmi2Status = fmi2Terminate(component);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi2Terminate exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2Terminate(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi2Status fmi2TerminateTYPE(fmi2Component c);
@@ -433,6 +416,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     double communicationStepSize,
     out double lastSuccessfulTime)
   {
+    // Note that this return code is special as the code '0' as well as '5' are success values
     var fmi2Status = fmi2DoStep(component, currentCommunicationPoint, communicationStepSize, out _);
     if (fmi2Status == 0)
     {
@@ -450,7 +434,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       //  var doStepStatus = stepComplete.Task.Result;
       //  if (doStepStatus != 0)
       //  {
-      //    throw new InvalidOperationException($"doStep did not complete correctly and exited with exit code '{doStepStatus}'.");
+      //    throw new InvalidOperationException(
+      //      $"doStep did not complete correctly and exited with exit code '{doStepStatus}'.");
       //  }
       //}
       //else
@@ -480,12 +465,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void CancelStep()
   {
-    var fmi2Status = fmi2CancelStep(component);
-    if (fmi2Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi2CancelStep exited with exit code '{fmi2Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2CancelStep(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi2Status fmi2CancelStepTYPE(fmi2Component c);
@@ -494,56 +476,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi2CancelStepTYPE(IntPtr c);
 
-  /*
-    typedef fmi2Status fmi2GetStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Status*  value);
-  */
-  internal fmi2GetStatusTYPE fmi2GetStatus = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate void fmi2GetStatusTYPE(
-    IntPtr c,
-    out int s,  
-    IntPtr value);
-
-  /*
-    typedef fmi2Status fmi2GetRealStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Real*    value);
-  */
-  internal fmi2GetRealStatusTYPE fmi2GetRealStatus = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate void fmi2GetRealStatusTYPE(
-    IntPtr c,
-    out int s, 
-    IntPtr value);
-
-  /*
-    typedef fmi2Status fmi2GetIntegerStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Integer* value);
-  */
-  internal fmi2GetIntegerStatusTYPE fmi2GetIntegerStatus = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate void fmi2GetIntegerStatusTYPE(
-    IntPtr c,
-    out int s, 
-    IntPtr value);
-
-  /*
-    typedef fmi2Status fmi2GetBooleanStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2Boolean* value);
-  */
-  internal fmi2GetBooleanStatusTYPE fmi2GetBooleanStatus = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate void fmi2GetBooleanStatusTYPE(
-    IntPtr c,
-    out int s, 
-    IntPtr value);
-    
-  /*
-    typedef fmi2Status fmi2GetStringStatusTYPE(fmi2Component c, const fmi2StatusKind s, fmi2String*  value);
-  */
-  internal fmi2GetStringStatusTYPE fmi2GetStringStatus = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate void fmi2GetStringStatusTYPE(
-    IntPtr c,
-    out int s, 
-    IntPtr value);
-
   #endregion Common & Co-Simulation Functions for FMI 2.x
 
   #region Variable Getters & Setters
@@ -551,23 +483,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /////////////
   // Getters //
   /////////////
-  //public Variable<double>[] GetReal(uint[] valueReferences)
-  //{
-  //  if (component == IntPtr.Zero)
-  //  {
-  //    throw new NullReferenceException("FMU was not initialized.");
-  //  }
-  //
-  //  var result = new double[valueReferences.Length];
-  //  fmi2GetReal(component, valueReferences, valueReferences.Length, result);
-  //
-  //  var vars = new Variable<double>[result.Length];
-  //  for (int i = 0; i < vars.Length; i++)
-  //  {
-  //    vars[i] = new Variable<double>(valueReferences[i], result[i]);
-  //  }
-  //  return vars;
-  //}
   public double[] GetReal(uint[] valueReferences)
   {
     if (component == IntPtr.Zero)
@@ -576,7 +491,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     var result = new double[valueReferences.Length];
-    fmi2GetReal(component, valueReferences, (IntPtr)valueReferences.Length, result);
+
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2GetReal(component, valueReferences, (IntPtr)valueReferences.Length, result),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return result;
   }
@@ -601,7 +519,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     var result = new int[valueReferences.Length];
-    fmi2GetInteger(component, valueReferences, (IntPtr)valueReferences.Length, result);
+
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2GetInteger(component, valueReferences, (IntPtr)valueReferences.Length, result),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return result;
   }
@@ -626,7 +547,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     var result = new bool[valueReferences.Length];
-    fmi2GetBoolean(component, valueReferences, (IntPtr)valueReferences.Length, result);
+
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2GetBoolean(component, valueReferences, (IntPtr)valueReferences.Length, result),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return result;
   }
@@ -651,7 +575,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     var result = new string[valueReferences.Length];
-    fmi2GetString(component, valueReferences, (IntPtr)valueReferences.Length, result);
+
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2GetString(component, valueReferences, (IntPtr)valueReferences.Length, result),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return result;
   }
@@ -671,18 +598,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   /////////////
   // Setters //
   /////////////
-  //public void SetReal(uint[] valueReferences, Variable<double>[] values)
-  //{
-  //  if (component == IntPtr.Zero)
-  //  {
-  //    throw new NullReferenceException("FMU was not initialized.");
-  //  }
-  //
-  //
-  //
-  //  fmi2SetReal(component, valueReferences, valueReferences.Length, values.Select(e => e.FirstScalar).ToArray());
-  //}
-
   public void SetReal(uint[] valueReferences, double[] values)
   {
     if (component == IntPtr.Zero)
@@ -690,7 +605,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi2SetReal(component, valueReferences, (IntPtr)valueReferences.Length, values);
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetReal(component, valueReferences, (IntPtr)valueReferences.Length, values),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
   }
   /*
     typedef fmi2Status fmi2SetRealTYPE(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]);
@@ -712,7 +630,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi2SetInteger(component, valueReferences, (IntPtr)valueReferences.Length, values);
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetInteger(component, valueReferences, (IntPtr)valueReferences.Length, values),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
   }
   /*
     typedef fmi2Status fmi2SetIntegerTYPE(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Integer value[]);
@@ -735,7 +656,13 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     // bool cannot be cast trivially
-    fmi2SetBoolean(component, valueReferences, (IntPtr)valueReferences.Length, Array.ConvertAll(values, Convert.ToInt32));
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetBoolean(
+        component, 
+        valueReferences, 
+        (IntPtr)valueReferences.Length, 
+        Array.ConvertAll(values, Convert.ToInt32)),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi2Status fmi2SetBooleanTYPE(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Boolean value[]);
@@ -757,7 +684,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi2SetString(component, valueReferences, (IntPtr)valueReferences.Length, values);
+    Helpers.ProcessReturnCode(
+      (Fmi2Statuses)fmi2SetString(component, valueReferences, (IntPtr)valueReferences.Length, values),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
   }
   /*
   typedef fmi2Status fmi2SetStringTYPE(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]);
@@ -800,11 +730,12 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       }
       else
       {
-        throw new InvalidOperationException($"fmi2FreeInstance exited with exit code '{((Fmi2Statuses)fmi2Status)}'.");
+        throw new InvalidOperationException(
+          $"fmi2FreeInstance exited with exit code '{((Fmi2Statuses)fmi2Status)}'.");
       }
     }
   }
-  
+
   private bool mDisposedValue;
   protected override void Dispose(bool disposing)
   {

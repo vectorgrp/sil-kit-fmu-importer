@@ -22,8 +22,14 @@ namespace SilKit.Services.PubSub
     {
       this.participant = participant;
       var silKitDataSpec = dataSpec.toSilKitDataSpec();
-      var result = SilKit_DataPublisher_Create(out dataPublisherPtr, participant.ParticipantPtr, controllerName, silKitDataSpec,
-          history);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Create(
+          out dataPublisherPtr, 
+          participant.ParticipantPtr, 
+          controllerName, 
+          silKitDataSpec,
+          history),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
     /*
@@ -51,7 +57,9 @@ namespace SilKit.Services.PubSub
         data = dataPtr,
         size = (IntPtr)data.Length
       };
-      SilKit_DataPublisher_Publish(DataPublisherPtr, byteVector);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Publish(DataPublisherPtr, byteVector),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
       handle.Free();
     }
 

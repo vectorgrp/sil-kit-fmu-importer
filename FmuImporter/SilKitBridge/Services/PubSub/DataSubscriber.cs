@@ -29,21 +29,31 @@ namespace SilKit.Services.PubSub
       this.dataMessageHandler = dataMessageHandler;
       var silKitDataSpec = dataSpec.toSilKitDataSpec();
 
-      SilKit_DataSubscriber_Create(out dataSubscriberPtr, participant.ParticipantPtr, controllerName, silKitDataSpec,
-        dataHandlerContext, DataMessageHandlerInternal);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_Create(
+          out dataSubscriberPtr, 
+          participant.ParticipantPtr, 
+          controllerName, 
+          silKitDataSpec,
+          dataHandlerContext, DataMessageHandlerInternal),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
 
     public void SetDataMessageHandler(DataMessageHandler dataMessageHandler)
     {
       this.dataMessageHandler = dataMessageHandler;
-      SilKit_DataSubscriber_SetDataMessageHandler(DataSubscriberPtr, IntPtr.Zero, DataMessageHandlerInternal);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_SetDataMessageHandler(
+          DataSubscriberPtr, 
+          IntPtr.Zero, 
+          DataMessageHandlerInternal),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
     private void DataMessageHandlerInternal(IntPtr context, IntPtr subscriber, ref DataMessageEventInternal dataMessageEvent)
     {
       // double check if this is the correct lifecycle service
       if (subscriber != DataSubscriberPtr) { return; }
-
 
       dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
     }

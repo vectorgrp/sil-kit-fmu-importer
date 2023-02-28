@@ -80,7 +80,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3FreeInstance);
     SetDelegate(out fmi3EnterInitializationMode);
     SetDelegate(out fmi3ExitInitializationMode);
-    SetDelegate(out fmi3EnterStepMode);
     SetDelegate(out fmi3DoStep);
     SetDelegate(out fmi3Terminate);
 
@@ -130,7 +129,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     component = fmi3InstantiateCoSimulation(
       instanceName,
       instantiationToken,
-      $"file://{FullFmuLibraryPath}/resources",
+      $"file://{FullFmuLibPath}/resources",
       visible,
       loggingOn,
       false, 
@@ -186,17 +185,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime)
   {
-    var fmi3Status = fmi3EnterInitializationMode(
-      component,
-      tolerance.HasValue,
-      (tolerance.HasValue) ? tolerance.Value : double.NaN,
-      startTime,
-      stopTime.HasValue,
-      (stopTime.HasValue) ? stopTime.Value : double.NaN);
-    if (fmi3Status != 0)
-    {
-      throw new InvalidOperationException($"fmi3EnterInitializationMode exited with exit code '{fmi3Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3EnterInitializationMode(
+        component,
+        tolerance.HasValue,
+        (tolerance.HasValue) ? tolerance.Value : double.NaN,
+        startTime,
+        stopTime.HasValue,
+        (stopTime.HasValue) ? stopTime.Value : double.NaN),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
   }
   /*
     typedef fmi3Status fmi3EnterInitializationModeTYPE(
@@ -219,12 +217,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void ExitInitializationMode()
   {
-    var fmi3Status = fmi3ExitInitializationMode(component);
-    if (fmi3Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi3ExitInitializationMode exited with exit code '{fmi3Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3ExitInitializationMode(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3ExitInitializationModeTYPE(fmi3Instance instance);
@@ -232,24 +227,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   internal fmi3ExitInitializationModeTYPE fmi3ExitInitializationMode;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3ExitInitializationModeTYPE(IntPtr instance);
-
-  public void EnterStepMode()
-  {
-    var fmi3Status = fmi3EnterStepMode(component);
-    if (fmi3Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi3EnterStepMode exited with exit code '{fmi3Status}'.");
-    }
-  }
-  /*
-    typedef fmi3Status fmi3EnterStepModeTYPE(fmi3Instance instance);
-  */
-  internal fmi3EnterStepModeTYPE fmi3EnterStepMode = null!;
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate int fmi3EnterStepModeTYPE(IntPtr instance);
-
-
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
   {
@@ -542,8 +519,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
       if (binSizes.Sum() != data.Length)
       {
-        throw new ArgumentOutOfRangeException(
-          $"The expected data length ({binSizes.Sum()}) does not match the received data length ({data.Length}).");
+        throw new ArgumentOutOfRangeException($"The expected data length ({binSizes.Sum()}) " +
+                                              $"does not match the received data length ({data.Length}).");
       }
     }
 
@@ -583,14 +560,18 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     double communicationStepSize,
     out double lastSuccessfulTime)
   {
-    bool terminateRequested;
-    var fmi3Status = fmi3DoStep(component, currentCommunicationPoint, communicationStepSize, true, out _, out terminateRequested, out _, out lastSuccessfulTime);
-    if (fmi3Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi3EnterStepMode exited with exit code '{fmi3Status}'.");
-    }
-
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3DoStep(
+        component, 
+        currentCommunicationPoint, 
+        communicationStepSize, 
+        true, 
+        out _, 
+        out var terminateRequested, 
+        out _, 
+        out lastSuccessfulTime),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    
     if (terminateRequested)
     {
       Console.WriteLine("FMU requested simulation termination. Calling fmi3Terminate.");
@@ -622,12 +603,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public override void Terminate()
   {
-    var fmi3Status = fmi3Terminate(component);
-    if (fmi3Status != 0)
-    {
-      throw new InvalidOperationException(
-        $"Internal call to fmi3Terminate exited with exit code '{fmi3Status}'.");
-    }
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3Terminate(component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3TerminateTYPE(fmi3Instance instance);
@@ -652,7 +630,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new float[(int)nValues];
 
-    fmi3GetFloat32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetFloat32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
 
     return ReturnVariable<float>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -674,7 +660,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
     float[] values,
     size_t nValues);
-  
+
   public ReturnVariable<double> GetFloat64(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
@@ -685,7 +671,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new double[(int)nValues];
 
-    fmi3GetFloat64(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetFloat64(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<double>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -718,7 +711,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new sbyte[(int)nValues];
 
-    fmi3GetInt8(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetInt8(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<sbyte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -751,7 +751,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new byte[(int)nValues];
 
-    fmi3GetUInt8(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetUInt8(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<byte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -784,7 +791,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new short[(int)nValues];
 
-    fmi3GetInt16(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetInt16(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<short>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -817,7 +831,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new ushort[(int)nValues];
 
-    fmi3GetUInt16(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetUInt16(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<ushort>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -850,7 +871,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new int[(int)nValues];
 
-    fmi3GetInt32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetInt32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<int>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -883,7 +911,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new uint[(int)nValues];
 
-    fmi3GetUInt32(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetUInt32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<uint>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -916,7 +951,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new long[(int)nValues];
 
-    fmi3GetInt64(component, valueReferences, (IntPtr)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetInt64(
+        component, 
+        valueReferences, 
+        (IntPtr)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<long>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -949,7 +991,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new ulong[(int)nValues];
 
-    fmi3GetUInt64(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetUInt64(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<ulong>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -982,7 +1031,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new bool[(int)nValues];
 
-    fmi3GetBoolean(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetBoolean(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<bool>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -1015,7 +1071,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new string[(int)nValues];
 
-    fmi3GetString(component, valueReferences, (size_t)valueReferences.Length, result, nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetString(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<string>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -1049,9 +1112,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new fmi3Binary[(int)nValues];
 
-    fmi3GetBinary(component, valueReferences, (size_t)valueReferences.Length, valueSizes, result, (size_t)nValues);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3GetBinary(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        valueSizes, 
+        result, 
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<fmi3Binary>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription, valueSizes);
+    return ReturnVariable<fmi3Binary>.CreateReturnVariable(
+      valueReferences, 
+      result, 
+      nValues, 
+      ref modelDescription, 
+      valueSizes);
   }
   /*
     typedef fmi3Status fmi3GetBinaryTYPE(
@@ -1085,7 +1161,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetFloat32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetFloat32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetFloat32TYPE(
@@ -1113,7 +1196,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetFloat64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetFloat64(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetFloat64TYPE(
@@ -1141,7 +1231,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetInt8(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetInt8(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetInt8TYPE(
@@ -1169,7 +1266,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetUInt8(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetUInt8(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetUInt8TYPE(
@@ -1197,7 +1301,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetInt16(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetInt16(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetInt16TYPE(
@@ -1225,7 +1336,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetUInt16(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetUInt16(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetUInt16TYPE(
@@ -1253,7 +1371,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetInt32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetInt32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetInt32TYPE(
@@ -1281,7 +1406,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetUInt32(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetUInt32(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetUInt32TYPE(
@@ -1308,8 +1440,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-
-    fmi3SetInt64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetInt64(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetInt64TYPE(
@@ -1337,7 +1476,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetUInt64(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetUInt64(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetUInt64TYPE(
@@ -1365,7 +1511,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetBoolean(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetBoolean(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetBooleanTYPE(
@@ -1393,7 +1546,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetString(component, valueReferences, (size_t)valueReferences.Length, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetString(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetStringTYPE(
@@ -1421,7 +1581,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    fmi3SetBinary(component, valueReferences, (size_t)valueReferences.Length, valueSizes, values, (size_t)values.Length);
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetBinary(
+        component, 
+        valueReferences, 
+        (size_t)valueReferences.Length, 
+        valueSizes, 
+        values, 
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
   /*
     typedef fmi3Status fmi3SetBinaryTYPE(

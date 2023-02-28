@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\CommonHelpers.cs" Link="CommonHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="SilKitd.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

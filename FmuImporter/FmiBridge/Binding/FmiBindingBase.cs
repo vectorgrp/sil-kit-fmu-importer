@@ -39,7 +39,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     private set { modelDescription = value; }
   }
 
-  public string FullFmuLibraryPath { get; }
+  public string FullFmuLibPath { get; }
 
   private IntPtr DllPtr { set; get; }
 
@@ -54,8 +54,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       throw new NullReferenceException("Failed to initialize model description.");
     }
 
-    FullFmuLibraryPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.ModelName)}";
-    InitializeModelBinding(FullFmuLibraryPath);
+    FullFmuLibPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.ModelName)}";
+    InitializeModelBinding(FullFmuLibPath);
   }
 
   private void InitializeModelDescription(string extractedFolderPath)

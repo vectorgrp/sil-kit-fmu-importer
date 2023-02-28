@@ -644,7 +644,7 @@ public class FmuImporter
         FormatData(ref arrayPrefix);
         publishableBytes.AddRange(arrayPrefix);
       }
-      
+
       for (int i = 0; i < arraySize; i++)
       {
         var binarySize = (int)variable.ValueSizes[i];

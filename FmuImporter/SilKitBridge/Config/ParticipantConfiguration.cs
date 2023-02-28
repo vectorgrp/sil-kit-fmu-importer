@@ -12,7 +12,9 @@ namespace SilKit.Config
     }
     internal ParticipantConfiguration(string configurationString)
     {
-      SilKit_ParticipantConfiguration_FromString(out configurationPtr, configurationString);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_FromString(out configurationPtr, configurationString),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
     /*
@@ -29,7 +31,9 @@ namespace SilKit.Config
     ~ParticipantConfiguration()
     {
       // TODO change to dispose pattern
-      SilKit_ParticipantConfiguration_Destroy(ParticipantConfigurationPtr);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_Destroy(ParticipantConfigurationPtr),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
       ParticipantConfigurationPtr = IntPtr.Zero;
     }
 

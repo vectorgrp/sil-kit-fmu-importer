@@ -53,7 +53,7 @@ namespace SilKit.Services.PubSub
 
     internal SilKit_DataSpec toSilKitDataSpec()
     {
-      var res = new SilKit_DataSpec
+      var dataSpec = new SilKit_DataSpec
       {
         mediaType = this.MediaType,
         topic = this.Topic
@@ -80,9 +80,9 @@ namespace SilKit.Services.PubSub
       }
 
       labelList.labels = labelsPtr;
-      res.labelList = labelList;
+      dataSpec.labelList = labelList;
 
-      return res;
+      return dataSpec;
     }
   }
 

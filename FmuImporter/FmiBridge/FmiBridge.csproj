@@ -9,4 +9,7 @@
     <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Common\CommonHelpers.cs" Link="Binding\CommonHelpers.cs" />
+  </ItemGroup>
 </Project>

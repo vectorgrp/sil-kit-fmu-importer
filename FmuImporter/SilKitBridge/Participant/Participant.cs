@@ -23,7 +23,9 @@ namespace SilKit
       this.pinnedHandles = new HashSet<GCHandle>();
 
       this.configuration = configuration;
-      SilKit_Participant_Create(out participantPtr, configuration.ParticipantConfigurationPtr, participantName, registryUri);
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(out participantPtr, configuration.ParticipantConfigurationPtr, participantName, registryUri),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
     /*
