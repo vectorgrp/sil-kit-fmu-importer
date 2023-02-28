@@ -35,7 +35,7 @@ namespace SilKit
             const char* participantName, 
             const char* registryUri);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_Participant_Create(
         [Out] out IntPtr outParticipant,
         [In] IntPtr participantConfiguration,
@@ -60,7 +60,7 @@ namespace SilKit
     /*
      * SilKit_Participant_Destroy(SilKit_Participant* participant);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_Participant_Destroy([In] IntPtr participant);
 
     #endregion ctor & dtor

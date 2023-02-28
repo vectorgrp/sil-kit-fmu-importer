@@ -22,11 +22,12 @@ namespace SilKit.Services.PubSub
     {
       this.participant = participant;
       var silKitDataSpec = dataSpec.toSilKitDataSpec();
+
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Create(
           out dataPublisherPtr, 
           participant.ParticipantPtr, 
-          controllerName, 
+          controllerName,
           silKitDataSpec,
           history),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
@@ -40,12 +41,12 @@ namespace SilKit.Services.PubSub
             SilKit_DataSpec* dataSpec, 
             uint8_t history);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataPublisher_Create(
         [Out] out IntPtr outPublisher,
         [In] IntPtr participant,
         [In][MarshalAs(UnmanagedType.LPStr)] string controllerName,
-        [In] SilKit_DataSpec dataSpec,
+        [In] IntPtr dataSpec,
         [In] byte history);
 
     public void Publish(byte[] data)
@@ -68,7 +69,7 @@ namespace SilKit.Services.PubSub
             SilKit_DataPublisher* self, 
             const SilKit_ByteVector* data);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataPublisher_Publish(IntPtr self, SilKit_ByteVector data);
 
   }

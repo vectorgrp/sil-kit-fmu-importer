@@ -22,7 +22,7 @@ namespace SilKit.Config
             SilKit_ParticipantConfiguration** outParticipantConfiguration,
             const char* participantConfigurationString);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_ParticipantConfiguration_FromString(
         [Out] out IntPtr outParticipantConfiguration,
         [MarshalAs(UnmanagedType.LPStr)] string participantConfigurationString);
@@ -40,7 +40,7 @@ namespace SilKit.Config
     /*
         SilKit_ParticipantConfiguration_Destroy(SilKit_ParticipantConfiguration* participantConfiguration);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_ParticipantConfiguration_Destroy([In] IntPtr participantConfiguration);
 
   }

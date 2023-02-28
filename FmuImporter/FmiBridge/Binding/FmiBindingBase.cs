@@ -71,7 +71,13 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   private IntPtr LoadFmiLibrary(string libraryPath)
   {
+#if OS_WINDOWS
     var res = NativeMethods.LoadLibrary(libraryPath);
+#elif (OS_LINUX || OS_MAC)
+    var res = NativeMethods.dlopen(libraryPath + ".so", 0x00002 /* RTLD_NOW */);
+#else
+    throw new NotSupportedException();
+#endif
     if (res == IntPtr.Zero)
     {
       throw new FileLoadException("Failed to retrieve a pointer from the provided FMU library");
@@ -90,13 +96,20 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     }
     delegateTypeName = delegateTypeName.Substring(0, delegateTypeName.Length - 4);
 
+
+#if OS_WINDOWS
     var ptr = NativeMethods.GetProcAddress(DllPtr, delegateTypeName);
+#elif  (OS_LINUX || OS_MAC)
+    var ptr = NativeMethods.dlsym(DllPtr, delegateTypeName);
+#else
+    throw new NotSupportedException();
+#endif
     if (ptr == IntPtr.Zero)
     {
       throw new FileLoadException(
         $"Failed to retrieve function pointer to method '{delegateTypeName}'.");
     }
-      
+
     deleg = (T)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
   }
 

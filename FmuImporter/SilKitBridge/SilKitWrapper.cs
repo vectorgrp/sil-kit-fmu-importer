@@ -262,8 +262,8 @@ namespace SilKit
 
     internal static ulong SK_ID_MAKE(ServiceId serviceId, DatatypeId datatypeId, byte datatypeVersion)
     {
-      return ((ulong)83 << 56)
-          | ((ulong)75 << 48)
+      return ((ulong)83 /*S*/ << 56)
+          | ((ulong)75 /*K*/ << 48)
           | ((ulong)serviceId << 40)
           | ((ulong)datatypeId << 32)
           | ((ulong)datatypeVersion << 24);

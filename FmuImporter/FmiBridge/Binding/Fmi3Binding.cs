@@ -72,8 +72,15 @@ public interface IFmi3Binding : IDisposable, IFmiBindingCommon
 internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 {
   private IntPtr component;
+#if OS_WINDOWS
+  private const string osPath = "/binaries/x86_64-windows";
+#elif OS_LINUX
+  private const string osPath = "/binaries/x86_64-linux";
+#elif OS_MAC
+  private const string osPath = "/binaries/x86_64-darwin";
+#endif
 
-  public Fmi3Binding(string fmuPath) : base(fmuPath, "/binaries/x86_64-windows")
+  public Fmi3Binding(string fmuPath) : base(fmuPath, osPath)
   {
     // Common functions
     SetDelegate(out fmi3InstantiateCoSimulation);
@@ -117,7 +124,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     return ModelDescription;
   }
 
-  #region Common & Co-Simulation Functions for FMI 3.0
+#region Common & Co-Simulation Functions for FMI 3.0
 
   public void InstantiateCoSimulation(
     string instanceName,
@@ -614,9 +621,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3TerminateTYPE(IntPtr instance);
 
-  #endregion Common & Co-Simulation Functions for FMI 3.0
+#endregion Common & Co-Simulation Functions for FMI 3.0
 
-  #region Getters & Setters
+#region Getters & Setters
   /////////////
   // Getters //
   /////////////
@@ -1613,7 +1620,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr[] values,
     size_t nValues);
 
-  #endregion Getters & Setters
+#endregion Getters & Setters
 
   private size_t CalculateValueLength(ref fmi3ValueReference[] valueReferences)
   {

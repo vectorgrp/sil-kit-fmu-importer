@@ -85,7 +85,7 @@ namespace SilKit.Services.Orchestration
               SilKit_TimeSyncService** outTimeSyncService,
               SilKit_LifecycleService* lifecycleService);
       */
-      [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+      [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
       private static extern int SilKit_TimeSyncService_Create(
           [Out] out IntPtr outTimeSyncService,
           [In] IntPtr lifecycleService);
@@ -122,7 +122,7 @@ namespace SilKit.Services.Orchestration
               SilKit_TimeSyncService_SimulationStepHandler_t handler, 
               SilKit_NanosecondsTime initialStepSize);
       */
-      [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+      [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
       private static extern int SilKit_TimeSyncService_SetSimulationStepHandler(
           [In] IntPtr timesyncService,
           [Out] out IntPtr context,
@@ -148,7 +148,7 @@ namespace SilKit.Services.Orchestration
       this.participant = participant;
       this.lifecycleConfiguration = lc;
       var internalLc = lc.LifecycleConfigurationInternal;
-      
+
       var handler = GCHandle.Alloc(internalLc, GCHandleType.Pinned);
 
       Helpers.ProcessReturnCode(
@@ -166,11 +166,11 @@ namespace SilKit.Services.Orchestration
             SilKit_Participant* participant,
             const SilKit_LifecycleConfiguration* startConfiguration);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_Create(
         [Out] out IntPtr outLifecycleService,
         [In] IntPtr participant,
-        [In] SilKit_LifecycleConfiguration startConfiguration
+        [In] IntPtr startConfiguration
         );
 
     ~LifecycleService()
@@ -189,7 +189,7 @@ namespace SilKit.Services.Orchestration
         SilKit_LifecycleService_StartLifecycle(
             SilKit_LifecycleService* lifecycleService);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_StartLifecycle(
         [In] IntPtr lifecycleService);
 
@@ -205,7 +205,7 @@ namespace SilKit.Services.Orchestration
             SilKit_LifecycleService* lifecycleService, 
             const char* reason);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_Stop(
       [In] IntPtr lifecycleService, 
       [MarshalAs(UnmanagedType.LPStr)] string reason);
@@ -229,7 +229,7 @@ namespace SilKit.Services.Orchestration
             SilKit_LifecycleService* lifecycleService, 
             SilKit_ParticipantState* outParticipantState);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_WaitForLifecycleToComplete([In] IntPtr lifecycleService, [Out] out IntPtr outParticipantState);
 
 
@@ -263,7 +263,7 @@ namespace SilKit.Services.Orchestration
             void* context,
             SilKit_LifecycleService_CommunicationReadyHandler_t handler);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_SetCommunicationReadyHandler([In] IntPtr lifecycleService,
                                                                [Out] out IntPtr context,
                                                                SilKit_LifecycleService_StopHandler_t handler);
@@ -292,7 +292,7 @@ namespace SilKit.Services.Orchestration
             void* context,
             SilKit_LifecycleService_StopHandler_t handler);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_SetStopHandler([In] IntPtr lifecycleService,
                                                                [Out] out IntPtr context,
                                                                SilKit_LifecycleService_StopHandler_t handler);
@@ -323,7 +323,7 @@ namespace SilKit.Services.Orchestration
             void* context, 
             SilKit_LifecycleService_ShutdownHandler_t handler);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_SetShutdownHandler([In] IntPtr lifecycleService,
                                                                [Out] out IntPtr context,
                                                                SilKit_LifecycleService_StopHandler_t handler);

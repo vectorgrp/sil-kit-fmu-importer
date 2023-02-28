@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 
 namespace SilKit.Services.PubSub
 {
@@ -51,7 +52,7 @@ namespace SilKit.Services.PubSub
       });
     }
 
-    internal SilKit_DataSpec toSilKitDataSpec()
+    internal IntPtr toSilKitDataSpec()
     {
       var dataSpec = new SilKit_DataSpec
       {
@@ -82,12 +83,15 @@ namespace SilKit.Services.PubSub
       labelList.labels = labelsPtr;
       dataSpec.labelList = labelList;
 
-      return dataSpec;
+      var dataSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_DataSpec>()); 
+      Marshal.StructureToPtr(dataSpec, dataSpecPtr, false);
+
+      return dataSpecPtr;
     }
   }
 
   // Internal
-  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
   internal struct SilKit_DataSpec
   {
     public SilKit_DataSpec()
@@ -105,14 +109,14 @@ namespace SilKit.Services.PubSub
     internal SilKit_LabelList labelList;
   }
 
-  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
   internal struct SilKit_LabelList
   {
     internal IntPtr /* size_t */ numLabels;
     internal IntPtr labels;
   };
 
-  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
   internal struct SilKit_Label
   {
     [MarshalAs(UnmanagedType.LPStr)] internal string key;

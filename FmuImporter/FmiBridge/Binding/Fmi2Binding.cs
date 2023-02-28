@@ -125,8 +125,15 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 {
   private IntPtr component = IntPtr.Zero;
 
+#if OS_WINDOWS
+  private const string osPath = "/binaries/win64";
+#elif OS_LINUX
+  private const string osPath = "/binaries/linux64";
+#elif OS_MAC
+  private const string osPath = "/binaries/darwin64";
+#endif
 
-  public Fmi2Binding(string fmuPath) : base(fmuPath, "/binaries/win64")
+  public Fmi2Binding(string fmuPath) : base(fmuPath, osPath)
   {
     // Common Functions
     SetDelegate(out fmi2SetDebugLogging);

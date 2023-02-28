@@ -64,7 +64,7 @@ namespace SilKit.Services.PubSub
             void* context, 
             SilKit_DataMessageHandler_t dataHandler);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataSubscriber_SetDataMessageHandler(
         [In] IntPtr self,
         [In] IntPtr context,
@@ -81,12 +81,12 @@ namespace SilKit.Services.PubSub
             void* dataHandlerContext,
             SilKit_DataMessageHandler_t dataHandler);
     */
-    [DllImport("SilKitd.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataSubscriber_Create(
         [Out] out IntPtr outSubscriber,
         [In] IntPtr participant,
         [MarshalAs(UnmanagedType.LPStr)] string controllerName,
-        [In] SilKit_DataSpec dataSpec,
+        [In] IntPtr dataSpec,
         IntPtr context,
         SilKit_DataMessageHandler_t dataHandler);
   }
