@@ -406,7 +406,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
@@ -421,7 +421,8 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
+
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
@@ -436,7 +437,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
@@ -451,7 +452,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
@@ -466,7 +467,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
@@ -481,7 +482,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -503,7 +504,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -525,7 +526,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -547,7 +548,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -569,7 +570,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -591,7 +592,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -613,7 +614,7 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var byteList = new List<byte>(variable.Values.Length);
+      var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
@@ -635,15 +636,8 @@ public class FmuImporter
   {
     foreach (var variable in data.ResultArray)
     {
-      var publishableBytes = new List<byte>();
-
+      var publishableBytes = InitByteList(variable.IsScalar, variable.Values.Length);
       var arraySize = variable.ValueSizes.Length;
-      if (!variable.IsScalar)
-      {
-        var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
-        publishableBytes.AddRange(arrayPrefix);
-      }
 
       for (int i = 0; i < arraySize; i++)
       {
@@ -657,6 +651,21 @@ public class FmuImporter
 
       // publish byte array
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(publishableBytes.ToArray());
+    }
+  }
+
+  private List<byte> InitByteList(bool isScalar, int arrayLength)
+  {
+    if (isScalar)
+    {
+      return new List<byte>();
+    }
+    else
+    {
+      var byteArr = BitConverter.GetBytes(arrayLength);
+      FormatData(ref byteArr);
+
+      return byteArr.ToList();
     }
   }
 
