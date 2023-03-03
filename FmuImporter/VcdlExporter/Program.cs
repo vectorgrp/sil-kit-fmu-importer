@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Text;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
@@ -16,7 +15,7 @@ namespace VcdlExporter
       var interfaceSb = new StringBuilder();
       var objectsSb = new StringBuilder();
 
-      commonTextSb.AppendLine("version 1.4;\nimport module \"SilKit\";\n\n");
+      commonTextSb.AppendLine("version 2.0;\nimport module \"SilKit\";\n\n");
       commonTextSb.AppendLine($"namespace {typeof(Program).Namespace}\n{{");
 
       for (int i = 1; i < args.Length; i++)
@@ -153,9 +152,8 @@ namespace VcdlExporter
         interfaceSb.AppendLine($"{vValue.Name};");
       }
       interfaceSb.AppendLine($"  }}\n");
-      objectsSb.AppendLine($"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier};");
+      objectsSb.AppendLine($"  I{modelDescription.CoSimulation.ModelIdentifier} {modelDescription.CoSimulation.ModelIdentifier};");
     }
-
 
     private static string GetVarTypeString(Type variableType)
     {
