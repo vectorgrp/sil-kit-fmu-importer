@@ -51,7 +51,7 @@ namespace VcdlExporter
     {
       var modelDescription = binding.GetModelDescription();
 
-      interfaceSb.AppendLine($"  interface I{modelDescription.ModelName}\n  {{");
+      interfaceSb.AppendLine($"  interface I{modelDescription.CoSimulation.ModelIdentifier}\n  {{");
 
       foreach (var variable in modelDescription.Variables)
       {
@@ -103,14 +103,14 @@ namespace VcdlExporter
 
       }
       interfaceSb.AppendLine($"  }}\n");
-      objectsSb.AppendLine($"  object {modelDescription.ModelName}: I{modelDescription.ModelName}");
+      objectsSb.AppendLine($"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier}");
     }
 
     private static void ParseFmi3(IFmi3Binding binding, StringBuilder interfaceSb, StringBuilder objectsSb)
     {
       var modelDescription = binding.GetModelDescription();
 
-      interfaceSb.AppendLine($"  interface I{modelDescription.ModelName}\n  {{");
+      interfaceSb.AppendLine($"  interface I{modelDescription.CoSimulation.ModelIdentifier}\n  {{");
 
       foreach (var variable in modelDescription.Variables)
       {
@@ -153,7 +153,7 @@ namespace VcdlExporter
         interfaceSb.AppendLine($"{vValue.Name};");
       }
       interfaceSb.AppendLine($"  }}\n");
-      objectsSb.AppendLine($"  object {modelDescription.ModelName}: I{modelDescription.ModelName};");
+      objectsSb.AppendLine($"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier};");
     }
 
 

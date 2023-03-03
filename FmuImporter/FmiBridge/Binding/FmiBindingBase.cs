@@ -54,7 +54,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       throw new NullReferenceException("Failed to initialize model description.");
     }
 
-    FullFmuLibPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.ModelName)}";
+    FullFmuLibPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
     InitializeModelBinding(FullFmuLibPath);
   }
 
