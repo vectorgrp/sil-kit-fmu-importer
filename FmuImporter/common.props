@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="DisplayMessages">
+        <Message Text="SolutionDir = $(SolutionDir)" />
+        <Message Text="Configuration = $(Configuration)" />
+    </Target>
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <OutDir>$(OutputPath)</OutDir>
+        <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
+        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <Platforms>x64</Platforms>
+        <Platform>x64</Platform>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)/_obj/$(Configuration)/</IntermediateOutputPath>
+        <OutputPath>$(MSBuildProjectDirectory)/../_build/linux-$(Platform)-$(Configuration)</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)/_obj/$(Configuration)/</IntermediateOutputPath>
+        <OutputPath>$(MSBuildProjectDirectory)/../_build/osx-$(Platform)-$(Configuration)</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) ">
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)\_obj\$(Configuration)\</IntermediateOutputPath>
+        <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
+    </PropertyGroup>
+</Project>
