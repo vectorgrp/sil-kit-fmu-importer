@@ -80,7 +80,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 #endif
     if (res == IntPtr.Zero)
     {
-      throw new FileLoadException("Failed to retrieve a pointer from the provided FMU library");
+      throw new FileLoadException("Failed to retrieve a pointer from the provided FMU library.");
     }
 
     return res;

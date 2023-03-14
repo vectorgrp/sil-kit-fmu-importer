@@ -19,14 +19,14 @@ internal static class Helpers
     {
       throw new NullReferenceException(
         $"Failed to identify name of method that caused error in native code " +
-        $"with return code '{resultCode}' ({returnCodeName})");
+        $"with return code '{resultCode}' ({returnCodeName}).");
     }
     var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
     if (methodInfo == null)
     {
       throw new NullReferenceException(
         $"Failed to identify name of method that caused error in native code " +
-        $"with return code '{resultCode}' ({returnCodeName})");
+        $"with return code '{resultCode}' ({returnCodeName}).");
     }
     var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
 

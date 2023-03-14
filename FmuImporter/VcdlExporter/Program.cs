@@ -34,7 +34,7 @@ namespace VcdlExporter
             break;
           case ModelLoader.FmiVersions.Invalid:
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The FMU uses an unsupported FMU version.");
         }
       }
 
@@ -75,7 +75,7 @@ namespace VcdlExporter
             // ignore
             continue;
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
         }
 
         if (vValue.Dimensions?.Length == 0)
@@ -135,7 +135,7 @@ namespace VcdlExporter
             // ignore
             continue;
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
         }
 
         if (vValue.Dimensions?.Length > 0)

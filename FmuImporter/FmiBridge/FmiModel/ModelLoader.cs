@@ -89,7 +89,7 @@ namespace Fmi.FmiModel
 
       if (commonDescription == null)
       {
-        throw new NullReferenceException("Failed to initialize model description object");
+        throw new NullReferenceException("Failed to initialize model description object.");
       }
       return commonDescription;
     }

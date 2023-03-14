@@ -148,7 +148,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       IntPtr.Zero);
     if (component == IntPtr.Zero)
     {
-      throw new NullReferenceException("Failed to create an FMU instance");
+      throw new NullReferenceException("Failed to create an FMU instance.");
     }
   }
   /*
@@ -354,7 +354,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         if (data.Length > 1)
         {
-          throw new NotSupportedException("Unexpected size of data type");
+          throw new NotSupportedException("Unexpected size of data type.");
         }
       }
 
@@ -369,7 +369,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         if (data.Length > 1)
         {
-          throw new NotSupportedException("Unexpected size of data type");
+          throw new NotSupportedException("Unexpected size of data type.");
         }
       }
 
@@ -526,8 +526,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
       if (binSizes.Sum() != data.Length)
       {
-        throw new ArgumentOutOfRangeException($"The expected data length ({binSizes.Sum()}) " +
-                                              $"does not match the received data length ({data.Length}).");
+        throw new ArgumentOutOfRangeException(
+          nameof(binSizes), 
+          $"The expected data length ({binSizes.Sum()}) " +
+          $"does not match the received data length ({data.Length}).");
       }
     }
 

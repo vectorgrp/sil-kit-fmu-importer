@@ -119,7 +119,7 @@ namespace Fmi.FmiModel.Internal
           VariableType = typeof(IntPtr);
           break;
         default: 
-          throw new ArgumentOutOfRangeException("The FMI 3 datatype is unknown");
+          throw new InvalidDataException("The FMI 3 datatype is unknown.");
       }
 
       switch (input.causality)
@@ -146,7 +146,7 @@ namespace Fmi.FmiModel.Internal
           Causality = Causalities.StructuralParameter;
           break;
         default:
-          throw new ArgumentOutOfRangeException();
+          throw new InvalidDataException($"The variable '{input.name}' has an unknown causality.");
       }
 
       if (input.variabilitySpecified)
@@ -169,7 +169,7 @@ namespace Fmi.FmiModel.Internal
             Variability = Variabilities.Continuous;
             break;
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The variable '{input.name}' has an unknown variability.");
         }
       }
       else
@@ -227,7 +227,7 @@ namespace Fmi.FmiModel.Internal
           VariableType = typeof(string);
           break;
         default:
-          throw new ArgumentOutOfRangeException("Unexpected FMI 2 variable type");
+          throw new InvalidDataException($"The variable '{input.name}' has an unknown variable type.");
       }
 
       switch (input.causality)
@@ -251,7 +251,7 @@ namespace Fmi.FmiModel.Internal
           Causality = Causalities.Independent;
           break;
         default:
-          throw new ArgumentOutOfRangeException();
+          throw new InvalidDataException($"The variable '{input.name}' has an unknown causality.");
       }
 
       if (true /*input.variabilitySpecified*/)
@@ -274,7 +274,7 @@ namespace Fmi.FmiModel.Internal
             Variability = Variabilities.Continuous;
             break;
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The variable '{input.name}' has an unknown variability.");
         }
       }
 
@@ -293,7 +293,7 @@ namespace Fmi.FmiModel.Internal
             InitialValue = InitialValues.Calculated;
             break;
           default:
-            throw new ArgumentOutOfRangeException();
+            throw new InvalidDataException($"The variable '{input.name}' has an unknown initial value.");
         }
       }
       else

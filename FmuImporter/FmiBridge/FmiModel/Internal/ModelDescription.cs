@@ -57,8 +57,7 @@ namespace Fmi.FmiModel.Internal
       // Node init
       if (input.CoSimulation.Length < 1)
       {
-        throw new ArgumentOutOfRangeException(
-            $"The model description does not provide a CoSimulation description.");
+        throw new InvalidDataException($"The model description does not provide a CoSimulation description.");
       }
       CoSimulation = new CoSimulation(input.CoSimulation[0]);
       DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);

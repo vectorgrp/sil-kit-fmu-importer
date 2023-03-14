@@ -122,7 +122,7 @@ public class FmuImporter
 
     if (dataMessageEvent.timestampInNs > nextSimStep)
     {
-      throw new ArgumentOutOfRangeException(
+      throw new InvalidDataException(
         "The received message is further in the future than the next communication step!");
     }
     else if (dataMessageEvent.timestampInNs > lastSimStep)
@@ -180,7 +180,7 @@ public class FmuImporter
       (name, status, category, message) =>
       {
         Console.WriteLine($"Logger: Name={name}; status={status}; category={category};\n  message={message}");
-      }, status => throw new NotImplementedException("Step finished asynchronously"));
+      }, status => throw new NotImplementedException("Step finished asynchronously."));
 
     fmi2Binding.Instantiate(
       ModelDescription.ModelName,
@@ -714,6 +714,15 @@ internal class Program
 
     rootCommand.SetHandler((fmuPath, silKitConfigFile, participantName) =>
     {
+      if (!File.Exists(fmuPath))
+      {
+        throw new FileNotFoundException("The provided FMU file path is invalid.");
+      }
+      if (!File.Exists(silKitConfigFile))
+      {
+        throw new FileNotFoundException("The provided SIL Kit configuration file path is invalid.");
+      }
+
       var instance = new FmuImporter(fmuPath, silKitConfigFile, participantName);
       instance.RunSimulation();
     }, fmuPathOption, silKitConfigFileOption, participantNameOption);

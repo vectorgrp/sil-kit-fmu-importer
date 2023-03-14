@@ -164,7 +164,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<double> result)
@@ -175,22 +175,22 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<byte> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<short> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<int> result)
@@ -201,17 +201,17 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<uint> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<long> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<bool> result)
@@ -228,7 +228,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result)
   {
-    throw new NotSupportedException("Not available in FMI 2.0");
+    throw new NotSupportedException("Not available in FMI 2.0.");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -265,7 +265,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void SetValue(uint valueRef, byte[] data, int[] binSizes)
   {
-    throw new NotSupportedException("The binary datatype is not available in FMI 2.0");
+    throw new NotSupportedException("The binary datatype is not available in FMI 2.0.");
   }
 
   public ModelDescription GetModelDescription()
@@ -315,7 +315,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       loggingOn);
     if (component == IntPtr.Zero)
     {
-      throw new NullReferenceException("Failed to create an FMU instance");
+      throw new NullReferenceException("Failed to create an FMU instance.");
     }
   }
   /*
