@@ -330,6 +330,28 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
+      var unit = mdVar.TypeDefinition?.Unit;
+      if (unit != null)
+      {
+        // Apply unit transformation
+        // FMU value = [SIL Kit value] * factor + offset
+        for (int i = 0; i < values.Length; i++)
+        {
+          var value = values[i];
+          // first apply factor, then offset
+          if (unit.Factor.HasValue)
+          {
+            value = Convert.ToSingle(value * unit.Factor.Value);
+          }
+
+          if (unit.Offset.HasValue)
+          {
+            value = Convert.ToSingle(value + unit.Offset.Value);
+          }
+          values[i] = value;
+        }
+      }
+
       SetFloat32(new[] { valueRef }, values);
     }
     else if (type == typeof(double))
@@ -344,6 +366,28 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       else
       {
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
+      }
+
+      var unit = mdVar.TypeDefinition?.Unit;
+      if (unit != null)
+      {
+        // Apply unit transformation
+        // FMU value = [SIL Kit value] * factor + offset
+        for (int i = 0; i < values.Length; i++)
+        {
+          var value = values[i];
+          // first apply factor, then offset
+          if (unit.Factor.HasValue)
+          {
+            value *= unit.Factor.Value;
+          }
+
+          if (unit.Offset.HasValue)
+          {
+            value += unit.Offset.Value;
+          }
+          values[i] = value;
+        }
       }
 
       SetFloat64(new[] { valueRef }, values);

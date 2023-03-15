@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Fmi.FmiModel.Internal;
+﻿using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding
 {

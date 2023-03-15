@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Data;
+using System.Text;
 
 namespace Fmi.FmiModel.Internal
 {
@@ -24,9 +25,15 @@ namespace Fmi.FmiModel.Internal
       set { variables = value; }
     }
 
+    public Dictionary<string /*unitName*/, UnitDefinition> UnitDefinitions;
+
+    public Dictionary<string /*typeName*/, TypeDefinition> TypeDefinitions;
+
     public ModelDescription(Fmi3.fmiModelDescription input)
     {
       // init of local fields & properties
+      UnitDefinitions = new Dictionary<string, UnitDefinition>();
+      TypeDefinitions = new Dictionary<string, TypeDefinition>();
       Variables = new Dictionary<uint, Variable>();
 
       // Attribute init
@@ -39,12 +46,27 @@ namespace Fmi.FmiModel.Internal
       // Node init
       CoSimulation = new CoSimulation(input.CoSimulation);
       DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
-      InitVariableMap(input.ModelVariables);
+      if (input.UnitDefinitions != null)
+      {
+        InitUnitMap(input.UnitDefinitions);
+      }
+
+      if (input.TypeDefinitions != null)
+      {
+        InitTypeDefMap(input.TypeDefinitions);
+      }
+
+      if (input.ModelVariables != null)
+      {
+        InitVariableMap(input.ModelVariables);
+      }
     }
 
     public ModelDescription(Fmi2.fmiModelDescription input)
     {
       // init of local fields & properties
+      UnitDefinitions = new Dictionary<string, UnitDefinition>();
+      TypeDefinitions = new Dictionary<string, TypeDefinition>();
       Variables = new Dictionary<uint, Variable>();
 
       // Attribute init
@@ -61,14 +83,148 @@ namespace Fmi.FmiModel.Internal
       }
       CoSimulation = new CoSimulation(input.CoSimulation[0]);
       DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
-      InitVariableMap(input.ModelVariables);
+      if (input.UnitDefinitions != null)
+      {
+        InitUnitMap(input.UnitDefinitions);
+      }
+
+      if (input.TypeDefinitions != null)
+      {
+        InitTypeDefMap(input.TypeDefinitions);
+      }
+
+      if (input.ModelVariables != null)
+      {
+        InitVariableMap(input.ModelVariables);
+      }
+    }
+
+    private void InitTypeDefMap(Fmi3.fmiModelDescriptionTypeDefinitions input)
+    {
+      foreach (var typeDefinitionBase in input.Items)
+      {
+        if (typeDefinitionBase == null)
+        {
+          continue;
+        }
+
+        if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsFloat64Type typeDefFloat64)
+        {
+          if (!IsUnitInMap(typeDefFloat64.unit))
+          {
+            throw new DataException("The model description has a type definition with no matching unit.");
+          }
+          var typeDef = new TypeDefinition()
+          {
+            Name = typeDefinitionBase.name,
+            Unit = UnitDefinitions[typeDefFloat64.unit],
+          };
+          TypeDefinitions.Add(typeDef.Name, typeDef);
+        }
+        else if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsFloat32Type typeDefFloat32)
+        {
+          if (!IsUnitInMap(typeDefFloat32.unit))
+          {
+            throw new DataException("The model description has a type definition with no matching unit.");
+          }
+          var typeDef = new TypeDefinition()
+          {
+            Name = typeDefinitionBase.name,
+            Unit = UnitDefinitions[typeDefFloat32.unit],
+          };
+          TypeDefinitions.Add(typeDef.Name, typeDef);
+        }
+        else
+        {
+          continue;
+        }
+      }
+    }
+
+    private void InitTypeDefMap(Fmi2.fmiModelDescriptionTypeDefinitions input)
+    {
+      foreach (var fmi2SimpleType in input.SimpleType)
+      {
+        if (fmi2SimpleType == null)
+        {
+          continue;
+        }
+
+        if (fmi2SimpleType.Item is Fmi2.fmi2SimpleTypeReal typeDefReal)
+        {
+          if (!IsUnitInMap(typeDefReal.unit))
+          {
+            throw new DataException("The model description has a type definition with no matching unit.");
+          }
+          var typeDef = new TypeDefinition()
+          {
+            Name = fmi2SimpleType.name,
+            Unit = UnitDefinitions[typeDefReal.unit],
+          };
+          TypeDefinitions.Add(typeDef.Name, typeDef);
+        }
+        else
+        {
+          continue;
+        }
+      }
+    }
+
+    private void InitUnitMap(Fmi3.fmiModelDescriptionUnitDefinitions input)
+    {
+      if (input.Unit == null)
+      {
+        return;
+      }
+
+      foreach (var fmi3Unit in input.Unit)
+      {
+        var unitDefinition = new UnitDefinition()
+        {
+          Name = fmi3Unit.name,
+          Offset = fmi3Unit.BaseUnit.offset,
+          Factor = fmi3Unit.BaseUnit.factor
+        };
+
+        UnitDefinitions.Add(unitDefinition.Name, unitDefinition);
+      }
+    }
+
+    private void InitUnitMap(Fmi2.fmiModelDescriptionUnitDefinitions input)
+    {
+      if (input.Unit == null)
+      {
+        return;
+      }
+
+      foreach (var fmi3Unit in input.Unit)
+      {
+        var unitDefinition = new UnitDefinition()
+        {
+          Name = fmi3Unit.name,
+          Offset = fmi3Unit.BaseUnit.offset,
+          Factor = fmi3Unit.BaseUnit.factor
+        };
+
+        UnitDefinitions.Add(unitDefinition.Name, unitDefinition);
+      }
+    }
+
+    private bool IsUnitInMap(string unitName)
+    {
+      return UnitDefinitions.ContainsKey(unitName);
     }
 
     private void InitVariableMap(Fmi3.fmiModelDescriptionModelVariables input)
     {
+      if (input.Items == null)
+      {
+        return;
+      }
+
       foreach (var fmiModelDescriptionModelVariable in input.Items)
       {
-        var v = new Variable(fmiModelDescriptionModelVariable);
+        var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions);
         var result = Variables.TryAdd(v.ValueReference, v);
         if (!result)
         {
@@ -85,9 +241,14 @@ namespace Fmi.FmiModel.Internal
 
     private void InitVariableMap(Fmi2.fmiModelDescriptionModelVariables input)
     {
+      if (input.ScalarVariable == null)
+      {
+        return;
+      }
+
       foreach (var fmiModelDescriptionModelVariable in input.ScalarVariable)
       {
-        var v = new Variable(fmiModelDescriptionModelVariable);
+        var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions);
         var result = Variables.TryAdd(v.ValueReference, v);
         if (!result)
         {

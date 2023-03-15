@@ -244,6 +244,24 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     if (type == typeof(double))
     {
       var value = BitConverter.ToDouble(data);
+
+      // Apply unit transformation
+      // FMU value = [SIL Kit value] * factor + offset
+      var unit = mdVar.TypeDefinition?.Unit;
+      if (unit != null)
+      {
+        // first apply factor, then offset
+        if (unit.Factor.HasValue)
+        {
+          value *= unit.Factor.Value;
+        }
+
+        if (unit.Offset.HasValue)
+        {
+          value += unit.Offset.Value;
+        }
+      }
+
       SetReal(new[] { valueRef }, new[] { value });
     }
     else if (type == typeof(int))

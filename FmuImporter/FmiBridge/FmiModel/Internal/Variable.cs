@@ -67,9 +67,11 @@ namespace Fmi.FmiModel.Internal
       }
     }
 
+    public TypeDefinition? TypeDefinition { get; set; }
+
     public ulong FlattenedArrayLength { get; private set; } = 1;
 
-    public Variable(Fmi3.fmi3AbstractVariable input)
+    public Variable(fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
     {
       this.originalVariable = input;
 
@@ -79,11 +81,19 @@ namespace Fmi.FmiModel.Internal
 
       switch (input)
       {
-        case Fmi3.fmi3Float32:
+        case Fmi3.fmi3Float32 inputVar:
           VariableType = typeof(float);
+          if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+          {
+            TypeDefinition = typeDefinitions[inputVar.declaredType];
+          }
           break;
-        case Fmi3.fmi3Float64:
+        case Fmi3.fmi3Float64 inputVar:
           VariableType = typeof(double);
+          if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+          {
+            TypeDefinition = typeDefinitions[inputVar.declaredType];
+          }
           break;
         case Fmi3.fmi3Int8:
           VariableType = typeof(sbyte);
@@ -206,7 +216,7 @@ namespace Fmi.FmiModel.Internal
       }
     }
 
-    public Variable(Fmi2.fmi2ScalarVariable input)
+    public Variable(fmi2ScalarVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
     {
       Name = input.name;
       ValueReference = input.valueReference;
@@ -217,8 +227,12 @@ namespace Fmi.FmiModel.Internal
         case Fmi2.fmi2ScalarVariableInteger:
           VariableType = typeof(Int32);
           break;
-        case Fmi2.fmi2ScalarVariableReal:
+        case Fmi2.fmi2ScalarVariableReal inputVar:
           VariableType = typeof(double);
+          if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+          {
+            TypeDefinition = typeDefinitions[inputVar.declaredType];
+          }
           break;
         case Fmi2.fmi2ScalarVariableBoolean:
           VariableType = typeof(bool);
@@ -363,6 +377,11 @@ namespace Fmi.FmiModel.Internal
           Start = new[] { res };
         }
       }
+    }
+
+    private bool IsTypeDefInMap(string declaredType, Dictionary<string, TypeDefinition> typeDefinitions)
+    {
+      return typeDefinitions.ContainsKey(declaredType);
     }
 
     internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */ , Variable> variables)
