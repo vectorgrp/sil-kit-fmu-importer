@@ -10,10 +10,13 @@ namespace SilKit.Config
       get { return configurationPtr; }
       private set { configurationPtr = value; }
     }
+
     internal ParticipantConfiguration(string configurationString)
     {
       Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_FromString(out configurationPtr, configurationString),
+        (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_FromString(
+          out configurationPtr,
+          configurationString),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
@@ -33,6 +36,7 @@ namespace SilKit.Config
     }
 
     private bool mDisposedValue;
+
     protected void Dispose(bool disposing)
     {
       if (!mDisposedValue)
@@ -41,6 +45,7 @@ namespace SilKit.Config
         {
           // dispose managed objects
         }
+
         ReleaseUnmanagedResources();
         mDisposedValue = true;
       }
@@ -61,8 +66,8 @@ namespace SilKit.Config
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_ParticipantConfiguration_FromString(
-        [Out] out IntPtr outParticipantConfiguration,
-        [MarshalAs(UnmanagedType.LPStr)] string participantConfigurationString);
+      [Out] out IntPtr outParticipantConfiguration,
+      [MarshalAs(UnmanagedType.LPStr)] string participantConfigurationString);
 
     /*
         SilKit_ParticipantConfiguration_Destroy(SilKit_ParticipantConfiguration* participantConfiguration);

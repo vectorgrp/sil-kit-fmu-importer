@@ -21,8 +21,12 @@ namespace SilKit.Services.PubSub
       private set { dataSubscriberPtr = value; }
     }
 
-    internal DataSubscriber(Participant participant, string controllerName, PubSubSpec dataSpec, IntPtr dataHandlerContext,
-        DataMessageHandler dataMessageHandler)
+    internal DataSubscriber(
+      Participant participant,
+      string controllerName,
+      PubSubSpec dataSpec,
+      IntPtr dataHandlerContext,
+      DataMessageHandler dataMessageHandler)
     {
       this.participant = participant;
       this.datahandlerContext = dataHandlerContext;
@@ -31,11 +35,12 @@ namespace SilKit.Services.PubSub
 
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_Create(
-          out dataSubscriberPtr, 
-          participant.ParticipantPtr, 
-          controllerName, 
+          out dataSubscriberPtr,
+          participant.ParticipantPtr,
+          controllerName,
           silKitDataSpec,
-          dataHandlerContext, DataMessageHandlerInternal),
+          dataHandlerContext,
+          DataMessageHandlerInternal),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
@@ -45,15 +50,22 @@ namespace SilKit.Services.PubSub
       this.dataMessageHandler = dataMessageHandler;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_SetDataMessageHandler(
-          DataSubscriberPtr, 
-          IntPtr.Zero, 
+          DataSubscriberPtr,
+          IntPtr.Zero,
           DataMessageHandlerInternal),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
-    private void DataMessageHandlerInternal(IntPtr context, IntPtr subscriber, ref DataMessageEventInternal dataMessageEvent)
+
+    private void DataMessageHandlerInternal(
+      IntPtr context,
+      IntPtr subscriber,
+      ref DataMessageEventInternal dataMessageEvent)
     {
       // double check if this is the correct lifecycle service
-      if (subscriber != DataSubscriberPtr) { return; }
+      if (subscriber != DataSubscriberPtr)
+      {
+        return;
+      }
 
       dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
     }
@@ -66,10 +78,14 @@ namespace SilKit.Services.PubSub
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataSubscriber_SetDataMessageHandler(
-        [In] IntPtr self,
-        [In] IntPtr context,
-        [In] SilKit_DataMessageHandler_t dataHandler);
-    private delegate void SilKit_DataMessageHandler_t(IntPtr context, IntPtr subscriber, ref DataMessageEventInternal dataMessageEvent);
+      [In] IntPtr self,
+      [In] IntPtr context,
+      [In] SilKit_DataMessageHandler_t dataHandler);
+
+    private delegate void SilKit_DataMessageHandler_t(
+      IntPtr context,
+      IntPtr subscriber,
+      ref DataMessageEventInternal dataMessageEvent);
 
 
     /*
@@ -83,11 +99,11 @@ namespace SilKit.Services.PubSub
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_DataSubscriber_Create(
-        [Out] out IntPtr outSubscriber,
-        [In] IntPtr participant,
-        [MarshalAs(UnmanagedType.LPStr)] string controllerName,
-        [In] IntPtr dataSpec,
-        IntPtr context,
-        SilKit_DataMessageHandler_t dataHandler);
+      [Out] out IntPtr outSubscriber,
+      [In] IntPtr participant,
+      [MarshalAs(UnmanagedType.LPStr)] string controllerName,
+      [In] IntPtr dataSpec,
+      IntPtr context,
+      SilKit_DataMessageHandler_t dataHandler);
   }
 }

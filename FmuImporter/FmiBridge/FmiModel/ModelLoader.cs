@@ -17,7 +17,7 @@ namespace Fmi.FmiModel
     internal static string ExtractFmu(string fmuPath)
     {
       // check if the directory exists
-      var targetFolderPath = 
+      var targetFolderPath =
         $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}";
 
       // TODO switch to temporary directory as soon as everything works as intended
@@ -30,7 +30,7 @@ namespace Fmi.FmiModel
       }
 
       var dir = Directory.CreateDirectory(
-          $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}");
+        $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}");
 
       ZipFile.ExtractToDirectory(fmuPath, dir.FullName);
       return dir.FullName;
@@ -54,7 +54,7 @@ namespace Fmi.FmiModel
       }
 
       var fmiVersion = FindFmiVersion(modelDescriptionPath);
-      
+
       ModelDescription? commonDescription = null;
 
       using var fileStream = File.Open(modelDescriptionPath, FileMode.Open);
@@ -91,6 +91,7 @@ namespace Fmi.FmiModel
       {
         throw new NullReferenceException("Failed to initialize model description object.");
       }
+
       return commonDescription;
     }
 
@@ -109,6 +110,7 @@ namespace Fmi.FmiModel
         {
           throw new NullReferenceException("fmu does not have a model description.");
         }
+
         stream = zipEntry.Open();
       }
 

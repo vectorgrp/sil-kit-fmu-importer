@@ -1,13 +1,13 @@
-﻿using Fmi.Binding;
-using Fmi.FmiModel.Internal;
+﻿using System.Runtime.InteropServices;
+using System.Text;
+using Fmi.Binding;
 using Fmi.FmiModel;
+using Fmi.FmiModel.Internal;
+using SilKit;
 using SilKit.Config;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
-using SilKit;
 using SilKit.Supplements.VendorData;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace FmuImporter;
 
@@ -86,6 +86,7 @@ public class FmuImporter
   }
 
   private bool mDisposedValue;
+
   protected virtual void Dispose(bool disposing)
   {
     if (!mDisposedValue)
@@ -100,6 +101,7 @@ public class FmuImporter
         // cleanup FMU
         Binding.Dispose();
       }
+
       ReleaseUnmanagedResources();
       mDisposedValue = true;
     }
@@ -139,15 +141,14 @@ public class FmuImporter
         {
           throw new NotSupportedException("The detected FMI variable type is unknown");
         }
+
         list.Add(modelDescriptionVariable.ValueReference);
       }
       else if (modelDescriptionVariable.Causality == Variable.Causalities.Parameter)
       {
-
       }
       else
       {
-
       }
     }
   }
@@ -345,6 +346,7 @@ public class FmuImporter
     {
       Binding.SetValue(dataBufferKvp.Key, dataBufferKvp.Value);
     }
+
     DataBuffer.Clear();
 
     // Calculate simulation step
@@ -372,6 +374,7 @@ public class FmuImporter
     {
       DataBuffer.Add(kvp.Key, kvp.Value);
     }
+
     FutureDataBuffer.Clear();
   }
 
@@ -383,6 +386,7 @@ public class FmuImporter
       {
         continue;
       }
+
       var valueRefArr = varKvp.Value.ToArray();
       if (varKvp.Key == typeof(float))
       {
@@ -410,10 +414,12 @@ public class FmuImporter
               {
                 value = Convert.ToSingle(value / unit.Factor.Value);
               }
+
               variable.Values[i] = value;
             }
           }
         }
+
         PublishData(result);
       }
       else if (varKvp.Key == typeof(double))
@@ -442,6 +448,7 @@ public class FmuImporter
               {
                 value /= unit.Factor.Value;
               }
+
               variable.Values[i] = value;
             }
           }
@@ -518,6 +525,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -534,6 +542,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -549,6 +558,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -564,6 +574,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -579,6 +590,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -601,6 +613,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -623,6 +636,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -645,6 +659,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -667,6 +682,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -689,6 +705,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -711,6 +728,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
@@ -733,6 +751,7 @@ public class FmuImporter
         FormatData(ref byteArr);
         byteList.AddRange(byteArr);
       }
+
       silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }

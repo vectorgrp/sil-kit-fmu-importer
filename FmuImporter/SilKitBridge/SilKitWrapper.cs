@@ -11,14 +11,19 @@ namespace SilKit
    * [class]* -> IntPtr
    * char* -> [MarshalAs(UnmanagedType.LPStr)] string
    */
-
   public class SilKitWrapper
   {
-    private static readonly Lazy<SilKitWrapper> sSilKitWrapperInstance = new Lazy<SilKitWrapper>(() => new SilKitWrapper());
+    private static readonly Lazy<SilKitWrapper> sSilKitWrapperInstance =
+      new Lazy<SilKitWrapper>(() => new SilKitWrapper());
 
-    private SilKitWrapper() { }
+    private SilKitWrapper()
+    {
+    }
 
-    public static SilKitWrapper Instance { get { return sSilKitWrapperInstance.Value; } }
+    public static SilKitWrapper Instance
+    {
+      get { return sSilKitWrapperInstance.Value; }
+    }
 
     public ParticipantConfiguration GetConfigurationFromFile(string configPath)
     {
@@ -30,7 +35,10 @@ namespace SilKit
       return new ParticipantConfiguration(configurationString);
     }
 
-    public Participant CreateParticipant(ParticipantConfiguration configuration, string participantName, string registryUri)
+    public Participant CreateParticipant(
+      ParticipantConfiguration configuration,
+      string participantName,
+      string registryUri)
     {
       return new Participant(configuration, participantName, registryUri);
     }
@@ -42,6 +50,7 @@ namespace SilKit
   }
 
   #region object version
+
   // #define SK_ID_MAKE(SERVICE_NAME, DATATYPE_NAME) \
   //     (uint64_t)(\
   //           ((uint64_t)83 /*S*/ << 56)\
@@ -250,7 +259,8 @@ namespace SilKit
       public ulong version; //!< Version encoded using SK_ID_MAKE
       public fixed ulong _reserved[3]; //!< For future expansions
     }
-    internal static SilKit_StructHeader GetStructHeader(SilKitVersion.ServiceId serviceName, SilKitVersion.DatatypeId datatypeName)
+
+    internal static SilKit_StructHeader GetStructHeader(ServiceId serviceName, DatatypeId datatypeName)
     {
       return new SilKit_StructHeader()
       {
@@ -261,11 +271,12 @@ namespace SilKit
     internal static ulong SK_ID_MAKE(ServiceId serviceId, DatatypeId datatypeId, byte datatypeVersion)
     {
       return ((ulong)83 /*S*/ << 56)
-          | ((ulong)75 /*K*/ << 48)
-          | ((ulong)serviceId << 40)
-          | ((ulong)datatypeId << 32)
-          | ((ulong)datatypeVersion << 24);
+             | ((ulong)75 /*K*/ << 48)
+             | ((ulong)serviceId << 40)
+             | ((ulong)datatypeId << 32)
+             | ((ulong)datatypeVersion << 24);
     }
   }
+
   #endregion
 }

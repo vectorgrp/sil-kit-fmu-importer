@@ -99,10 +99,11 @@ namespace VcdlExporter
         {
           interfaceSb.AppendLine($"{vValue.Name};");
         }
-
       }
+
       interfaceSb.AppendLine($"  }}\n");
-      objectsSb.AppendLine($"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier}");
+      objectsSb.AppendLine(
+        $"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier}");
     }
 
     private static void ParseFmi3(IFmi3Binding binding, StringBuilder interfaceSb, StringBuilder objectsSb)
@@ -151,8 +152,10 @@ namespace VcdlExporter
 
         interfaceSb.AppendLine($"{vValue.Name};");
       }
+
       interfaceSb.AppendLine($"  }}\n");
-      objectsSb.AppendLine($"  I{modelDescription.CoSimulation.ModelIdentifier} {modelDescription.CoSimulation.ModelIdentifier};");
+      objectsSb.AppendLine(
+        $"  I{modelDescription.CoSimulation.ModelIdentifier} {modelDescription.CoSimulation.ModelIdentifier};");
     }
 
     private static string GetVarTypeString(Type variableType)

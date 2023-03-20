@@ -54,7 +54,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       throw new NullReferenceException("Failed to initialize model description.");
     }
 
-    FullFmuLibPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
+    FullFmuLibPath =
+      $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
     InitializeModelBinding(FullFmuLibPath);
   }
 
@@ -80,6 +81,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       {
         // dispose managed objects
       }
+
       ReleaseUnmanagedResources();
       mDisposedValue = true;
     }
@@ -121,7 +123,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     return res;
   }
 
-  protected void SetDelegate<T>(out T deleg) 
+  protected void SetDelegate<T>(out T deleg)
     where T : System.Delegate
   {
     var delegateTypeName = typeof(T).Name;
@@ -129,12 +131,13 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     {
       throw new FileLoadException($"Failed to retrieve method name by reflection.");
     }
+
     delegateTypeName = delegateTypeName.Substring(0, delegateTypeName.Length - 4);
 
 
 #if OS_WINDOWS
     var ptr = NativeMethods.GetProcAddress(DllPtr, delegateTypeName);
-#elif  (OS_LINUX || OS_MAC)
+#elif (OS_LINUX || OS_MAC)
     var ptr = NativeMethods.dlsym(DllPtr, delegateTypeName);
 #else
     throw new NotSupportedException();
@@ -171,6 +174,4 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     out double lastSuccessfulTime);
 
   public abstract void Terminate();
-
-
 }

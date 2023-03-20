@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Text;
 
 namespace SilKit.Services.PubSub
 {
@@ -36,7 +35,7 @@ namespace SilKit.Services.PubSub
       if (label.Kind != MatchingLabel.Kinds.Mandatory && label.Kind != MatchingLabel.Kinds.Optional)
       {
         throw new InvalidOperationException(
-            "SilKit::Services::MatchingLabel must specify a SilKit::Services::MatchingLabel::Kind.");
+          "SilKit::Services::MatchingLabel must specify a SilKit::Services::MatchingLabel::Kind.");
       }
 
       Labels.Add(label);
@@ -83,7 +82,7 @@ namespace SilKit.Services.PubSub
       labelList.labels = labelsPtr;
       dataSpec.labelList = labelList;
 
-      var dataSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_DataSpec>()); 
+      var dataSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_DataSpec>());
       Marshal.StructureToPtr(dataSpec, dataSpecPtr, false);
 
       return dataSpecPtr;
@@ -97,7 +96,7 @@ namespace SilKit.Services.PubSub
     public SilKit_DataSpec()
     {
       structHeader =
-          SilKitVersion.GetStructHeader(SilKitVersion.ServiceId.Data, SilKitVersion.DatatypeId.DataSpec);
+        SilKitVersion.GetStructHeader(SilKitVersion.ServiceId.Data, SilKitVersion.DatatypeId.DataSpec);
       topic = string.Empty;
       mediaType = string.Empty;
       labelList = new SilKit_LabelList();
@@ -123,5 +122,4 @@ namespace SilKit.Services.PubSub
     [MarshalAs(UnmanagedType.LPStr)] internal string value;
     internal int kind;
   }
-
 }

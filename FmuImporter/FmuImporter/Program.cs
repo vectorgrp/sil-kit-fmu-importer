@@ -45,6 +45,7 @@ internal class Program
       {
         throw new FileNotFoundException("The provided FMU file path is invalid.");
       }
+
       if (!File.Exists(silKitConfigFile))
       {
         throw new FileNotFoundException("The provided SIL Kit configuration file path is invalid.");

@@ -60,6 +60,7 @@ namespace Fmi.FmiModel.Internal
         {
           return;
         }
+
         foreach (var dim in value)
         {
           FlattenedArrayLength *= dim;
@@ -128,7 +129,7 @@ namespace Fmi.FmiModel.Internal
         case Fmi3.fmi3Binary:
           VariableType = typeof(IntPtr);
           break;
-        default: 
+        default:
           throw new InvalidDataException("The FMI 3 datatype is unknown.");
       }
 
@@ -384,7 +385,7 @@ namespace Fmi.FmiModel.Internal
       return typeDefinitions.ContainsKey(declaredType);
     }
 
-    internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */ , Variable> variables)
+    internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */, Variable> variables)
     {
       var prop = originalVariable.GetType().GetProperty("Dimension");
       if (prop != null)
@@ -396,6 +397,7 @@ namespace Fmi.FmiModel.Internal
           Dimensions = null;
           return;
         }
+
         if (dimensions is fmi3ArrayableVariableDimension[] dims)
         {
           Dimensions = GetDimensionSizeArray(dims, ref variables);
@@ -408,8 +410,8 @@ namespace Fmi.FmiModel.Internal
     }
 
     private ulong[] GetDimensionSizeArray(
-      fmi3ArrayableVariableDimension[] originalDimensions, 
-      ref Dictionary<uint /* ValueReference */ , Variable> variables)
+      fmi3ArrayableVariableDimension[] originalDimensions,
+      ref Dictionary<uint /* ValueReference */, Variable> variables)
     {
       var res = new ulong[originalDimensions.Length];
       for (int i = 0; i < originalDimensions.Length; i++)
@@ -426,6 +428,7 @@ namespace Fmi.FmiModel.Internal
           {
             throw new ArgumentException("The referenced dimension variable must be of type UInt64.");
           }
+
           if (v.Causality == Causalities.StructuralParameter || v.Variability == Variabilities.Constant)
           {
             if (v.Start != null)
@@ -442,7 +445,6 @@ namespace Fmi.FmiModel.Internal
             throw new ArgumentException(
               "The referenced dimension variable must either be a structuralParameter or a constant.");
           }
-
         }
         else
         {

@@ -81,6 +81,7 @@ namespace Fmi.FmiModel.Internal
       {
         throw new InvalidDataException($"The model description does not provide a CoSimulation description.");
       }
+
       CoSimulation = new CoSimulation(input.CoSimulation[0]);
       DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
       if (input.UnitDefinitions != null)
@@ -114,6 +115,7 @@ namespace Fmi.FmiModel.Internal
           {
             throw new DataException("The model description has a type definition with no matching unit.");
           }
+
           var typeDef = new TypeDefinition()
           {
             Name = typeDefinitionBase.name,
@@ -127,6 +129,7 @@ namespace Fmi.FmiModel.Internal
           {
             throw new DataException("The model description has a type definition with no matching unit.");
           }
+
           var typeDef = new TypeDefinition()
           {
             Name = typeDefinitionBase.name,
@@ -156,6 +159,7 @@ namespace Fmi.FmiModel.Internal
           {
             throw new DataException("The model description has a type definition with no matching unit.");
           }
+
           var typeDef = new TypeDefinition()
           {
             Name = fmi2SimpleType.name,
@@ -229,9 +233,10 @@ namespace Fmi.FmiModel.Internal
         if (!result)
         {
           throw new ArgumentException(
-              "Failed to parse model description: multiple variables have the same valueReference.");
+            "Failed to parse model description: multiple variables have the same valueReference.");
         }
       }
+
       // iterate through all variables again and initialize array length
       foreach (var variable in Variables)
       {
@@ -253,7 +258,7 @@ namespace Fmi.FmiModel.Internal
         if (!result)
         {
           throw new ArgumentException(
-              "Failed to parse model description: multiple variables have the same valueReference.");
+            "Failed to parse model description: multiple variables have the same valueReference.");
         }
       }
     }

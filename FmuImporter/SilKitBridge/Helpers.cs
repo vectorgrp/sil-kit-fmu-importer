@@ -21,8 +21,8 @@ internal static class Helpers
   public static void ProcessReturnCode(SilKit_ReturnCodes statusCode, RuntimeMethodHandle? methodHandle)
   {
     var result = Common.Helpers.ProcessReturnCode(
-      (int)statusCode, 
-      statusCode.ToString(), 
+      (int)statusCode,
+      statusCode.ToString(),
       methodHandle);
     if (!result.Item1)
     {
@@ -45,5 +45,4 @@ internal static class Helpers
   /*SilKitAPI const char* SilKitCALL SilKit_GetLastErrorString();*/
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
   private static extern string SilKit_GetLastErrorString();
-
 }

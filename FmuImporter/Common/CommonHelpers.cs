@@ -5,8 +5,8 @@ namespace Common;
 internal static class Helpers
 {
   public static Tuple<bool, StringBuilder?> ProcessReturnCode(
-    int resultCode, 
-    string returnCodeName, 
+    int resultCode,
+    string returnCodeName,
     RuntimeMethodHandle? methodHandle)
   {
     if (resultCode is 0 or 5)
@@ -22,6 +22,7 @@ internal static class Helpers
         $"Failed to identify name of method that caused error in native code " +
         $"with return code '{resultCode}' ({returnCodeName}).");
     }
+
     var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
     if (methodInfo == null)
     {
@@ -29,6 +30,7 @@ internal static class Helpers
         $"Failed to identify name of method that caused error in native code " +
         $"with return code '{resultCode}' ({returnCodeName}).");
     }
+
     var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
 
     StringBuilder errorMessageBuilder = new StringBuilder();

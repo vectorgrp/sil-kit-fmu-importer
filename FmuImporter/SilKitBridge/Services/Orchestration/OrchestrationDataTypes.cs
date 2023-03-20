@@ -2,7 +2,9 @@
 {
   // LifecycleService
   public delegate void CommunicationReadyHandler();
+
   public delegate void StopHandler();
+
   public delegate void ShutdownHandler();
 
   // TimeSyncService

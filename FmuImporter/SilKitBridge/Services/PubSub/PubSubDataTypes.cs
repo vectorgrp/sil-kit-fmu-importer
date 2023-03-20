@@ -3,7 +3,10 @@ using static SilKit.SilKitVersion;
 
 namespace SilKit.Services.PubSub
 {
-  public delegate void DataMessageHandler(IntPtr context, IDataSubscriber subscriber, DataMessageEvent dataMessageEvent);
+  public delegate void DataMessageHandler(
+    IntPtr context,
+    IDataSubscriber subscriber,
+    DataMessageEvent dataMessageEvent);
 
   public struct DataMessageEvent
   {
@@ -13,6 +16,7 @@ namespace SilKit.Services.PubSub
       this.data = new byte[(int)internalDataMessageEvent.data.size];
       Marshal.Copy(internalDataMessageEvent.data.data, data, 0, data.Length);
     }
+
     public UInt64 timestampInNs;
     public byte[] data;
   }

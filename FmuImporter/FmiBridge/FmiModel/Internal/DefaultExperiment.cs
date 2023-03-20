@@ -14,6 +14,7 @@
       Tolerance = (input.toleranceSpecified) ? input.tolerance : null;
       StepSize = (input.stepSizeSpecified) ? input.stepSize : null;
     }
+
     public DefaultExperiment(Fmi2.fmiModelDescriptionDefaultExperiment input)
     {
       StartTime = input.startTime;

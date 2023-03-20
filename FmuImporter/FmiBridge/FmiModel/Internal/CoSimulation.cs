@@ -3,7 +3,9 @@
   public class CoSimulation
   {
     public string ModelIdentifier { get; set; }
+
     public bool NeedsExecutionTool { get; set; }
+
     // NB: By concept of this importer, the following can never be a problem
     public bool CanBeInstantiatedOnlyOncePerProcess { get; set; }
     public bool CanHandleVariableCommunicationStepSize { get; set; }

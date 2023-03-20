@@ -6,6 +6,7 @@ internal static class Helpers
   {
     ProcessReturnCode((int)statusCode, statusCode.ToString(), methodHandle);
   }
+
   public static void ProcessReturnCode(Fmi3Statuses statusCode, RuntimeMethodHandle? methodHandle)
   {
     ProcessReturnCode((int)statusCode, statusCode.ToString(), methodHandle);

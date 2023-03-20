@@ -24,5 +24,4 @@ namespace Fmi.Binding
     public static extern int dlclose(IntPtr hModule);
 #endif
   }
-
 }

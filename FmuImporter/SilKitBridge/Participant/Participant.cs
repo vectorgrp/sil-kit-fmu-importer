@@ -15,10 +15,15 @@ namespace SilKit
     }
 
     #region ctor & dtor
+
     public Participant(ParticipantConfiguration configuration, string participantName, string registryUri)
     {
       Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(out participantPtr, configuration.ParticipantConfigurationPtr, participantName, registryUri),
+        (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(
+          out participantPtr,
+          configuration.ParticipantConfigurationPtr,
+          participantName,
+          registryUri),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
 
@@ -31,10 +36,10 @@ namespace SilKit
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_Participant_Create(
-        [Out] out IntPtr outParticipant,
-        [In] IntPtr participantConfiguration,
-        [MarshalAs(UnmanagedType.LPStr)] string participantName,
-        [MarshalAs(UnmanagedType.LPStr)] string registryUri);
+      [Out] out IntPtr outParticipant,
+      [In] IntPtr participantConfiguration,
+      [MarshalAs(UnmanagedType.LPStr)] string participantName,
+      [MarshalAs(UnmanagedType.LPStr)] string registryUri);
 
 
     ~Participant()
@@ -49,6 +54,7 @@ namespace SilKit
     }
 
     private bool mDisposedValue;
+
     protected void Dispose(bool disposing)
     {
       if (!mDisposedValue)
@@ -57,6 +63,7 @@ namespace SilKit
         {
           // dispose managed objects
         }
+
         ReleaseUnmanagedResources();
         mDisposedValue = true;
       }
@@ -86,7 +93,11 @@ namespace SilKit
       return new DataPublisher(this, controllerName, dataSpec, history);
     }
 
-    public IDataSubscriber CreateDataSubscriber(string controllerName, PubSubSpec dataSpec, IntPtr context, DataMessageHandler dataMessageHandler)
+    public IDataSubscriber CreateDataSubscriber(
+      string controllerName,
+      PubSubSpec dataSpec,
+      IntPtr context,
+      DataMessageHandler dataMessageHandler)
     {
       return new DataSubscriber(this, controllerName, dataSpec, context, dataMessageHandler);
     }

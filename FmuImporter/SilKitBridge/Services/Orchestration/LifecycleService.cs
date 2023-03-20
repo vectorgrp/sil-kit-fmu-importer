@@ -20,12 +20,15 @@ namespace SilKit.Services.Orchestration
   public class LifecycleService : ILifecycleService
   {
     #region nested classes
+
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct SilKit_LifecycleConfiguration
     {
       public SilKit_LifecycleConfiguration()
       {
-        structHeader = SilKitVersion.GetStructHeader(SilKitVersion.ServiceId.Participant, SilKitVersion.DatatypeId.LifecycleConfiguration);
+        structHeader = SilKitVersion.GetStructHeader(
+          SilKitVersion.ServiceId.Participant,
+          SilKitVersion.DatatypeId.LifecycleConfiguration);
         operationMode = 0;
       }
 
@@ -55,10 +58,10 @@ namespace SilKit.Services.Orchestration
     public interface ITimeSyncService
     {
       public void SetSimulationStepHandler(
-          SimulationStepHandler simulationStepHandler,
-          UInt64 initialStepSize);
-
+        SimulationStepHandler simulationStepHandler,
+        UInt64 initialStepSize);
     }
+
     public class TimeSyncService : ITimeSyncService
     {
       private readonly LifecycleService lifecycleService;
@@ -70,6 +73,7 @@ namespace SilKit.Services.Orchestration
       }
 
       #region ctor & dtor
+
       internal TimeSyncService(LifecycleService lifecycleService)
       {
         this.lifecycleService = lifecycleService;
@@ -87,32 +91,40 @@ namespace SilKit.Services.Orchestration
       */
       [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
       private static extern int SilKit_TimeSyncService_Create(
-          [Out] out IntPtr outTimeSyncService,
-          [In] IntPtr lifecycleService);
+        [Out] out IntPtr outTimeSyncService,
+        [In] IntPtr lifecycleService);
 
       ~TimeSyncService()
       {
         TimeSyncServicePtr = IntPtr.Zero;
       }
+
       #endregion ctor & dtor
 
       #region callback handling
+
       private SimulationStepHandler? simulationStepHandler;
+
       public void SetSimulationStepHandler(SimulationStepHandler simulationStepHandler, UInt64 initialStepSize)
       {
         this.simulationStepHandler = simulationStepHandler;
         Helpers.ProcessReturnCode(
           (Helpers.SilKit_ReturnCodes)SilKit_TimeSyncService_SetSimulationStepHandler(
-            TimeSyncServicePtr, 
-            out var context, 
-            SimulationStepHandlerInternal, 
+            TimeSyncServicePtr,
+            out var context,
+            SimulationStepHandlerInternal,
             initialStepSize),
           System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
       }
+
       private void SimulationStepHandlerInternal(IntPtr context, IntPtr timeSyncService, UInt64 now, UInt64 duration)
       {
         // double check if this is the correct lifecycle service
-        if (timeSyncService != TimeSyncServicePtr) { return; }
+        if (timeSyncService != TimeSyncServicePtr)
+        {
+          return;
+        }
+
         simulationStepHandler?.Invoke(now, duration);
       }
 
@@ -124,13 +136,20 @@ namespace SilKit.Services.Orchestration
       */
       [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
       private static extern int SilKit_TimeSyncService_SetSimulationStepHandler(
-          [In] IntPtr timesyncService,
-          [Out] out IntPtr context,
-          SilKit_TimeSyncService_SetSimulationStepHandler_t handler,
-          UInt64 initialStepSize);
-      private delegate void SilKit_TimeSyncService_SetSimulationStepHandler_t(IntPtr context, IntPtr timeSyncService, UInt64 now, UInt64 duration);
+        [In] IntPtr timesyncService,
+        [Out] out IntPtr context,
+        SilKit_TimeSyncService_SetSimulationStepHandler_t handler,
+        UInt64 initialStepSize);
+
+      private delegate void SilKit_TimeSyncService_SetSimulationStepHandler_t(
+        IntPtr context,
+        IntPtr timeSyncService,
+        UInt64 now,
+        UInt64 duration);
+
       #endregion callback handling
     }
+
     #endregion nested classes
 
     private readonly Participant participant;
@@ -143,6 +162,7 @@ namespace SilKit.Services.Orchestration
     }
 
     #region ctor & dtor
+
     internal LifecycleService(Participant participant, LifecycleConfiguration lc)
     {
       this.participant = participant;
@@ -153,8 +173,8 @@ namespace SilKit.Services.Orchestration
 
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_Create(
-          out lifecycleServicePtr, 
-          participant.ParticipantPtr, 
+          out lifecycleServicePtr,
+          participant.ParticipantPtr,
           handler.AddrOfPinnedObject()),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
       handler.Free();
@@ -168,15 +188,16 @@ namespace SilKit.Services.Orchestration
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_Create(
-        [Out] out IntPtr outLifecycleService,
-        [In] IntPtr participant,
-        [In] IntPtr startConfiguration
-        );
+      [Out] out IntPtr outLifecycleService,
+      [In] IntPtr participant,
+      [In] IntPtr startConfiguration
+    );
 
     ~LifecycleService()
     {
       LifecycleServicePtr = IntPtr.Zero;
     }
+
     #endregion ctor & dtor
 
     public void StartLifecycle()
@@ -185,13 +206,14 @@ namespace SilKit.Services.Orchestration
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_StartLifecycle(LifecycleServicePtr),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
+
     /*
         SilKit_LifecycleService_StartLifecycle(
             SilKit_LifecycleService* lifecycleService);
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_StartLifecycle(
-        [In] IntPtr lifecycleService);
+      [In] IntPtr lifecycleService);
 
     public void Stop(string reason)
     {
@@ -207,7 +229,7 @@ namespace SilKit.Services.Orchestration
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_Stop(
-      [In] IntPtr lifecycleService, 
+      [In] IntPtr lifecycleService,
       [MarshalAs(UnmanagedType.LPStr)] string reason);
 
 
@@ -215,7 +237,7 @@ namespace SilKit.Services.Orchestration
     {
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_WaitForLifecycleToComplete(
-          LifecycleServicePtr, 
+          LifecycleServicePtr,
           out var finalState),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
       if ((short)finalState != 110)
@@ -230,7 +252,9 @@ namespace SilKit.Services.Orchestration
             SilKit_ParticipantState* outParticipantState);
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int SilKit_LifecycleService_WaitForLifecycleToComplete([In] IntPtr lifecycleService, [Out] out IntPtr outParticipantState);
+    private static extern int SilKit_LifecycleService_WaitForLifecycleToComplete(
+      [In] IntPtr lifecycleService,
+      [Out] out IntPtr outParticipantState);
 
 
     public ITimeSyncService CreateTimeSyncService()
@@ -239,21 +263,28 @@ namespace SilKit.Services.Orchestration
     }
 
     #region callback handling
+
     private CommunicationReadyHandler? communicationReadyHandler;
+
     public void SetCommunicationReadyHandler(CommunicationReadyHandler communicationReadyHandler)
     {
       this.communicationReadyHandler = communicationReadyHandler;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetCommunicationReadyHandler(
-          LifecycleServicePtr, 
-          out var context, 
+          LifecycleServicePtr,
+          out var context,
           CommunicationReadyHandlerInternal),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
+
     private void CommunicationReadyHandlerInternal(IntPtr context, IntPtr lifecycleService)
     {
       // double check if this is the correct lifecycle service
-      if (lifecycleService != LifecycleServicePtr) { return; }
+      if (lifecycleService != LifecycleServicePtr)
+      {
+        return;
+      }
+
       communicationReadyHandler?.Invoke();
     }
 
@@ -264,25 +295,35 @@ namespace SilKit.Services.Orchestration
             SilKit_LifecycleService_CommunicationReadyHandler_t handler);
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int SilKit_LifecycleService_SetCommunicationReadyHandler([In] IntPtr lifecycleService,
-                                                               [Out] out IntPtr context,
-                                                               SilKit_LifecycleService_StopHandler_t handler);
-    private delegate void SilKit_LifecycleService_SetCommunicationReadyHandler_t(IntPtr context, IntPtr lifecycleService);
+    private static extern int SilKit_LifecycleService_SetCommunicationReadyHandler(
+      [In] IntPtr lifecycleService,
+      [Out] out IntPtr context,
+      SilKit_LifecycleService_StopHandler_t handler);
+
+    private delegate void SilKit_LifecycleService_SetCommunicationReadyHandler_t(
+      IntPtr context,
+      IntPtr lifecycleService);
 
     private StopHandler? stopHandler;
+
     public void SetStopHandler(StopHandler stopHandler)
     {
       this.stopHandler = stopHandler;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetStopHandler(
-          LifecycleServicePtr, 
-          out var context, 
+          LifecycleServicePtr,
+          out var context,
           StopHandlerInternal),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
+
     private void StopHandlerInternal(IntPtr context, IntPtr lifecycleService)
     {
-      if (lifecycleService != LifecycleServicePtr) { return; }
+      if (lifecycleService != LifecycleServicePtr)
+      {
+        return;
+      }
+
       stopHandler?.Invoke();
     }
 
@@ -294,26 +335,33 @@ namespace SilKit.Services.Orchestration
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_SetStopHandler([In] IntPtr lifecycleService,
-                                                               [Out] out IntPtr context,
-                                                               SilKit_LifecycleService_StopHandler_t handler);
+      [Out] out IntPtr context,
+      SilKit_LifecycleService_StopHandler_t handler);
+
     private delegate void SilKit_LifecycleService_StopHandler_t(IntPtr context, IntPtr lifecycleService);
 
 
     private ShutdownHandler? shutdownHandler;
+
     public void SetShutdownHandler(ShutdownHandler shutdownHandler)
     {
       this.shutdownHandler = shutdownHandler;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetShutdownHandler(
-          LifecycleServicePtr, 
-          out var context, 
+          LifecycleServicePtr,
+          out var context,
           ShutdownHandlerInternal),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
+
     private void ShutdownHandlerInternal(IntPtr context, IntPtr lifecycleService)
     {
       // double check if this is the correct lifecycle service
-      if (lifecycleService != LifecycleServicePtr) { return; }
+      if (lifecycleService != LifecycleServicePtr)
+      {
+        return;
+      }
+
       shutdownHandler?.Invoke();
     }
 
@@ -325,11 +373,11 @@ namespace SilKit.Services.Orchestration
     */
     [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     private static extern int SilKit_LifecycleService_SetShutdownHandler([In] IntPtr lifecycleService,
-                                                               [Out] out IntPtr context,
-                                                               SilKit_LifecycleService_StopHandler_t handler);
+      [Out] out IntPtr context,
+      SilKit_LifecycleService_StopHandler_t handler);
+
     private delegate void SilKit_LifecycleService_SetShutdownHandler_t(IntPtr context, IntPtr lifecycleService);
 
-    // TODO think about context
     #endregion callback handling
   }
 }

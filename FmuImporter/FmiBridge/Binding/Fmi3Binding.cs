@@ -17,6 +17,7 @@ public enum Fmi3Statuses : int
   Error,
   Fatal
 }
+
 public static class Fmi3BindingFactory
 {
   public static IFmi3Binding CreateFmi3Binding(string fmuPath)
@@ -151,6 +152,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         // dispose managed objects
       }
+
       ReleaseUnmanagedResources();
       mDisposedValue = true;
     }
@@ -165,7 +167,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     return ModelDescription;
   }
 
-#region Common & Co-Simulation Functions for FMI 3.0
+  #region Common & Co-Simulation Functions for FMI 3.0
 
   public void InstantiateCoSimulation(
     string instanceName,
@@ -180,10 +182,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       $"file://{FullFmuLibPath}/resources",
       visible,
       loggingOn,
-      false, 
-      false, 
+      false,
+      false,
       IntPtr.Zero,
-      IntPtr.Zero, 
+      IntPtr.Zero,
       IntPtr.Zero,
       logger,
       IntPtr.Zero);
@@ -192,6 +194,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("Failed to create an FMU instance.");
     }
   }
+
   /*
     typedef fmi3Instance fmi3InstantiateCoSimulationTYPE(
       fmi3String                     instanceName,
@@ -208,6 +211,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       fmi3IntermediateUpdateCallback intermediateUpdate);
   */
   internal fmi3InstantiateCoSimulationTYPE fmi3InstantiateCoSimulation;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate IntPtr fmi3InstantiateCoSimulationTYPE(
     string instanceName,
@@ -227,6 +231,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     typedef void fmi3FreeInstanceTYPE(fmi3Instance instance);
   */
   internal fmi3FreeInstanceTYPE fmi3FreeInstance;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi3FreeInstanceTYPE(IntPtr instance);
 
@@ -241,8 +246,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         stopTime.HasValue,
         (stopTime.HasValue) ? stopTime.Value : double.NaN),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
-
   }
+
   /*
     typedef fmi3Status fmi3EnterInitializationModeTYPE(
       fmi3Instance instance,
@@ -253,6 +258,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       fmi3Float64  stopTime);
    */
   internal fmi3EnterInitializationModeTYPE fmi3EnterInitializationMode;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3EnterInitializationModeTYPE(
     IntPtr instance,
@@ -268,10 +274,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       (Fmi3Statuses)fmi3ExitInitializationMode(component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3ExitInitializationModeTYPE(fmi3Instance instance);
    */
   internal fmi3ExitInitializationModeTYPE fmi3ExitInitializationMode;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3ExitInitializationModeTYPE(IntPtr instance);
 
@@ -282,9 +290,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     string[]? categories)
   {
     Helpers.ProcessReturnCode(
-      (Fmi3Statuses)fmi3SetDebugLogging(component, loggingOn, (IntPtr)nCategories, categories), 
+      (Fmi3Statuses)fmi3SetDebugLogging(component, loggingOn, (IntPtr)nCategories, categories),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetDebugLoggingTYPE(
       fmi3Instance instance,
@@ -293,11 +302,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       const fmi3String categories[]);
   */
   internal fmi3SetDebugLoggingTYPE fmi3SetDebugLogging;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetDebugLoggingTYPE(
-    IntPtr instance, 
-    bool loggingOn, 
-    size_t nCategories, 
+    IntPtr instance,
+    bool loggingOn,
+    size_t nCategories,
     string[]? categories);
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
@@ -413,6 +423,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           {
             value = Convert.ToSingle(value + unit.Offset.Value);
           }
+
           values[i] = value;
         }
       }
@@ -451,6 +462,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           {
             value += unit.Offset.Value;
           }
+
           values[i] = value;
         }
       }
@@ -636,7 +648,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       if (binSizes.Sum() != data.Length)
       {
         throw new ArgumentOutOfRangeException(
-          nameof(binSizes), 
+          nameof(binSizes),
           $"The expected data length ({binSizes.Sum()}) " +
           $"does not match the received data length ({data.Length}).");
       }
@@ -658,7 +670,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         int offset = 0;
         for (int i = 0; i < arraySize; i++)
         {
-          var currentBinary = new byte[binSizes[i]]; 
+          var currentBinary = new byte[binSizes[i]];
           Buffer.BlockCopy(data, offset, currentBinary, 0, binSizes[i]);
           offset += binSizes[i];
 
@@ -667,6 +679,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           values[i] = handler.AddrOfPinnedObject();
         }
       }
+
       SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
 
       foreach (var gcHandle in handlers)
@@ -683,13 +696,13 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   {
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3DoStep(
-        component, 
-        currentCommunicationPoint, 
-        communicationStepSize, 
-        true, 
-        out _, 
-        out var terminateRequested, 
-        out _, 
+        component,
+        currentCommunicationPoint,
+        communicationStepSize,
+        true,
+        out _,
+        out var terminateRequested,
+        out _,
         out lastSuccessfulTime),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     
@@ -699,6 +712,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       fmi3Terminate(component);
     }
   }
+
   /*
     typedef fmi3Status fmi3DoStepTYPE(
       fmi3Instance instance,
@@ -711,6 +725,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       fmi3Float64* lastSuccessfulTime);
   */
   internal fmi3DoStepTYPE fmi3DoStep;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3DoStepTYPE(
     IntPtr instance,
@@ -728,16 +743,19 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       (Fmi3Statuses)fmi3Terminate(component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3TerminateTYPE(fmi3Instance instance);
    */
   internal fmi3TerminateTYPE fmi3Terminate;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3TerminateTYPE(IntPtr instance);
 
-#endregion Common & Co-Simulation Functions for FMI 3.0
+  #endregion Common & Co-Simulation Functions for FMI 3.0
 
-#region Getters & Setters
+  #region Getters & Setters
+
   /////////////
   // Getters //
   /////////////
@@ -747,22 +765,23 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new float[(int)nValues];
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetFloat32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
 
     return ReturnVariable<float>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetFloat32TYPE(
       fmi3Instance instance,
@@ -772,6 +791,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetFloat32TYPE fmi3GetFloat32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetFloat32TYPE(
     IntPtr instance,
@@ -794,15 +814,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetFloat64(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<double>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetFloat64TYPE(
       fmi3Instance instance,
@@ -812,6 +833,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetFloat64TYPE fmi3GetFloat64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetFloat64TYPE(
     IntPtr instance,
@@ -834,15 +856,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetInt8(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<sbyte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetInt8TYPE(
       fmi3Instance instance,
@@ -852,6 +875,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetInt8TYPE fmi3GetInt8;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetInt8TYPE(
     IntPtr instance,
@@ -874,15 +898,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetUInt8(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<byte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetUInt8TYPE(
       fmi3Instance instance,
@@ -892,6 +917,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetUInt8TYPE fmi3GetUInt8;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetUInt8TYPE(
     IntPtr instance,
@@ -914,15 +940,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetInt16(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<short>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetInt16TYPE(
       fmi3Instance instance,
@@ -932,6 +959,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetInt16TYPE fmi3GetInt16;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetInt16TYPE(
     IntPtr instance,
@@ -954,15 +982,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetUInt16(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<ushort>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetUInt16TYPE(
       fmi3Instance instance,
@@ -972,6 +1001,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetUInt16TYPE fmi3GetUInt16;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetUInt16TYPE(
     IntPtr instance,
@@ -994,15 +1024,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetInt32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<int>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetInt32TYPE(
       fmi3Instance instance,
@@ -1012,6 +1043,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetInt32TYPE fmi3GetInt32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetInt32TYPE(
     IntPtr instance,
@@ -1034,15 +1066,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetUInt32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<uint>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetUInt32TYPE(
       fmi3Instance instance,
@@ -1052,6 +1085,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetUInt32TYPE fmi3GetUInt32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetUInt32TYPE(
     IntPtr instance,
@@ -1074,15 +1108,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetInt64(
-        component, 
-        valueReferences, 
-        (IntPtr)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (IntPtr)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<long>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetInt64TYPE(
       fmi3Instance instance,
@@ -1092,6 +1127,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetInt64TYPE fmi3GetInt64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetInt64TYPE(
     IntPtr instance,
@@ -1114,15 +1150,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetUInt64(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<ulong>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetUInt64TYPE(
       fmi3Instance instance,
@@ -1132,6 +1169,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetUInt64TYPE fmi3GetUInt64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetUInt64TYPE(
     IntPtr instance,
@@ -1154,15 +1192,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetBoolean(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<bool>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetBooleanTYPE(
       fmi3Instance instance,
@@ -1172,6 +1211,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetBooleanTYPE fmi3GetBoolean;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetBooleanTYPE(
     IntPtr instance,
@@ -1194,15 +1234,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetString(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<string>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
+
   /*
     typedef fmi3Status fmi3GetStringTYPE(
       fmi3Instance instance,
@@ -1212,6 +1253,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetStringTYPE fmi3GetString;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetStringTYPE(
     IntPtr instance,
@@ -1228,28 +1270,29 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     size_t[] valueSizes = new size_t[valueReferences.Length];
     size_t nValues = CalculateValueLength(ref valueReferences);
     var result = new fmi3Binary[(int)nValues];
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetBinary(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        valueSizes, 
-        result, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        valueSizes,
+        result,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     return ReturnVariable<fmi3Binary>.CreateReturnVariable(
-      valueReferences, 
-      result, 
-      nValues, 
-      ref modelDescription, 
+      valueReferences,
+      result,
+      nValues,
+      ref modelDescription,
       valueSizes);
   }
+
   /*
     typedef fmi3Status fmi3GetBinaryTYPE(
       fmi3Instance instance,
@@ -1260,6 +1303,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3GetBinaryTYPE fmi3GetBinary;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetBinaryTYPE(
     IntPtr instance,
@@ -1284,13 +1328,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetFloat32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetFloat32TYPE(
       fmi3Instance instance,
@@ -1300,6 +1345,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetFloat32TYPE fmi3SetFloat32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetFloat32TYPE(
     IntPtr instance,
@@ -1319,13 +1365,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetFloat64(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetFloat64TYPE(
       fmi3Instance instance,
@@ -1335,6 +1382,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetFloat64TYPE fmi3SetFloat64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetFloat64TYPE(
     IntPtr instance,
@@ -1354,13 +1402,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetInt8(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetInt8TYPE(
       fmi3Instance instance,
@@ -1370,6 +1419,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetInt8TYPE fmi3SetInt8;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetInt8TYPE(
     IntPtr instance,
@@ -1389,13 +1439,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetUInt8(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetUInt8TYPE(
       fmi3Instance instance,
@@ -1405,6 +1456,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetUInt8TYPE fmi3SetUInt8;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetUInt8TYPE(
     IntPtr instance,
@@ -1424,13 +1476,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetInt16(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetInt16TYPE(
       fmi3Instance instance,
@@ -1440,6 +1493,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetInt16TYPE fmi3SetInt16;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetInt16TYPE(
     IntPtr instance,
@@ -1459,13 +1513,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetUInt16(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetUInt16TYPE(
       fmi3Instance instance,
@@ -1475,6 +1530,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetUInt16TYPE fmi3SetUInt16;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetUInt16TYPE(
     IntPtr instance,
@@ -1494,13 +1550,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetInt32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetInt32TYPE(
       fmi3Instance instance,
@@ -1510,6 +1567,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetInt32TYPE fmi3SetInt32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetInt32TYPE(
     IntPtr instance,
@@ -1529,13 +1587,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetUInt32(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetUInt32TYPE(
       fmi3Instance instance,
@@ -1545,6 +1604,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetUInt32TYPE fmi3SetUInt32;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetUInt32TYPE(
     IntPtr instance,
@@ -1561,16 +1621,17 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       throw new NullReferenceException("FMU was not initialized.");
     }
-    
+
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetInt64(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetInt64TYPE(
       fmi3Instance instance,
@@ -1580,6 +1641,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetInt64TYPE fmi3SetInt64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetInt64TYPE(
     IntPtr instance,
@@ -1599,13 +1661,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetUInt64(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetUInt64TYPE(
       fmi3Instance instance,
@@ -1615,6 +1678,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetUInt64TYPE fmi3SetUInt64;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetUInt64TYPE(
     IntPtr instance,
@@ -1634,13 +1698,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetBoolean(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetBooleanTYPE(
       fmi3Instance instance,
@@ -1650,6 +1715,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetBooleanTYPE fmi3SetBoolean;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetBooleanTYPE(
     IntPtr instance,
@@ -1669,13 +1735,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetString(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetStringTYPE(
       fmi3Instance instance,
@@ -1685,6 +1752,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetStringTYPE fmi3SetString;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetStringTYPE(
     IntPtr instance,
@@ -1704,14 +1772,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetBinary(
-        component, 
-        valueReferences, 
-        (size_t)valueReferences.Length, 
-        valueSizes, 
-        values, 
+        component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        valueSizes,
+        values,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
+
   /*
     typedef fmi3Status fmi3SetBinaryTYPE(
       fmi3Instance instance,
@@ -1722,6 +1791,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       size_t nValues);
   */
   internal fmi3SetBinaryTYPE fmi3SetBinary;
+
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3SetBinaryTYPE(
     IntPtr instance,
@@ -1734,7 +1804,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr[] values,
     size_t nValues);
 
-#endregion Getters & Setters
+  #endregion Getters & Setters
 
   private size_t CalculateValueLength(ref fmi3ValueReference[] valueReferences)
   {
@@ -1746,5 +1816,4 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     return (size_t)valueSize;
   }
-
 }
