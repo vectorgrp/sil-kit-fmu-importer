@@ -1,12 +1,11 @@
-﻿namespace SilKit.Services.Orchestration
-{
-  // LifecycleService
-  public delegate void CommunicationReadyHandler();
+﻿namespace SilKit.Services.Orchestration;
 
-  public delegate void StopHandler();
+// LifecycleService
+public delegate void CommunicationReadyHandler();
 
-  public delegate void ShutdownHandler();
+public delegate void StopHandler();
 
-  // TimeSyncService
-  public delegate void SimulationStepHandler(UInt64 nowInNs, UInt64 durationInNs);
-}
+public delegate void ShutdownHandler();
+
+// TimeSyncService
+public delegate void SimulationStepHandler(UInt64 nowInNs, UInt64 durationInNs);

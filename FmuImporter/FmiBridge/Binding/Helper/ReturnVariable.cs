@@ -1,98 +1,97 @@
 ﻿using Fmi.FmiModel.Internal;
 
-namespace Fmi.Binding
+namespace Fmi.Binding;
+
+public class ReturnVariable<T>
 {
-  public class ReturnVariable<T>
+  public struct Variable
   {
-    public struct Variable
+    public uint ValueReference;
+    public T[] Values;
+    public IntPtr[] ValueSizes;
+    public bool IsScalar;
+  }
+
+  public Variable[] ResultArray;
+
+  private ReturnVariable()
+  {
+    ResultArray = Array.Empty<Variable>();
+  }
+
+  public static ReturnVariable<T> CreateReturnVariable(
+    uint[] valueReferences,
+    T[] values,
+    nint nValues,
+    ref ModelDescription modelDescription)
+  {
+    var result = new ReturnVariable<T>();
+    result.ResultArray = new Variable[valueReferences.Length];
+
+    int indexCounter = 0;
+
+    for (int i = 0; i < valueReferences.Length; i++)
     {
-      public uint ValueReference;
-      public T[] Values;
-      public IntPtr[] ValueSizes;
-      public bool IsScalar;
-    }
+      var valueReference = valueReferences[i];
+      var modelVar = modelDescription.Variables[valueReference];
+      var arrayLength = modelVar.FlattenedArrayLength;
 
-    public Variable[] ResultArray;
-
-    private ReturnVariable()
-    {
-      ResultArray = Array.Empty<Variable>();
-    }
-
-    public static ReturnVariable<T> CreateReturnVariable(
-      uint[] valueReferences,
-      T[] values,
-      nint nValues,
-      ref ModelDescription modelDescription)
-    {
-      var result = new ReturnVariable<T>();
-      result.ResultArray = new Variable[valueReferences.Length];
-
-      int indexCounter = 0;
-
-      for (int i = 0; i < valueReferences.Length; i++)
+      var v = new Variable
       {
-        var valueReference = valueReferences[i];
-        var modelVar = modelDescription.Variables[valueReference];
-        var arrayLength = modelVar.FlattenedArrayLength;
-
-        var v = new Variable
-        {
-          ValueReference = valueReference,
-          ValueSizes = Array.Empty<IntPtr>(),
-          Values = new T[arrayLength],
-          IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
-        };
-        for (ulong j = 0; j < arrayLength; j++)
-        {
-          v.Values[j] = values[indexCounter];
-          indexCounter++;
-        }
-
-        result.ResultArray[i] = v;
+        ValueReference = valueReference,
+        ValueSizes = Array.Empty<IntPtr>(),
+        Values = new T[arrayLength],
+        IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
+      };
+      for (ulong j = 0; j < arrayLength; j++)
+      {
+        v.Values[j] = values[indexCounter];
+        indexCounter++;
       }
 
-      return result;
+      result.ResultArray[i] = v;
     }
 
-    public static ReturnVariable<T> CreateReturnVariable(
-      uint[] valueReferences,
-      T[] values,
-      nint nValues,
-      ref ModelDescription modelDescription,
-      size_t[] nValueSizes)
+    return result;
+  }
+
+  public static ReturnVariable<T> CreateReturnVariable(
+    uint[] valueReferences,
+    T[] values,
+    nint nValues,
+    ref ModelDescription modelDescription,
+    size_t[] nValueSizes)
+  {
+    var result = new ReturnVariable<T>();
+    result.ResultArray = new Variable[valueReferences.Length];
+
+    int indexCounter = 0;
+
+    // outer loop -> value references
+    for (int i = 0; i < valueReferences.Length; i++)
     {
-      var result = new ReturnVariable<T>();
-      result.ResultArray = new Variable[valueReferences.Length];
+      var valueReference = valueReferences[i];
+      var modelVar = modelDescription.Variables[valueReference];
+      var arrayLength = modelVar.FlattenedArrayLength;
 
-      int indexCounter = 0;
-
-      // outer loop -> value references
-      for (int i = 0; i < valueReferences.Length; i++)
+      var v = new Variable
       {
-        var valueReference = valueReferences[i];
-        var modelVar = modelDescription.Variables[valueReference];
-        var arrayLength = modelVar.FlattenedArrayLength;
-
-        var v = new Variable
-        {
-          ValueReference = valueReference,
-          ValueSizes = new IntPtr[arrayLength],
-          // T ~ Array of Binaries -> IntPtr[]
-          Values = new T[arrayLength],
-          IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
-        };
-        for (ulong j = 0; j < arrayLength; j++)
-        {
-          v.Values[j] = values[indexCounter];
-          v.ValueSizes[j] = nValueSizes[indexCounter];
-          indexCounter++;
-        }
-
-        result.ResultArray[i] = v;
+        ValueReference = valueReference,
+        ValueSizes = new IntPtr[arrayLength],
+        // T ~ Array of Binaries -> IntPtr[]
+        Values = new T[arrayLength],
+        IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
+      };
+      for (ulong j = 0; j < arrayLength; j++)
+      {
+        v.Values[j] = values[indexCounter];
+        v.ValueSizes[j] = nValueSizes[indexCounter];
+        indexCounter++;
       }
 
-      return result;
+      result.ResultArray[i] = v;
     }
+
+    return result;
   }
 }
