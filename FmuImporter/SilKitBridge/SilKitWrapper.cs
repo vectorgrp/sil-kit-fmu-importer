@@ -3,8 +3,6 @@ using SilKit.Config;
 
 namespace SilKit
 {
-  // TODO change destructors to proper patterns (dispose)
-
   /**
    * ##############################
    * # Mapping: [C] -> [C# Type] #

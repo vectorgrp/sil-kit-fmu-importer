@@ -4,7 +4,7 @@ using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
-public interface IFmiBindingCommon
+public interface IFmiBindingCommon : IDisposable
 {
   public void GetValue(uint[] valueRefs, out ReturnVariable<float> result);
   public void GetValue(uint[] valueRefs, out ReturnVariable<double> result);
@@ -57,6 +57,41 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     FullFmuLibPath = $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
     InitializeModelBinding(FullFmuLibPath);
   }
+
+  #region IDisposable
+
+  ~FmiBindingBase()
+  {
+    Dispose(false);
+  }
+
+  private void ReleaseUnmanagedResources()
+  {
+  }
+
+  private bool mDisposedValue;
+  protected ModelDescription modelDescription = null!;
+
+  protected virtual void Dispose(bool disposing)
+  {
+    if (!mDisposedValue)
+    {
+      if (disposing)
+      {
+        // dispose managed objects
+      }
+      ReleaseUnmanagedResources();
+      mDisposedValue = true;
+    }
+  }
+
+  public void Dispose()
+  {
+    Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+
+  #endregion
 
   private void InitializeModelDescription(string extractedFolderPath)
   {
@@ -138,34 +173,4 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   public abstract void Terminate();
 
 
-  ~FmiBindingBase()
-  {
-    Dispose(false);
-  }
-
-  private void ReleaseUnmanagedResources()
-  {
-  }
-
-  private bool mDisposedValue;
-  protected ModelDescription modelDescription = null!;
-
-  protected virtual void Dispose(bool disposing)
-  {
-    if (!mDisposedValue)
-    {
-      if (disposing)
-      {
-        // dispose managed objects
-      }
-      ReleaseUnmanagedResources();
-      mDisposedValue = true;
-    }
-  }
-
-  public void Dispose()
-  {
-    Dispose(true);
-    GC.SuppressFinalize(this);
-  }
 }

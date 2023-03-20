@@ -74,6 +74,45 @@ public class FmuImporter
     PrepareVariableDistribution();
   }
 
+  #region IDisposable
+
+  ~FmuImporter()
+  {
+    Dispose(false);
+  }
+
+  private void ReleaseUnmanagedResources()
+  {
+  }
+
+  private bool mDisposedValue;
+  protected virtual void Dispose(bool disposing)
+  {
+    if (!mDisposedValue)
+    {
+      if (disposing)
+      {
+        // dispose managed objects
+
+        // cleanup SIL Kit
+        silKitInstance.Participant.Dispose();
+
+        // cleanup FMU
+        Binding.Dispose();
+      }
+      ReleaseUnmanagedResources();
+      mDisposedValue = true;
+    }
+  }
+
+  public void Dispose()
+  {
+    Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+
+  #endregion IDisposable
+
   private void PrepareVariableDistribution()
   {
     foreach (var modelDescriptionVariable in ModelDescription.Variables.Values)
@@ -178,10 +217,14 @@ public class FmuImporter
     ModelDescription = fmi2Binding.GetModelDescription();
     // Prepare FMU
     var functions = new Fmi2BindingCallbackFunctions(
-      (name, status, category, message) =>
+      loggerDelegate: (name, status, category, message) =>
       {
         Console.WriteLine($"Logger: Name={name}; status={status}; category={category};\n  message={message}");
-      }, status => throw new NotImplementedException("Step finished asynchronously."));
+      },
+      stepFinishedDelegate: status =>
+      {
+        fmi2Binding.NotifyAsyncDoStepReturned(status);
+      });
 
     fmi2Binding.Instantiate(
       ModelDescription.ModelName,
@@ -214,11 +257,9 @@ public class FmuImporter
       ModelDescription.InstantiationToken,
       true,
       true,
-      (name, status, category, message) =>
-      {
-        Console.WriteLine($"Logger: Name={name}; status={status}; category={category};\n  message={message}");
-      });
+      Logger);
 
+    fmi3Binding.SetDebugLogging(true, 0, null);
 
     fmi3Binding.EnterInitializationMode(
       ModelDescription.DefaultExperiment.Tolerance,
@@ -227,6 +268,13 @@ public class FmuImporter
 
     // initialize all 'exact' and 'approx' values
     fmi3Binding.ExitInitializationMode();
+  }
+
+  private void Logger(IntPtr instanceEnvironment, Fmi3Statuses status, string category, string message)
+  {
+    Console.WriteLine(
+      $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};\n" +
+      $"  message={message}");
   }
 
   private void InitializeSilKit(string silKitConfigurationPath, string participantName)
@@ -256,6 +304,7 @@ public class FmuImporter
 
     var lc = new LifecycleService.LifecycleConfiguration(LifecycleService.LifecycleConfiguration.Modes.Coordinated);
     silKitInstance.Participant = wrapper.CreateParticipant(config, participantName);
+    config.Dispose();
     silKitInstance.LifecycleService = silKitInstance.Participant.CreateLifecycleService(lc);
     silKitInstance.TimeSyncService = silKitInstance.LifecycleService.CreateTimeSyncService();
 

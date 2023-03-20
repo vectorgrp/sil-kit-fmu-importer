@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Text;
 
 namespace Common;
 
@@ -10,8 +9,10 @@ internal static class Helpers
     string returnCodeName, 
     RuntimeMethodHandle? methodHandle)
   {
-    if (resultCode == 0)
+    if (resultCode is 0 or 5)
     {
+      // 0 = OK
+      // 5 = asynchronous doStep (FMI 2)
       return new Tuple<bool, StringBuilder?>(true, null);
     }
 

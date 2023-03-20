@@ -71,6 +71,7 @@ public struct Fmi2BindingCallbackFunctions
   }
 
 }
+
 public enum Fmi2Statuses : int
 {
   OK,
@@ -80,8 +81,8 @@ public enum Fmi2Statuses : int
   Fatal,
   Pending
 }
-  
-public interface IFmi2Binding : IDisposable, IFmiBindingCommon
+
+public interface IFmi2Binding : IFmiBindingCommon
 {
   public ModelDescription GetModelDescription();
 
@@ -111,6 +112,9 @@ public interface IFmi2Binding : IDisposable, IFmiBindingCommon
   public void SetInteger(uint[] valueReferences, int[] values);
   public void SetBoolean(uint[] valueReferences, bool[] values);
   public void SetString(uint[] valueReferences, string[] values);
+
+  // Internal
+  public void NotifyAsyncDoStepReturned(Fmi2Statuses status);
 }
 
 public static class Fmi2BindingFactory
@@ -132,6 +136,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 #elif OS_MAC
   private const string osPath = "/binaries/darwin64";
 #endif
+
+  private static AutoResetEvent waitForDoStepEvent = new AutoResetEvent(false);
 
   public Fmi2Binding(string fmuPath) : base(fmuPath, osPath)
   {
@@ -161,6 +167,36 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     // other
     SetDelegate(out fmi2GetFMUstate);
   }
+
+  #region IDisposable
+
+  ~Fmi2Binding()
+  {
+    Dispose(false);
+  }
+
+  private void ReleaseUnmanagedResources()
+  {
+    fmi2FreeInstance(component);
+  }
+
+  private bool mDisposedValue;
+  protected override void Dispose(bool disposing)
+  {
+    if (!mDisposedValue)
+    {
+      if (disposing)
+      {
+        // dispose managed objects
+      }
+      ReleaseUnmanagedResources();
+      mDisposedValue = true;
+    }
+
+    base.Dispose(disposing);
+  }
+
+  #endregion IDisposable
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
   {
@@ -291,6 +327,12 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     return ModelDescription;
   }
 
+  public void NotifyAsyncDoStepReturned(Fmi2Statuses status)
+  {
+    Helpers.ProcessReturnCode(status, System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    waitForDoStepEvent.Set();
+  }
+
   #region Common & Co-Simulation Functions for FMI 2.x
 
   public void SetDebugLogging(bool loggingOn, string[] categories)
@@ -356,13 +398,13 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     Fmi2BindingCallbackFunctions.fmi2CallbackFunctions functions,
     bool visible,
     bool loggingOn);
-  
+
   /*
     typedef void fmi2FreeInstanceTYPE(fmi2Component c);
   */
   internal fmi2FreeInstanceTYPE fmi2FreeInstance;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate int fmi2FreeInstanceTYPE(IntPtr c);
+  internal delegate void fmi2FreeInstanceTYPE(IntPtr c);
 
   public void SetupExperiment(double? tolerance, double startTime, double? stopTime)
   {
@@ -435,7 +477,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   internal fmi2TerminateTYPE fmi2Terminate;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi2TerminateTYPE(IntPtr c);
-  
+
   public override void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
@@ -451,23 +493,17 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
     else if (fmi2Status == 5)
     {
-      // TODO fix this
-      throw new NotImplementedException();
-      //// doStep requires async handling
-      //if (stepComplete.Task.Wait(1000))
-      //{
-      //  var doStepStatus = stepComplete.Task.Result;
-      //  if (doStepStatus != 0)
-      //  {
-      //    throw new InvalidOperationException(
-      //      $"doStep did not complete correctly and exited with exit code '{doStepStatus}'.");
-      //  }
-      //}
-      //else
-      //{
-      //  // timeout logic
-      //  throw new TimeoutException("SimTask did not return in time...");
-      //}
+      // doStep requires async handling -> wait 60s for doStep callback
+      // TODO make timeout configurable
+      if (waitForDoStepEvent.WaitOne(60000))
+      {
+          lastSuccessfulTime = currentCommunicationPoint + communicationStepSize;
+      }
+      else
+      {
+        // timeout logic
+        throw new TimeoutException("SimTask did not return in time...");
+      }
     }
     else
     {
@@ -736,44 +772,4 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   internal delegate int fmi2GetFMUstateTYPE(
     IntPtr c,
     IntPtr fmuState);
-
-
-  ~Fmi2Binding()
-  {
-    Dispose(false);
-  }
-  
-  private void ReleaseUnmanagedResources()
-  {
-    Fmi2Statuses fmi2Status = (Fmi2Statuses)fmi2FreeInstance(component);
-
-    if (fmi2Status != Fmi2Statuses.OK)
-    {
-      if (fmi2Status == Fmi2Statuses.Warning)
-      {
-        Console.WriteLine($"Warning: fmi2FreeInstance exited with exit code '{((Fmi2Statuses)fmi2Status)}'.");
-      }
-      else
-      {
-        throw new InvalidOperationException(
-          $"fmi2FreeInstance exited with exit code '{((Fmi2Statuses)fmi2Status)}'.");
-      }
-    }
-  }
-
-  private bool mDisposedValue;
-  protected override void Dispose(bool disposing)
-  {
-    if (!mDisposedValue)
-    {
-      if (disposing)
-      {
-        // dispose managed objects
-      }
-      ReleaseUnmanagedResources();
-      mDisposedValue = true;
-    }
-
-    base.Dispose(disposing);
-  }
 }

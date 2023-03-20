@@ -52,6 +52,7 @@ internal class Program
 
       var instance = new FmuImporter(fmuPath, silKitConfigFile, participantName, ignoreStopTime);
       instance.RunSimulation();
+      instance.Dispose();
     }, fmuPathOption, silKitConfigFileOption, participantNameOption, ignoreStopTimeOption);
 
     await rootCommand.InvokeAsync(args);

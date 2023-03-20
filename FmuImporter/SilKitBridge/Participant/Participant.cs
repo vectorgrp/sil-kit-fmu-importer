@@ -5,11 +5,8 @@ using SilKit.Services.PubSub;
 
 namespace SilKit
 {
-  public class Participant
+  public class Participant : IDisposable
   {
-    private HashSet<GCHandle> pinnedHandles;
-
-    private readonly ParticipantConfiguration configuration;
     private IntPtr participantPtr;
     internal IntPtr ParticipantPtr
     {
@@ -20,9 +17,6 @@ namespace SilKit
     #region ctor & dtor
     public Participant(ParticipantConfiguration configuration, string participantName, string registryUri)
     {
-      this.pinnedHandles = new HashSet<GCHandle>();
-
-      this.configuration = configuration;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(out participantPtr, configuration.ParticipantConfigurationPtr, participantName, registryUri),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
@@ -45,16 +39,33 @@ namespace SilKit
 
     ~Participant()
     {
-      // TODO change to dispose pattern
-      // TODO free GCHandlers for DataContext
-      SilKit_Participant_Destroy(ParticipantPtr);
-      foreach (var pinnedHandle in pinnedHandles)
-      {
-        pinnedHandle.Free();
-      }
-      pinnedHandles.Clear();
+      Dispose(false);
+    }
 
+    private void ReleaseUnmanagedResources()
+    {
+      SilKit_Participant_Destroy(ParticipantPtr);
       ParticipantPtr = IntPtr.Zero;
+    }
+
+    private bool mDisposedValue;
+    protected void Dispose(bool disposing)
+    {
+      if (!mDisposedValue)
+      {
+        if (disposing)
+        {
+          // dispose managed objects
+        }
+        ReleaseUnmanagedResources();
+        mDisposedValue = true;
+      }
+    }
+
+    public void Dispose()
+    {
+      Dispose(true);
+      GC.SuppressFinalize(this);
     }
 
     /*

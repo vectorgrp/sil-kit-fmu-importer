@@ -3,8 +3,8 @@ using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
-public delegate void Logger(
-  string instanceName,
+public delegate void fmi3LogMessageCallback(
+  IntPtr instanceEnvironment,
   Fmi3Statuses status,
   string category,
   string message);
@@ -25,7 +25,7 @@ public static class Fmi3BindingFactory
   }
 }
 
-public interface IFmi3Binding : IDisposable, IFmiBindingCommon
+public interface IFmi3Binding : IFmiBindingCommon
 {
   public ModelDescription GetModelDescription();
 
@@ -35,10 +35,15 @@ public interface IFmi3Binding : IDisposable, IFmiBindingCommon
     string instantiationToken,
     bool visible,
     bool loggingOn,
-    Logger logger);
+    fmi3LogMessageCallback logger);
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime);
   public void ExitInitializationMode();
+
+  public void SetDebugLogging(
+    bool loggingOn,
+    int nCategories,
+    string[]? categories);
 
   // Getters & Setters
   public ReturnVariable<float> GetFloat32(fmi3ValueReference[] valueReferences);
@@ -72,6 +77,8 @@ public interface IFmi3Binding : IDisposable, IFmiBindingCommon
 internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 {
   private IntPtr component;
+  GCHandle? loggerHandlerGcHandle;
+
 #if OS_WINDOWS
   private const string osPath = "/binaries/x86_64-windows";
 #elif OS_LINUX
@@ -82,6 +89,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public Fmi3Binding(string fmuPath) : base(fmuPath, osPath)
   {
+    loggerHandlerGcHandle = null;
+
     // Common functions
     SetDelegate(out fmi3InstantiateCoSimulation);
     SetDelegate(out fmi3FreeInstance);
@@ -89,6 +98,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3ExitInitializationMode);
     SetDelegate(out fmi3DoStep);
     SetDelegate(out fmi3Terminate);
+    SetDelegate(out fmi3SetDebugLogging);
 
     // Variable Getters and Setters
     SetDelegate(out fmi3GetFloat32);
@@ -119,6 +129,37 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3SetBinary);
   }
 
+  #region IDisposable
+
+  ~Fmi3Binding()
+  {
+    Dispose(false);
+  }
+
+  private void ReleaseUnmanagedResources()
+  {
+    fmi3FreeInstance(component);
+    loggerHandlerGcHandle?.Free();
+  }
+
+  private bool mDisposedValue;
+  protected override void Dispose(bool disposing)
+  {
+    if (!mDisposedValue)
+    {
+      if (disposing)
+      {
+        // dispose managed objects
+      }
+      ReleaseUnmanagedResources();
+      mDisposedValue = true;
+    }
+
+    base.Dispose(disposing);
+  }
+
+  #endregion IDisposable
+
   public ModelDescription GetModelDescription()
   {
     return ModelDescription;
@@ -131,7 +172,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     string instantiationToken,
     bool visible,
     bool loggingOn,
-    Logger logger)
+    fmi3LogMessageCallback logger)
   {
     component = fmi3InstantiateCoSimulation(
       instanceName,
@@ -179,16 +220,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr requiredIntermediateVariables,
     size_t nRequiredIntermediateVariables,
     IntPtr instanceEnvironment,
-    Logger logMessage,
+    fmi3LogMessageCallback logMessage,
     IntPtr intermediateUpdate);
 
-  // TODO free in dispose
   /*
     typedef void fmi3FreeInstanceTYPE(fmi3Instance instance);
   */
   internal fmi3FreeInstanceTYPE fmi3FreeInstance;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-  internal delegate int fmi3FreeInstanceTYPE(IntPtr instance);
+  internal delegate void fmi3FreeInstanceTYPE(IntPtr instance);
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime)
   {
@@ -234,6 +274,31 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   internal fmi3ExitInitializationModeTYPE fmi3ExitInitializationMode;
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3ExitInitializationModeTYPE(IntPtr instance);
+
+
+  public void SetDebugLogging(
+    bool loggingOn,
+    int nCategories,
+    string[]? categories)
+  {
+    Helpers.ProcessReturnCode(
+      (Fmi3Statuses)fmi3SetDebugLogging(component, loggingOn, (IntPtr)nCategories, categories), 
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+  }
+  /*
+    typedef fmi3Status fmi3SetDebugLoggingTYPE(
+      fmi3Instance instance,
+      fmi3Boolean loggingOn,
+      size_t nCategories,
+      const fmi3String categories[]);
+  */
+  internal fmi3SetDebugLoggingTYPE fmi3SetDebugLogging;
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3SetDebugLoggingTYPE(
+    IntPtr instance, 
+    bool loggingOn, 
+    size_t nCategories, 
+    string[]? categories);
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
   {
@@ -604,7 +669,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       }
       SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
 
-      // TODO/FIXME this is leaking memory, as the objects will never be freed
+      foreach (var gcHandle in handlers)
+      {
+        gcHandle.Free();
+      }
     }
   }
 
