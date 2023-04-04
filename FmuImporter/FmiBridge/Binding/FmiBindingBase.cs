@@ -166,6 +166,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   public abstract void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result);
 
   public abstract void SetValue(uint valueRef, byte[] data);
+  internal abstract void SetValue(Variable mdVar, byte[] data);
   public abstract void SetValue(uint valueRef, byte[] data, int[] binSizes);
 
   public abstract void DoStep(

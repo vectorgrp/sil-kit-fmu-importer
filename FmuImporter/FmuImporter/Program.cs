@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using System.Globalization;
+using FmuImporter.Config;
 
 namespace FmuImporter;
 
@@ -20,41 +21,74 @@ internal class Program
     fmuPathOption.IsRequired = true;
     rootCommand.AddOption(fmuPathOption);
 
-    var silKitConfigFileOption = new Option<string>(
+    var silKitConfigFileOption = new Option<string?>(
       name: "--sil-kit-config-file",
-      description: "Set the path to the SIL Kit configuration file. Defaults to an empty configuration.");
+      description: "Set the path to the SIL Kit configuration file. Defaults to an empty configuration.",
+      getDefaultValue: () => null);
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
+    var fmuImporterConfigFileOption = new Option<string?>(
+      name: "--fmu-importer-config-file",
+      description: "Set the path to the FMU Importer configuration file. Defaults to an empty configuration.",
+      getDefaultValue: () => null);
+    fmuImporterConfigFileOption.AddAlias("-c");
+    rootCommand.AddOption(fmuImporterConfigFileOption);
+
     var participantNameOption = new Option<string>(
       name: "--participant-name",
-      description: "Set the name of the SIL Kit participant. Defaults to the FMU's model name.");
+      description: "Set the name of the SIL Kit participant. Defaults to 'sil-kit-fmu-importer'.",
+      getDefaultValue: () => "sil-kit-fmu-importer");
     participantNameOption.AddAlias("-p");
     rootCommand.AddOption(participantNameOption);
 
-    var ignoreStopTimeOption = new Option<bool>(
-      name: "--ignore-stop-time",
-      description: "Ignore the FMUs stop time (if it is provided). Stop time is used by default.",
+    var parameterSetNameOption = new Option<string?>(
+      name: "--parameter-set-name",
+      description: "Set the name of the parameter set to be used. No set will be used by default.",
+      getDefaultValue: () => null);
+    rootCommand.AddOption(parameterSetNameOption);
+
+    var useStopTimeOption = new Option<bool>(
+      name: "--use-stop-time",
+      description: "Use the FMUs stop time (if it is provided). Stop time is ignored by default.",
       getDefaultValue: () => false);
-    ignoreStopTimeOption.AddAlias("-i");
-    rootCommand.AddOption(ignoreStopTimeOption);
+    useStopTimeOption.AddAlias("-t");
+    rootCommand.AddOption(useStopTimeOption);
 
-    rootCommand.SetHandler((fmuPath, silKitConfigFile, participantName, ignoreStopTime) =>
-    {
-      if (!File.Exists(fmuPath))
+    rootCommand.SetHandler((fmuPath, silKitConfigFile, fmuImporterConfigFile, participantName, parameterSetName, useStopTime) =>
       {
-        throw new FileNotFoundException("The provided FMU file path is invalid.");
-      }
+        if (!File.Exists(fmuPath))
+        {
+          throw new FileNotFoundException("The provided FMU file path is invalid.");
+        }
 
-      if (!File.Exists(silKitConfigFile))
-      {
-        throw new FileNotFoundException("The provided SIL Kit configuration file path is invalid.");
-      }
+        if (silKitConfigFile != null && !File.Exists(silKitConfigFile))
+        {
+          throw new FileNotFoundException("The provided SIL Kit configuration file path is invalid.");
+        }
 
-      var instance = new FmuImporter(fmuPath, silKitConfigFile, participantName, ignoreStopTime);
-      instance.RunSimulation();
-      instance.Dispose();
-    }, fmuPathOption, silKitConfigFileOption, participantNameOption, ignoreStopTimeOption);
+        if (fmuImporterConfigFile != null && !File.Exists(fmuImporterConfigFile))
+        {
+          throw new FileNotFoundException("The provided FMU Importer configuration file path is invalid.");
+        }
+
+        var instance = new FmuImporter(
+          fmuPath,
+          silKitConfigFile,
+          fmuImporterConfigFile,
+          participantName,
+          parameterSetName,
+          useStopTime);
+
+        instance.RunSimulation();
+        instance.Dispose();
+      },
+      fmuPathOption,
+      silKitConfigFileOption,
+      fmuImporterConfigFileOption,
+      participantNameOption,
+      parameterSetNameOption,
+      useStopTimeOption);
 
     await rootCommand.InvokeAsync(args);
   }

@@ -4,6 +4,7 @@ using System.Text;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
+using FmuImporter.Config;
 using SilKit;
 using SilKit.Config;
 using SilKit.Services.Logger;
@@ -57,7 +58,11 @@ public class FmuImporter
   private Dictionary<uint, byte[]> DataBuffer { get; }
   private Dictionary<uint, byte[]> FutureDataBuffer { get; }
 
-  private readonly bool ignoreStopTime;
+  private readonly bool useStopTime;
+
+  private Configuration fmuImporterConfig;
+
+  private Dictionary<string, Configuration.Parameter>? configuredParameters;
 
   private static void LogCallback(LogLevel logLevel, string message)
   {
@@ -71,12 +76,29 @@ public class FmuImporter
     }
   }
 
-  public FmuImporter(string fmuPath, string silKitConfigurationPath, string participantName, bool ignoreStopTime)
+  public FmuImporter(string fmuPath, string? silKitConfigurationPath, string? fmuImporterConfigFilePath, string participantName, string? parameterSetName, bool useStopTime)
   {
     // Initialize SIL Kit first to allow logging
     InitializeSilKit(silKitConfigurationPath, participantName);
 
-    this.ignoreStopTime = ignoreStopTime;
+    try
+    {
+      if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
+      {
+        fmuImporterConfig = new Configuration();
+      }
+      else
+      {
+        fmuImporterConfig = ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
+      }
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine(e);
+      throw;
+    }
+
+    this.useStopTime = useStopTime;
 
     outputValueReferencesByType = new Dictionary<Type, List<uint>>()
     {
@@ -98,7 +120,7 @@ public class FmuImporter
     DataBuffer = new Dictionary<uint, byte[]>();
     FutureDataBuffer = new Dictionary<uint, byte[]>();
 
-    InitializeFMU(fmuPath);
+    InitializeFMU(fmuPath, fmuImporterConfig.GetParameters(parameterSetName));
     PrepareVariableDistribution();
 
     ConfigureSilKitServices();
@@ -176,6 +198,18 @@ public class FmuImporter
       }
       else if (modelDescriptionVariable.Causality == Variable.Causalities.Parameter)
       {
+        var dataSpec = new PubSubSpec(modelDescriptionVariable.Name, Vector.MediaTypeData);
+        var pub = SilKitInstance.Participant.CreateDataPublisher(
+          modelDescriptionVariable.Name,
+          dataSpec, 0);
+        SilKitInstance.ValueRefToDataPublisher.Add(modelDescriptionVariable.ValueReference, pub);
+
+        if (!outputValueReferencesByType.TryGetValue(modelDescriptionVariable.VariableType, out var list))
+        {
+          throw new NotSupportedException("The detected FMI variable type is unknown");
+        }
+
+        list.Add(modelDescriptionVariable.ValueReference);
       }
       else
       {
@@ -221,16 +255,17 @@ public class FmuImporter
     }
   }
 
-  private void InitializeFMU(string fmuPath)
+  private void InitializeFMU(string fmuPath, Dictionary<string, Configuration.Parameter> configuredParameters)
   {
+    this.configuredParameters = configuredParameters;
     var fmiVersion = ModelLoader.FindFmiVersion(fmuPath);
     switch (fmiVersion)
     {
       case ModelLoader.FmiVersions.Fmi2:
-        PrepareFmi2Fmu(fmuPath);
+        PrepareFmi2Fmu(fmuPath, configuredParameters);
         break;
       case ModelLoader.FmiVersions.Fmi3:
-        PrepareFmi3Fmu(fmuPath);
+        PrepareFmi3Fmu(fmuPath, configuredParameters);
         break;
       case ModelLoader.FmiVersions.Invalid:
       // fallthrough
@@ -239,7 +274,7 @@ public class FmuImporter
     }
   }
 
-  private void PrepareFmi2Fmu(string fmuPath)
+  private void PrepareFmi2Fmu(string fmuPath, Dictionary<string, Configuration.Parameter> configuredParameters)
   {
     // Get FMI Model binding
     var fmi2Binding = Fmi2BindingFactory.CreateFmi2Binding(fmuPath);
@@ -292,10 +327,66 @@ public class FmuImporter
       ModelDescription.DefaultExperiment.StopTime);
 
     fmi2Binding.EnterInitializationMode();
+
+    if (configuredParameters != null)
+    {
+      foreach (var configuredParameter in configuredParameters.Values)
+      {
+        if (configuredParameter.Value == null)
+        {
+          throw new BadImageFormatException(
+            $"configured parameter for '{configuredParameter.VarName}' did not contain a value.");
+        }
+
+        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VarName, out var refValue);
+        if (!result)
+        {
+          throw new ArgumentException(
+            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+        }
+        result = ModelDescription.Variables.TryGetValue(refValue, out var v);
+        if (!result || v == null)
+        {
+          throw new ArgumentException(
+            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+        }
+
+        byte[] data;
+        var binSizes = new List<int>();
+        if (configuredParameter.Value is List<object> objectList)
+        {
+          // the parameter is an array
+          data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
+          if (binSizes.Count == 0)
+          {
+            Binding.SetValue(refValue, data);
+          }
+          else
+          {
+            // binary array handling
+            Binding.SetValue(refValue, data, binSizes.ToArray());
+          }
+        }
+        else
+        {
+          data = Fmi.Helpers.EncodeData(configuredParameter.Value, v.VariableType, ref binSizes);
+          if (binSizes.Count == 0)
+          {
+            Binding.SetValue(refValue, data);
+          }
+          else
+          {
+            // binary array handling
+            Binding.SetValue(refValue, data, binSizes.ToArray());
+          }
+        }
+      }
+    }
+
     fmi2Binding.ExitInitializationMode();
   }
 
-  private void PrepareFmi3Fmu(string fmuPath)
+  private void PrepareFmi3Fmu(string fmuPath, Dictionary<string, Configuration.Parameter>? configuredParameters)
   {
     // Get FMI Model binding
     var fmi3Binding = Fmi3BindingFactory.CreateFmi3Binding(fmuPath);
@@ -317,7 +408,54 @@ public class FmuImporter
       ModelDescription.DefaultExperiment.StartTime,
       ModelDescription.DefaultExperiment.StopTime);
 
-    // initialize all 'exact' and 'approx' values
+    // initialize all configured parameters
+
+    if (configuredParameters != null)
+    {
+      foreach (var configuredParameter in configuredParameters.Values)
+      {
+        if (configuredParameter.Value == null)
+        {
+          throw new BadImageFormatException(
+            $"configured parameter for '{configuredParameter.VarName}' did not contain a value.");
+        }
+
+        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VarName, out var refValue);
+        if (!result)
+        {
+          throw new ArgumentException(
+            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+        }
+        result = ModelDescription.Variables.TryGetValue(refValue, out var v);
+        if (!result || v == null)
+        {
+          throw new ArgumentException(
+            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+        }
+
+        byte[] data;
+        var binSizes = new List<int>();
+        if (configuredParameter.Value is List<object> objectList)
+        {
+          data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
+        }
+        else
+        {
+          data = Fmi.Helpers.EncodeData(configuredParameter.Value, v.VariableType, ref binSizes);
+        }
+
+        if (v.VariableType != typeof(IntPtr))
+        {
+          Binding.SetValue(refValue, data);
+        }
+        else
+        {
+          // binary type
+          Binding.SetValue(refValue, data, binSizes.ToArray());
+        }
+      }
+    }
+
     fmi3Binding.ExitInitializationMode();
   }
 
@@ -346,13 +484,8 @@ public class FmuImporter
     }
   }
 
-  private void InitializeSilKit(string silKitConfigurationPath, string participantName)
+  private void InitializeSilKit(string? silKitConfigurationPath, string participantName)
   {
-    if (string.IsNullOrEmpty(participantName))
-    {
-      participantName = ModelDescription.ModelName;
-    }
-
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
     if (string.IsNullOrEmpty(silKitConfigurationPath))
@@ -395,8 +528,8 @@ public class FmuImporter
     SilKitInstance.TimeSyncService.SetSimulationStepHandler(SimulationStepReached, stepDuration);
   }
 
-  private ulong? lastSimStep = null;
-  private ulong nextSimStep = 0L;
+  private ulong? lastSimStep;
+  private ulong nextSimStep;
 
   private void SimulationStepReached(ulong nowInNs, ulong durationInNs)
   {
@@ -427,7 +560,7 @@ public class FmuImporter
 
     PublishAllOutputData();
 
-    if (!ignoreStopTime && ModelDescription.DefaultExperiment.StopTime.HasValue)
+    if (useStopTime && ModelDescription.DefaultExperiment.StopTime.HasValue)
     {
       if (fmiNow >= ModelDescription.DefaultExperiment.StopTime)
       {
@@ -591,7 +724,7 @@ public class FmuImporter
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -608,7 +741,7 @@ public class FmuImporter
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -624,7 +757,7 @@ public class FmuImporter
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -640,7 +773,7 @@ public class FmuImporter
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -656,7 +789,7 @@ public class FmuImporter
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -672,14 +805,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -695,14 +828,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -718,14 +851,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -741,14 +874,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -764,14 +897,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -787,14 +920,14 @@ public class FmuImporter
       if (!variable.IsScalar)
       {
         var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
+        Helpers.ToLittleEndian(ref arrayPrefix);
         byteList.AddRange(arrayPrefix);
       }
 
       for (int i = 0; i < variable.Values.Length; i++)
       {
         var byteArr = BitConverter.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
+        Helpers.ToLittleEndian(ref byteArr);
         byteList.AddRange(byteArr);
       }
 
@@ -807,18 +940,12 @@ public class FmuImporter
     foreach (var variable in data.ResultArray)
     {
       var byteList = InitByteList(variable.IsScalar, variable.Values.Length);
-      if (!variable.IsScalar)
-      {
-        var arrayPrefix = BitConverter.GetBytes(variable.Values.Length);
-        FormatData(ref arrayPrefix);
-        byteList.AddRange(arrayPrefix);
-      }
-
       for (int i = 0; i < variable.Values.Length; i++)
       {
-        var byteArr = Encoding.ASCII.GetBytes(variable.Values[i]);
-        FormatData(ref byteArr);
-        byteList.AddRange(byteArr);
+        var encodedString = Encoding.UTF8.GetBytes(variable.Values[i]);
+        var localByteList = InitByteList(false, encodedString.Length);
+        localByteList.AddRange(encodedString);
+        byteList.AddRange(localByteList);
       }
 
       SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
@@ -830,16 +957,18 @@ public class FmuImporter
     foreach (var variable in data.ResultArray)
     {
       var publishableBytes = InitByteList(variable.IsScalar, variable.Values.Length);
-      var arraySize = variable.ValueSizes.Length;
 
-      for (int i = 0; i < arraySize; i++)
+      for (int i = 0; i < variable.Values.Length; i++)
       {
-        var binarySize = (int)variable.ValueSizes[i];
-        publishableBytes.AddRange(BitConverter.GetBytes(arraySize));
-        var targetByteArr = new byte[binarySize];
-        var binaryPtr = variable.Values[i];
-        Marshal.Copy(binaryPtr, targetByteArr, 0, binarySize);
-        publishableBytes.AddRange(targetByteArr);
+        var binDataPtr = variable.Values[i];
+        var rawDataLength = (int)variable.ValueSizes[i];
+        var binData = new byte[rawDataLength];
+        Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
+
+        // append length of following binary blob
+        publishableBytes.AddRange(InitByteList(false, binData.Length));
+        // add the data blob
+        publishableBytes.AddRange(binData);
       }
 
       // publish byte array
@@ -856,20 +985,15 @@ public class FmuImporter
     else
     {
       var byteArr = BitConverter.GetBytes(arrayLength);
-      FormatData(ref byteArr);
+      Helpers.ToLittleEndian(ref byteArr);
 
       return byteArr.ToList();
     }
   }
 
-  private static void FormatData(ref byte[] bytes)
-  {
-    if (!BitConverter.IsLittleEndian)
-      Array.Reverse(bytes);
-  }
-
   public void RunSimulation()
   {
+    LogCallback(LogLevel.Info, "Starting Simulation.");
     SilKitInstance.LifecycleService.StartLifecycle();
     SilKitInstance.LifecycleService.WaitForLifecycleToComplete();
   }

@@ -23,4 +23,10 @@ public static class Helpers
   }
 
   public const ulong DefaultSimStepDuration = 1000000 /* 1ms */;
+
+  public static void ToLittleEndian(ref byte[] bytes)
+  {
+    if (!BitConverter.IsLittleEndian)
+      Array.Reverse(bytes);
+  }
 }

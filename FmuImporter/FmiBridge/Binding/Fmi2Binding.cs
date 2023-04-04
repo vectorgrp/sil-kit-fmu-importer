@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
@@ -274,6 +275,11 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   public override void SetValue(uint valueRef, byte[] data)
   {
     var mdVar = ModelDescription.Variables[valueRef];
+    SetValue(mdVar, data);
+  }
+
+  internal override void SetValue(Variable mdVar, byte[] data)
+  {
     var type = mdVar.VariableType;
 
     if (mdVar.Dimensions != null)
@@ -302,22 +308,24 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         }
       }
 
-      SetReal(new[] { valueRef }, new[] { value });
+      SetReal(new[] { mdVar.ValueReference }, new[] { value });
     }
     else if (type == typeof(int))
     {
       var value = BitConverter.ToInt32(data);
-      SetInteger(new[] { valueRef }, new[] { value });
+      SetInteger(new[] { mdVar.ValueReference }, new[] { value });
     }
     else if (type == typeof(bool))
     {
       var value = BitConverter.ToBoolean(data);
-      SetBoolean(new[] { valueRef }, new[] { value });
+      SetBoolean(new[] { mdVar.ValueReference }, new[] { value });
     }
     else if (type == typeof(string))
     {
-      var value = BitConverter.ToString(data);
-      SetString(new[] { valueRef }, new[] { value });
+      var byteLength = BitConverter.ToInt32(data, 0);
+      // offset = 4 byte -> 32 bit
+      var value = Encoding.UTF8.GetString(data, 4, byteLength);
+      SetString(new[] { mdVar.ValueReference }, new[] { value });
     }
   }
 
@@ -661,11 +669,22 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new string[valueReferences.Length];
+    var resultRaw = new IntPtr[valueReferences.Length];
 
     Helpers.ProcessReturnCode(
-      (Fmi2Statuses)fmi2GetString(component, valueReferences, (IntPtr)valueReferences.Length, result),
+      (Fmi2Statuses)fmi2GetString(component, valueReferences, (IntPtr)valueReferences.Length, resultRaw),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    var result = new string[resultRaw.Length];
+    for (int i = 0; i < result.Length; i++)
+    {
+      var str = Marshal.PtrToStringUTF8(resultRaw[i]);
+      if (str == null)
+      {
+        throw new BadImageFormatException("TODO");
+      }
+      result[i] = str;
+    }
 
     return result;
   }
@@ -682,7 +701,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     uint[] /*fmi2ValueReference[]*/ vr,
     IntPtr nvr,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-    string[] value);
+    IntPtr[] value);
 
   /////////////
   // Setters //
@@ -777,8 +796,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
+    IntPtr[] valuePtrs = new IntPtr[values.Length];
+    for (int i = 0; i < values.Length; i++)
+    {
+      valuePtrs[i] = Marshal.StringToHGlobalAnsi(values[i]);
+    }
+
     Helpers.ProcessReturnCode(
-      (Fmi2Statuses)fmi2SetString(component, valueReferences, (IntPtr)valueReferences.Length, values),
+      (Fmi2Statuses)fmi2SetString(component, valueReferences, (IntPtr)valueReferences.Length, valuePtrs),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -794,7 +819,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     uint[] /*fmi2ValueReference[]*/ vr,
     IntPtr nvr,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-    string[] value);
+    IntPtr[] valuePtrs);
 
   #endregion Variable Getters & Setters
 

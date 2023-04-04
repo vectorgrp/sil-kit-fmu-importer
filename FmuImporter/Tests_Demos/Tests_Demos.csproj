@@ -8,10 +8,18 @@
 
   <ItemGroup>
     <None Remove="Config.silkit.yaml" />
+    <None Remove="FmuImporterConfig.yaml" />
+    <None Remove="FmuImporterIncludeConfig.yaml" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Config.silkit.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="FmuImporterConfig.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="FmuImporterIncludeConfig.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

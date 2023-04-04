@@ -5,7 +5,7 @@ namespace Fmi.FmiModel.Internal;
 
 public class ModelDescription
 {
-  private Dictionary<uint, Variable> variables = null!;
+  private Dictionary<uint, Variable> variables;
 
   // Former attributes
   public string ModelName { get; set; }
@@ -25,6 +25,8 @@ public class ModelDescription
     set { variables = value; }
   }
 
+  public Dictionary<string, uint> NameToValueReference { get; set; }
+
   public Dictionary<string /*unitName*/, UnitDefinition> UnitDefinitions;
 
   public Dictionary<string /*typeName*/, TypeDefinition> TypeDefinitions;
@@ -34,7 +36,8 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    Variables = new Dictionary<uint, Variable>();
+    variables = new Dictionary<uint, Variable>();
+    NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
     ModelName = input.modelName;
@@ -67,7 +70,8 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    Variables = new Dictionary<uint, Variable>();
+    variables = new Dictionary<uint, Variable>();
+    NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
     ModelName = input.modelName;
@@ -167,10 +171,6 @@ public class ModelDescription
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
-      else
-      {
-        continue;
-      }
     }
   }
 
@@ -233,7 +233,14 @@ public class ModelDescription
       if (!result)
       {
         throw new ArgumentException(
-          "Failed to parse model description: multiple variables have the same valueReference.");
+          "Failed to parse model description: multiple variables have the same value reference.");
+      }
+
+      result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
+      if (!result)
+      {
+        throw new ArgumentException(
+          "Failed to parse model description: multiple variables have the same name.");
       }
     }
 

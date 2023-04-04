@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
@@ -378,8 +379,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   public override void SetValue(uint valueRef, byte[] data)
   {
     var mdVar = ModelDescription.Variables[valueRef];
-    var type = mdVar.VariableType;
+    SetValue(mdVar, data);
+  }
 
+  internal override void SetValue(Variable mdVar, byte[] data)
+  {
+    var type = mdVar.VariableType;
     var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
 
     int arraySize = 1;
@@ -428,7 +433,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
       }
 
-      SetFloat32(new[] { valueRef }, values);
+      SetFloat32(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(double))
     {
@@ -467,7 +472,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
       }
 
-      SetFloat64(new[] { valueRef }, values);
+      SetFloat64(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(sbyte))
     {
@@ -482,7 +487,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       var values = new sbyte[arraySize];
       Buffer.BlockCopy(data, 0, values, 0, data.Length);
 
-      SetInt8(new[] { valueRef }, new[] { (sbyte)data[0] });
+      SetInt8(new[] { mdVar.ValueReference }, new[] { (sbyte)data[0] });
     }
     else if (type == typeof(byte))
     {
@@ -494,9 +499,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
       }
 
-      var values = new sbyte[arraySize];
-
-      SetUInt8(new[] { valueRef }, data);
+      SetUInt8(new[] { mdVar.ValueReference }, data);
     }
     else if (type == typeof(short))
     {
@@ -512,7 +515,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetInt16(new[] { valueRef }, values);
+      SetInt16(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(ushort))
     {
@@ -528,7 +531,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetUInt16(new[] { valueRef }, values);
+      SetUInt16(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(int))
     {
@@ -544,7 +547,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetInt32(new[] { valueRef }, values);
+      SetInt32(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(uint))
     {
@@ -560,7 +563,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetUInt32(new[] { valueRef }, values);
+      SetUInt32(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(long))
     {
@@ -576,7 +579,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetInt64(new[] { valueRef }, values);
+      SetInt64(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(ulong))
     {
@@ -592,7 +595,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetUInt64(new[] { valueRef }, values);
+      SetUInt64(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(bool))
     {
@@ -608,23 +611,25 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
       }
 
-      SetBoolean(new[] { valueRef }, values);
+      SetBoolean(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(string))
     {
       var values = new string[arraySize];
 
-      if (isScalar)
+      // arrays are encoded as arrays of characters and thus always have a leading length indicator of 32 bit
+      int dataOffset = 0;
+
+      for (int i = 0; i < arraySize; i++)
       {
-        var value = BitConverter.ToString(data);
-        values = new[] { value };
-      }
-      else
-      {
-        Buffer.BlockCopy(data, 0, values, 0, data.Length);
+        var byteLength = BitConverter.ToInt32(data, dataOffset);
+        dataOffset += 4; // 4 byte -> 32 bit
+        var value = Encoding.UTF8.GetString(data, dataOffset, byteLength);
+        dataOffset += byteLength;
+        values[i] = value;
       }
 
-      SetString(new[] { valueRef }, values);
+      SetString(new[] { mdVar.ValueReference }, values);
     }
     else if (type == typeof(IntPtr))
     {
@@ -654,38 +659,31 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       }
     }
 
-    if (type == typeof(IntPtr))
+    if (type != typeof(IntPtr))
     {
-      var values = new IntPtr[arraySize];
-      var handlers = new GCHandle[arraySize];
+      throw new InvalidDataException("SetValue with binSizes must target a variable of type 'Binary'.");
+    }
 
-      if (isScalar)
-      {
-        var handler = GCHandle.Alloc(data, GCHandleType.Pinned);
-        handlers[0] = handler;
-        values = new[] { handler.AddrOfPinnedObject() };
-      }
-      else
-      {
-        int offset = 0;
-        for (int i = 0; i < arraySize; i++)
-        {
-          var currentBinary = new byte[binSizes[i]];
-          Buffer.BlockCopy(data, offset, currentBinary, 0, binSizes[i]);
-          offset += binSizes[i];
+    var values = new IntPtr[arraySize];
+    var handlers = new GCHandle[arraySize];
 
-          var handler = GCHandle.Alloc(currentBinary, GCHandleType.Pinned);
-          handlers[i] = handler;
-          values[i] = handler.AddrOfPinnedObject();
-        }
-      }
+    int dataOffset = 0;
+    for (int i = 0; i < arraySize; i++)
+    {
+      var currentBinary = new byte[binSizes[i]];
+      Buffer.BlockCopy(data, dataOffset, currentBinary, 0, binSizes[i]);
+      dataOffset += binSizes[i];
 
-      SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
+      var handler = GCHandle.Alloc(currentBinary, GCHandleType.Pinned);
+      handlers[i] = handler;
+      values[i] = handler.AddrOfPinnedObject();
+    }
 
-      foreach (var gcHandle in handlers)
-      {
-        gcHandle.Free();
-      }
+    SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
+
+    foreach (var gcHandle in handlers)
+    {
+      gcHandle.Free();
     }
   }
 
@@ -1230,16 +1228,27 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
 
     size_t nValues = CalculateValueLength(ref valueReferences);
-    var result = new string[(int)nValues];
+    var resultRaw = new IntPtr[(int)nValues];
 
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3GetString(
         component,
         valueReferences,
         (size_t)valueReferences.Length,
-        result,
+        resultRaw,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    var result = new string[resultRaw.Length];
+    for (int i = 0; i < result.Length; i++)
+    {
+      var str = Marshal.PtrToStringUTF8(resultRaw[i]);
+      if (str == null)
+      {
+        throw new BadImageFormatException("TODO");
+      }
+      result[i] = str;
+    }
 
     return ReturnVariable<string>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
@@ -1261,7 +1270,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     fmi3ValueReference[] valueReferences,
     size_t nValueReferences,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
-    string[] values,
+    IntPtr[] values,
     size_t nValues);
 
   public ReturnVariable<fmi3Binary> GetBinary(fmi3ValueReference[] valueReferences)
@@ -1733,12 +1742,18 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
+    IntPtr[] valuePtrs = new IntPtr[values.Length];
+    for (int i = 0; i < values.Length; i++)
+    {
+      valuePtrs[i] = Marshal.StringToHGlobalAnsi(values[i]);
+    }
+
     Helpers.ProcessReturnCode(
       (Fmi3Statuses)fmi3SetString(
         component,
         valueReferences,
         (size_t)valueReferences.Length,
-        values,
+        valuePtrs,
         (size_t)values.Length),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
@@ -1760,7 +1775,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     fmi3ValueReference[] valueReferences,
     size_t nValueReferences,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
-    string[] values,
+    IntPtr[] values,
     size_t nValues);
 
   public void SetBinary(fmi3ValueReference[] valueReferences, IntPtr[] valueSizes, IntPtr[] values)
