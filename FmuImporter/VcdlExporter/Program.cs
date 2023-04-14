@@ -7,6 +7,17 @@ namespace VcdlExporter;
 
 internal class Program
 {
+  private enum Causality
+  {
+    Provider,
+    Consumer
+  }
+  private class FmiVariable
+  {
+    public string? Name { get; set; }
+    public string? Type { get; set; }
+  }
+
   static void Main(string[] args)
   {
     string outputFile = args[0];
@@ -15,14 +26,12 @@ internal class Program
     var interfaceSb = new StringBuilder();
     var objectsSb = new StringBuilder();
 
-    commonTextSb.AppendLine("version 2.0;\nimport module \"SilKit\";\n\n");
+    commonTextSb.AppendLine("version 2.0;\nimport module \"SilKit\";\n");
     commonTextSb.AppendLine($"namespace {typeof(Program).Namespace}\n{{");
 
     for (int i = 1; i < args.Length; i++)
     {
       string inputFile = args[i];
-
-      interfaceSb.AppendLine("  [Binding=\"SilKit\"]");
 
       switch (ModelLoader.FindFmiVersion(inputFile))
       {
@@ -39,7 +48,7 @@ internal class Program
     }
 
     commonTextSb.Append(interfaceSb.ToString());
-    commonTextSb.Append(objectsSb.ToString());
+    commonTextSb.AppendLine(objectsSb.ToString());
     commonTextSb.AppendLine("}");
 
     Console.WriteLine("Writing vCDL to " + outputFile);
@@ -50,7 +59,8 @@ internal class Program
   {
     var modelDescription = binding.GetModelDescription();
 
-    interfaceSb.AppendLine($"  interface I{modelDescription.CoSimulation.ModelIdentifier}\n  {{");
+    HashSet<FmiVariable> vcdlProviderVariables = new HashSet<FmiVariable>();
+    HashSet<FmiVariable> vcdlConsumerVariables = new HashSet<FmiVariable>();
 
     foreach (var variable in modelDescription.Variables)
     {
@@ -58,17 +68,38 @@ internal class Program
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
+      string typeString;
+      if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
+      {
+        // assume scalar
+        typeString = GetVarTypeString(vValue.VariableType) + " ";
+      }
+      else
+      {
+        // assume array of scalar
+        typeString = $"list<{GetVarTypeString(vValue.VariableType)}> ";
+      }
+
+      var v = new FmiVariable()
+      {
+        Name = vValue.Name,
+        Type = typeString
+      };
+
       switch (vValue.Causality)
       {
         case Variable.Causalities.Input:
-          interfaceSb.Append("    provided data ");
+          vcdlProviderVariables.Add(v);
           break;
         case Variable.Causalities.Output:
-          interfaceSb.Append("    consumed data ");
+          vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.Independent:
+          vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.Parameter:
+          vcdlConsumerVariables.Add(v);
+          break;
         case Variable.Causalities.CalculatedParameter:
         case Variable.Causalities.Local:
         case Variable.Causalities.StructuralParameter:
@@ -77,40 +108,47 @@ internal class Program
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
-
-      if (vValue.Dimensions?.Length == 0)
-      {
-        // assume scalar
-        interfaceSb.Append(GetVarTypeString(vValue.VariableType) + " ");
-      }
-      else
-      {
-        // assume array of scalar
-        interfaceSb.Append($"list<{GetVarTypeString(vValue.VariableType)}> ");
-      }
-
-      // special handling for keywords
-      if (vValue.Name.ToLowerInvariant().Trim() == "time")
-      {
-        interfaceSb.AppendLine($"t;");
-        Console.WriteLine("Replaced variable name 'time' with 't'.");
-      }
-      else
-      {
-        interfaceSb.AppendLine($"{vValue.Name};");
-      }
     }
 
-    interfaceSb.AppendLine($"  }}\n");
+    objectsSb.AppendLine();
+
+    // Remove all variables that are already part of the provider list (feedback loops can only be observed)
+    vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
+
+    var headerSb = GenerateInterfaceHeader($"I{modelDescription.CoSimulation.ModelIdentifier}");
+
+    var bodySb = new StringBuilder();
+    var providerSbRaw = GenerateInterfaceBody(vcdlProviderVariables, Causality.Provider);
+    if (providerSbRaw != null)
+    {
+      bodySb.Append(providerSbRaw.ToString());
+    }
+    var consumerSbRaw = GenerateInterfaceBody(vcdlConsumerVariables, Causality.Consumer);
+    if (consumerSbRaw != null)
+    {
+      if (providerSbRaw != null)
+      {
+        bodySb.AppendLine();
+      }
+      bodySb.Append(consumerSbRaw.ToString());
+    }
+
+    var footerSb = GenerateInterfaceFooter();
+
+    interfaceSb.Append(headerSb.ToString());
+    interfaceSb.Append(bodySb.ToString());
+    interfaceSb.AppendLine(footerSb.ToString());
+
     objectsSb.AppendLine(
-      $"  object {modelDescription.CoSimulation.ModelIdentifier}: I{modelDescription.CoSimulation.ModelIdentifier}");
+      $"  I{modelDescription.CoSimulation.ModelIdentifier} {modelDescription.CoSimulation.ModelIdentifier};");
   }
 
   private static void ParseFmi3(IFmi3Binding binding, StringBuilder interfaceSb, StringBuilder objectsSb)
   {
     var modelDescription = binding.GetModelDescription();
 
-    interfaceSb.AppendLine($"  interface I{modelDescription.CoSimulation.ModelIdentifier}\n  {{");
+    HashSet<FmiVariable> vcdlProviderVariables = new HashSet<FmiVariable>();
+    HashSet<FmiVariable> vcdlConsumerVariables = new HashSet<FmiVariable>();
 
     foreach (var variable in modelDescription.Variables)
     {
@@ -118,18 +156,37 @@ internal class Program
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
+      string typeString;
+      if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
+      {
+        // assume scalar
+        typeString = GetVarTypeString(vValue.VariableType) + " ";
+      }
+      else
+      {
+        // assume array of scalar
+        typeString = $"list<{GetVarTypeString(vValue.VariableType)}> ";
+      }
+
+      var v = new FmiVariable()
+      {
+        Name = vValue.Name,
+        Type = typeString
+      };
       switch (vValue.Causality)
       {
         case Variable.Causalities.Input:
-          interfaceSb.Append("    provided data ");
+          vcdlProviderVariables.Add(v);
           break;
         case Variable.Causalities.Output:
-          interfaceSb.Append("    consumed data ");
+          vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.Independent:
-          interfaceSb.Append("    consumed data ");
+          vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.Parameter:
+          vcdlConsumerVariables.Add(v);
+          break;
         case Variable.Causalities.CalculatedParameter:
         case Variable.Causalities.Local:
         case Variable.Causalities.StructuralParameter:
@@ -138,24 +195,89 @@ internal class Program
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
-
-      if (vValue.Dimensions?.Length > 0)
-      {
-        // assume array of scalar
-        interfaceSb.Append($"list<{GetVarTypeString(vValue.VariableType)}> ");
-      }
-      else
-      {
-        // assume scalar
-        interfaceSb.Append(GetVarTypeString(vValue.VariableType) + " ");
-      }
-
-      interfaceSb.AppendLine($"{vValue.Name};");
     }
 
-    interfaceSb.AppendLine($"  }}\n");
-    objectsSb.AppendLine(
+    objectsSb.AppendLine();
+
+    // Remove all variables that are already part of the provider list (feedback loops can only be observed)
+    vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
+
+    var headerSb = GenerateInterfaceHeader($"I{modelDescription.CoSimulation.ModelIdentifier}");
+
+    var bodySb = new StringBuilder();
+    var providerSbRaw = GenerateInterfaceBody(vcdlProviderVariables, Causality.Provider);
+    if (providerSbRaw != null)
+    {
+      bodySb.Append(providerSbRaw.ToString());
+    }
+    var consumerSbRaw = GenerateInterfaceBody(vcdlConsumerVariables, Causality.Consumer);
+    if (consumerSbRaw != null)
+    {
+      if (providerSbRaw != null)
+      {
+        bodySb.AppendLine();
+      }
+      bodySb.Append(consumerSbRaw.ToString());
+    }
+
+    var footerSb = GenerateInterfaceFooter();
+
+    interfaceSb.Append(headerSb.ToString());
+    interfaceSb.Append(bodySb.ToString());
+    interfaceSb.AppendLine(footerSb.ToString());
+
+    objectsSb.Append(
       $"  I{modelDescription.CoSimulation.ModelIdentifier} {modelDescription.CoSimulation.ModelIdentifier};");
+  }
+
+  private static StringBuilder GenerateInterfaceHeader(string interfaceName)
+  {
+    StringBuilder interfaceSb = new StringBuilder();
+
+    interfaceSb.AppendLine("  [Binding=\"SilKit\"]");
+    interfaceSb.AppendLine($"  interface {interfaceName}\n  {{");
+    return interfaceSb;
+  }
+
+  private static StringBuilder? GenerateInterfaceBody(HashSet<FmiVariable> variables, Causality causality)
+  {
+    if (variables.Count == 0)
+    {
+      return null;
+    }
+
+    StringBuilder interfaceSb = new StringBuilder();
+
+    foreach (var variable in variables)
+    {
+      // Note that the direction is reversed compared to the model description
+      // input  -> provided // CANoe _provides_ the _input_ value for an FMU
+      // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
+      switch (causality)
+      {
+        case Causality.Provider:
+          interfaceSb.Append("    provided data ");
+          break;
+        case Causality.Consumer:
+          interfaceSb.Append("    consumed data ");
+          break;
+        default:
+          throw new ArgumentOutOfRangeException(nameof(causality), causality, null);
+      }
+
+      interfaceSb.Append(variable.Type);
+      interfaceSb.AppendLine($"{variable.Name};");
+    }
+
+    return interfaceSb;
+  }
+
+  private static StringBuilder GenerateInterfaceFooter()
+  {
+    StringBuilder interfaceSb = new StringBuilder();
+    interfaceSb.AppendLine($"  }}");
+
+    return interfaceSb;
   }
 
   private static string GetVarTypeString(Type variableType)
