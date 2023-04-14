@@ -705,10 +705,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         out _,
         out lastSuccessfulTime),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
-    
+
     if (terminateRequested)
     {
-      Console.WriteLine("FMU requested simulation termination. Calling fmi3Terminate.");
+      Fmi.Helpers.Log(Fmi.Helpers.LogSeverity.Information, "FMU requested simulation termination.");
       fmi3Terminate(component);
     }
   }

@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using SilKit.Config;
+using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
 
@@ -7,7 +8,17 @@ namespace SilKit;
 
 public class Participant : IDisposable
 {
-  private IntPtr participantPtr;
+  private static readonly object lockObject = new object();
+  private static ILogger? _logger = null;
+  internal static ILogger? Logger
+  {
+    get
+    {
+      return _logger;
+    }
+  }
+
+  private IntPtr participantPtr = IntPtr.Zero;
   internal IntPtr ParticipantPtr
   {
     get { return participantPtr; }
@@ -25,6 +36,7 @@ public class Participant : IDisposable
         participantName,
         registryUri),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    _logger = new Logger(ParticipantPtr);
   }
 
   /*
@@ -100,5 +112,14 @@ public class Participant : IDisposable
     DataMessageHandler dataMessageHandler)
   {
     return new DataSubscriber(this, controllerName, dataSpec, context, dataMessageHandler);
+  }
+
+  public ILogger GetLogger()
+  {
+    if (Logger == null)
+    {
+      throw new NullReferenceException("GetLogger failed to retrieve a logger object");
+    }
+    return Logger;
   }
 }

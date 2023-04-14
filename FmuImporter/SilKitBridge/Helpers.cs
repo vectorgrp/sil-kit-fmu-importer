@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using SilKit.Services.Logger;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SilKit;
@@ -36,7 +37,14 @@ internal static class Helpers
       }
       catch (Exception e)
       {
-        Console.WriteLine(e);
+        if (Participant.Logger != null)
+        {
+          Participant.Logger.Log(LogLevel.Error, e.ToString());
+        }
+        else
+        {
+          Console.WriteLine(e);
+        }
         throw;
       }
     }

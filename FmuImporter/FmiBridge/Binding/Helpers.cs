@@ -22,7 +22,7 @@ internal static class Helpers
     }
     catch (Exception e)
     {
-      Console.WriteLine(e);
+      Fmi.Helpers.Log(Fmi.Helpers.LogSeverity.Error, e.Message);
       throw;
     }
   }

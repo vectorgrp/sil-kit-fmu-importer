@@ -23,7 +23,7 @@ internal class Program
     var silKitConfigFileOption = new Option<string>(
       name: "--sil-kit-config-file",
       description: "Set the path to the SIL Kit configuration file. Defaults to an empty configuration.");
-    silKitConfigFileOption.AddAlias("-c");
+    silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
     var participantNameOption = new Option<string>(

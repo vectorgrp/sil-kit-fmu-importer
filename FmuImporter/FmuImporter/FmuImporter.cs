@@ -1,10 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 using SilKit;
 using SilKit.Config;
+using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
 using SilKit.Supplements.VendorData;
@@ -13,13 +15,16 @@ namespace FmuImporter;
 
 public class FmuImporter
 {
-  private struct SilKitInstance
+  internal class SilKitServices
   {
-    public SilKitInstance()
+    public SilKitServices(
+      Participant participant,
+      ILifecycleService lifecycleService,
+      LifecycleService.ITimeSyncService timeSyncService)
     {
-      Participant = null!;
-      LifecycleService = null!;
-      TimeSyncService = null!;
+      Participant = participant;
+      LifecycleService = lifecycleService;
+      TimeSyncService = timeSyncService;
       ValueRefToDataPublisher = new Dictionary<uint, IDataPublisher>();
       ValueRefToDataSubscriber = new Dictionary<uint, IDataSubscriber>();
     }
@@ -27,7 +32,7 @@ public class FmuImporter
     public Participant Participant { get; set; }
     public ILifecycleService LifecycleService { get; set; }
     public LifecycleService.ITimeSyncService TimeSyncService { get; set; }
-
+    public static ILogger? SilKitLogger { get; set; }
 
     public Dictionary<uint /* ref */, IDataPublisher> ValueRefToDataPublisher { get; set; }
     public Dictionary<uint /* ref */, IDataSubscriber> ValueRefToDataSubscriber { get; set; }
@@ -37,16 +42,40 @@ public class FmuImporter
   private ModelDescription ModelDescription { get; set; } = null!;
   private IFmiBindingCommon Binding { get; set; } = null!;
 
-  private SilKitInstance silKitInstance;
+  private SilKitServices? silKitInstance;
+  internal SilKitServices SilKitInstance {
+    get {
+      if ( silKitInstance == null )
+      {
+        throw new NullReferenceException("SilKit was not initialized properly.");
+      }
+      return silKitInstance;
+    }
+  }
   private readonly Dictionary<Type, List<uint>> outputValueReferencesByType;
 
-  private Dictionary<uint, byte[]> DataBuffer { get; set; }
-  private Dictionary<uint, byte[]> FutureDataBuffer { get; set; }
+  private Dictionary<uint, byte[]> DataBuffer { get; }
+  private Dictionary<uint, byte[]> FutureDataBuffer { get; }
 
   private readonly bool ignoreStopTime;
 
+  private static void LogCallback(LogLevel logLevel, string message)
+  {
+    if (SilKitServices.SilKitLogger == null)
+    {
+      Debug.WriteLine($"Dropped log message due to unavailable SIL Kit logger. Original message: '{message}'");
+    }
+    else
+    {
+      SilKitServices.SilKitLogger.Log(logLevel, message);
+    }
+  }
+
   public FmuImporter(string fmuPath, string silKitConfigurationPath, string participantName, bool ignoreStopTime)
   {
+    // Initialize SIL Kit first to allow logging
+    InitializeSilKit(silKitConfigurationPath, participantName);
+
     this.ignoreStopTime = ignoreStopTime;
 
     outputValueReferencesByType = new Dictionary<Type, List<uint>>()
@@ -70,8 +99,9 @@ public class FmuImporter
     FutureDataBuffer = new Dictionary<uint, byte[]>();
 
     InitializeFMU(fmuPath);
-    InitializeSilKit(silKitConfigurationPath, participantName);
     PrepareVariableDistribution();
+
+    ConfigureSilKitServices();
   }
 
   #region IDisposable
@@ -96,7 +126,7 @@ public class FmuImporter
         // dispose managed objects
 
         // cleanup SIL Kit
-        silKitInstance.Participant.Dispose();
+        SilKitInstance.Participant.Dispose();
 
         // cleanup FMU
         Binding.Dispose();
@@ -122,20 +152,20 @@ public class FmuImporter
       if (modelDescriptionVariable.Causality == Variable.Causalities.Input)
       {
         var dataSpec = new PubSubSpec(modelDescriptionVariable.Name, Vector.MediaTypeData);
-        var sub = silKitInstance.Participant.CreateDataSubscriber(
+        var sub = SilKitInstance.Participant.CreateDataSubscriber(
           modelDescriptionVariable.Name,
           dataSpec,
           new IntPtr(modelDescriptionVariable.ValueReference),
           DataMessageHandler);
-        silKitInstance.ValueRefToDataSubscriber.Add(modelDescriptionVariable.ValueReference, sub);
+        SilKitInstance.ValueRefToDataSubscriber.Add(modelDescriptionVariable.ValueReference, sub);
       }
       else if (modelDescriptionVariable.Causality == Variable.Causalities.Output)
       {
         var dataSpec = new PubSubSpec(modelDescriptionVariable.Name, Vector.MediaTypeData);
-        var pub = silKitInstance.Participant.CreateDataPublisher(
+        var pub = SilKitInstance.Participant.CreateDataPublisher(
           modelDescriptionVariable.Name,
           dataSpec, 0);
-        silKitInstance.ValueRefToDataPublisher.Add(modelDescriptionVariable.ValueReference, pub);
+        SilKitInstance.ValueRefToDataPublisher.Add(modelDescriptionVariable.ValueReference, pub);
 
         if (!outputValueReferencesByType.TryGetValue(modelDescriptionVariable.VariableType, out var list))
         {
@@ -220,7 +250,27 @@ public class FmuImporter
     var functions = new Fmi2BindingCallbackFunctions(
       loggerDelegate: (name, status, category, message) =>
       {
-        Console.WriteLine($"Logger: Name={name}; status={status}; category={category};\n  message={message}");
+        string msg = $"Logger: Name={name}; status={status}; category={category};\n  message={message}";
+        switch (status)
+        {
+          case Fmi2Statuses.OK:
+          case Fmi2Statuses.Pending:
+            LogCallback(LogLevel.Info, msg);
+            break;
+          case Fmi2Statuses.Discard:
+          case Fmi2Statuses.Warning:
+            LogCallback(LogLevel.Warn, msg);
+            break;
+          case Fmi2Statuses.Error:
+            LogCallback(LogLevel.Error, msg);
+            break;
+          case Fmi2Statuses.Fatal:
+            LogCallback(LogLevel.Critical, msg);
+            break;
+          default:
+            throw new ArgumentOutOfRangeException(nameof(status), status, null);
+        }
+
       },
       stepFinishedDelegate: status =>
       {
@@ -273,9 +323,27 @@ public class FmuImporter
 
   private void Logger(IntPtr instanceEnvironment, Fmi3Statuses status, string category, string message)
   {
-    Console.WriteLine(
-      $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};\n" +
-      $"  message={message}");
+    string msg = $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};" +
+                 $"\n  message={message}";
+
+    switch (status)
+    {
+      case Fmi3Statuses.OK:
+        LogCallback(LogLevel.Info, msg);
+        break;
+      case Fmi3Statuses.Warning:
+      case Fmi3Statuses.Discard:
+        LogCallback(LogLevel.Warn, msg);
+        break;
+      case Fmi3Statuses.Error:
+        LogCallback(LogLevel.Error, msg);
+        break;
+      case Fmi3Statuses.Fatal:
+        LogCallback(LogLevel.Critical, msg);
+        break;
+      default:
+        throw new ArgumentOutOfRangeException(nameof(status), status, null);
+    }
   }
 
   private void InitializeSilKit(string silKitConfigurationPath, string participantName)
@@ -285,14 +353,9 @@ public class FmuImporter
       participantName = ModelDescription.ModelName;
     }
 
-    Console.WriteLine($"-----------------------\n" +
-                      $"Join SIL Kit simulation\n" +
-                      $"Name: {participantName}\n" +
-                      $"-----------------------\n");
-
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
-    if (String.IsNullOrEmpty(silKitConfigurationPath))
+    if (string.IsNullOrEmpty(silKitConfigurationPath))
     {
       config = wrapper.GetConfigurationFromString("");
     }
@@ -301,14 +364,20 @@ public class FmuImporter
       config = wrapper.GetConfigurationFromFile(silKitConfigurationPath);
     }
 
-    silKitInstance = new SilKitInstance();
-
     var lc = new LifecycleService.LifecycleConfiguration(LifecycleService.LifecycleConfiguration.Modes.Coordinated);
-    silKitInstance.Participant = wrapper.CreateParticipant(config, participantName);
-    config.Dispose();
-    silKitInstance.LifecycleService = silKitInstance.Participant.CreateLifecycleService(lc);
-    silKitInstance.TimeSyncService = silKitInstance.LifecycleService.CreateTimeSyncService();
 
+    var participant = wrapper.CreateParticipant(config, participantName);
+    var lcs = participant.CreateLifecycleService(lc);
+    var tss = lcs.CreateTimeSyncService();
+
+    silKitInstance = new SilKitServices(participant, lcs, tss);
+    // get logger
+    SilKitServices.SilKitLogger = SilKitInstance.Participant.GetLogger();
+    config.Dispose();
+  }
+
+  private void ConfigureSilKitServices()
+  {
     ulong stepDuration;
     if (ModelDescription.DefaultExperiment.StepSize.HasValue)
     {
@@ -323,7 +392,7 @@ public class FmuImporter
       stepDuration = Helpers.DefaultSimStepDuration;
     }
 
-    silKitInstance.TimeSyncService.SetSimulationStepHandler(SimulationStepReached, stepDuration);
+    SilKitInstance.TimeSyncService.SetSimulationStepHandler(SimulationStepReached, stepDuration);
   }
 
   private ulong? lastSimStep = null;
@@ -363,7 +432,7 @@ public class FmuImporter
       if (fmiNow >= ModelDescription.DefaultExperiment.StopTime)
       {
         // stop the SIL Kit simulation
-        silKitInstance.LifecycleService.Stop("FMU stopTime reached.");
+        SilKitInstance.LifecycleService.Stop("FMU stopTime reached.");
         Binding.Terminate();
         return;
       }
@@ -526,7 +595,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -543,7 +612,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -559,7 +628,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -575,7 +644,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -591,7 +660,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -614,7 +683,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -637,7 +706,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -660,7 +729,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -683,7 +752,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -706,7 +775,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -729,7 +798,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -752,7 +821,7 @@ public class FmuImporter
         byteList.AddRange(byteArr);
       }
 
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(byteList.ToArray());
     }
   }
 
@@ -774,7 +843,7 @@ public class FmuImporter
       }
 
       // publish byte array
-      silKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(publishableBytes.ToArray());
+      SilKitInstance.ValueRefToDataPublisher[variable.ValueReference].Publish(publishableBytes.ToArray());
     }
   }
 
@@ -801,7 +870,7 @@ public class FmuImporter
 
   public void RunSimulation()
   {
-    silKitInstance.LifecycleService.StartLifecycle();
-    silKitInstance.LifecycleService.WaitForLifecycleToComplete();
+    SilKitInstance.LifecycleService.StartLifecycle();
+    SilKitInstance.LifecycleService.WaitForLifecycleToComplete();
   }
 }

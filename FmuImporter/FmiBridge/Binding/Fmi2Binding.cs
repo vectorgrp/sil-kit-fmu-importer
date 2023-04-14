@@ -22,7 +22,7 @@ public struct Fmi2BindingCallbackFunctions
       freeMemory = Marshal.FreeHGlobal,
       stepFinished = (environment, status) =>
       {
-        Console.WriteLine("Step finished with status = " + status);
+        Fmi.Helpers.Log(Fmi.Helpers.LogSeverity.Debug, "Step finished with status = " + status);
         stepFinishedDelegate((Fmi2Statuses)status);
       },
       componentEnvironment = IntPtr.Zero,
