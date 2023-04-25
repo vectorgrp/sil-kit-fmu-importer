@@ -1,10 +1,9 @@
-﻿ParameterSets:
-  - Name: IncludeParamSet
-    Description: Externally included ParamSet
-    Parameters:
-      - VarName: Float64_fixed_parameter
-        Description: 
-        Value: -1
-      - VarName: Float64_tunable_parameter
-        Description: 
-        Value: -1
+﻿ParameterSet:
+  Description: Externally included ParamSet
+  Parameters:
+    - VarName: Float64_fixed_parameter
+      Description: 
+      Value: 42
+    - VarName: Float64_tunable_parameter
+      Description: 
+      Value: 42

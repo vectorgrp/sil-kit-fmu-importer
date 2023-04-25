@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using System.Globalization;
-using FmuImporter.Config;
 
 namespace FmuImporter;
 
@@ -42,12 +41,6 @@ internal class Program
     participantNameOption.AddAlias("-p");
     rootCommand.AddOption(participantNameOption);
 
-    var parameterSetNameOption = new Option<string?>(
-      name: "--parameter-set-name",
-      description: "Set the name of the parameter set to be used. No set will be used by default.",
-      getDefaultValue: () => null);
-    rootCommand.AddOption(parameterSetNameOption);
-
     var useStopTimeOption = new Option<bool>(
       name: "--use-stop-time",
       description: "Use the FMUs stop time (if it is provided). Stop time is ignored by default.",
@@ -55,7 +48,7 @@ internal class Program
     useStopTimeOption.AddAlias("-t");
     rootCommand.AddOption(useStopTimeOption);
 
-    rootCommand.SetHandler((fmuPath, silKitConfigFile, fmuImporterConfigFile, participantName, parameterSetName, useStopTime) =>
+    rootCommand.SetHandler((fmuPath, silKitConfigFile, fmuImporterConfigFile, participantName, useStopTime) =>
       {
         if (!File.Exists(fmuPath))
         {
@@ -77,7 +70,6 @@ internal class Program
           silKitConfigFile,
           fmuImporterConfigFile,
           participantName,
-          parameterSetName,
           useStopTime);
 
         instance.RunSimulation();
@@ -87,7 +79,6 @@ internal class Program
       silKitConfigFileOption,
       fmuImporterConfigFileOption,
       participantNameOption,
-      parameterSetNameOption,
       useStopTimeOption);
 
     await rootCommand.InvokeAsync(args);

@@ -29,6 +29,8 @@ public interface IFmiBindingCommon : IDisposable
     out double lastSuccessfulTime);
 
   public void Terminate();
+
+  public FmiVersions GetFmiVersion();
 }
 
 internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
@@ -175,4 +177,6 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     out double lastSuccessfulTime);
 
   public abstract void Terminate();
+
+  public abstract FmiVersions GetFmiVersion();
 }

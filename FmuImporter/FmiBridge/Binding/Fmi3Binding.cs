@@ -1831,4 +1831,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     return (size_t)valueSize;
   }
+
+  public override FmiVersions GetFmiVersion()
+  {
+    return FmiVersions.Fmi3;
+  }
 }

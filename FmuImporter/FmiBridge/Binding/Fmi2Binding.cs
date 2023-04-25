@@ -832,4 +832,10 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   internal delegate int fmi2GetFMUstateTYPE(
     IntPtr c,
     IntPtr fmuState);
+
+
+  public override FmiVersions GetFmiVersion()
+  {
+    return FmiVersions.Fmi2;
+  }
 }

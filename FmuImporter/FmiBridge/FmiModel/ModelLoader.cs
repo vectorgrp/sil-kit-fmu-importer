@@ -7,13 +7,6 @@ namespace Fmi.FmiModel;
 
 public class ModelLoader
 {
-  public enum FmiVersions
-  {
-    Invalid,
-    Fmi2,
-    Fmi3
-  }
-
   internal static string ExtractFmu(string fmuPath)
   {
     // check if the directory exists

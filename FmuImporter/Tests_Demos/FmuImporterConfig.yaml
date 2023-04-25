@@ -1,22 +1,21 @@
-ParameterSets:
-  - Name: IncludeParamSet
-    Description: Locally included parameter set
-    Parameters:
-      - VarName: Float64_fixed_parameter
-        Description: Overrides external include parameter
-        Value: 7.0
-      - VarName: String_parameter
-        Value: "Local include data"
-  - Name: DefaultParamSet
-    IncludeParameterSets:
-      - RefName: IncludeParamSet
-        FilePath: ./FmuImporterIncludeConfig.yaml
-      - RefName: IncludeParamSet
-    Parameters:
-      - VarName: UInt16_input
-        Description: Feedthrough UInt16
-        Value: 42
-      - VarName: String_parameter
-        Value: "LocalData"
-      - VarName: Binary_input
-        Value: "626172"
+ParameterSet:
+  IncludeParameterSets:
+    - ./FmuImporterIncludeConfig.yaml
+  Parameters:
+    - VarName: Float64_fixed_parameter
+      Description: Overrides external include parameter
+      Value: 7.0
+    - VarName: String_parameter
+      Description: Test override for string parameter
+      Value: "Local Data"
+    - VarName: Binary_input
+      Description: Test override for binary parameter
+      Value: "626172"
+
+Connectors:
+  - VariableName: UInt16_input
+    TopicName: UInt16_To_Double
+    Transformation:
+      Offset: -2.0
+      Factor: 2.0
+      Type: Float64

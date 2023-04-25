@@ -2,92 +2,47 @@
 
 public class Configuration
 {
-  public class Parameter
-  {
-    public string VarName { get; set; }
-    public string? Description { get; set; }
-    public string? Type { get; set; }
-    public object? Value { get; set; }
-
-    public Parameter()
-    {
-      VarName = string.Empty;
-    }
-  }
-
-  public class ParameterSet
-  {
-    public class IncludeParameterSet
-    {
-      public string? RefName { get; set; }
-      public string? FilePath { get; set; }
-    }
-
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public List<Parameter> Parameters;
-    public List<IncludeParameterSet>? IncludeParameterSets;
-
-    public ParameterSet()
-    {
-      Parameters = new List<Parameter>();
-      IncludeParameterSets = new List<IncludeParameterSet>();
-    }
-  }
-
   public string? Description { get; set; }
-  public List<ParameterSet>? ParameterSets { get; set; }
+  public ParameterSet? ParameterSet { get; set; }
 
   public string? ConfigurationPath { get; set; }
 
-  public Dictionary<string, Parameter> GetParameters(string? parameterSetName)
+  public Dictionary<string, Parameter> GetParameters()
   {
     var dict = new Dictionary<string, Parameter>();
-    UpdateParameterDictionary(parameterSetName, ref dict);
+    UpdateParameterDictionary(ref dict);
     return dict;
   }
 
-  public void UpdateParameterDictionary(string? parameterSetName, ref Dictionary<string, Parameter> parameterDictionary)
+  public void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
   {
-    if (parameterSetName == null)
-    {
-      return;
-    }
-
-    var paramSet = ParameterSets?.FirstOrDefault(e => e.Name == parameterSetName);
-    if (paramSet == null)
+    if (ParameterSet == null)
     {
       return;
     }
 
     // Fill parameter list with parameters from included sets before local parameters
-    if (paramSet.IncludeParameterSets != null)
+    if (ParameterSet.IncludeParameterSets != null)
     {
-      for (var i = 0; i < paramSet.IncludeParameterSets.Count; i++)
+      for (var i = 0; i < ParameterSet.IncludeParameterSets.Count; i++)
       {
-        var includeParameterSet = paramSet.IncludeParameterSets[i];
-        if (includeParameterSet.RefName == null)
+        var includeParameterSet = ParameterSet.IncludeParameterSets[i];
+        if (includeParameterSet == null)
         {
-          // TODO do this outside of the configuration class
-          // Warn that an invalid parameter set was included and that it is skipped - include index of paramSet
+          // TODO log warning about missing file path and skip
           continue;
-        }
-
-        if (includeParameterSet.FilePath == null)
-        {
-          // TODO use dictionary and create or replace
-          UpdateParameterDictionary(includeParameterSet.RefName, ref parameterDictionary);
         }
         else
         {
-          if (Path.IsPathFullyQualified(includeParameterSet.FilePath))
+          if (Path.IsPathFullyQualified(includeParameterSet))
           {
-            if (!File.Exists(includeParameterSet.FilePath))
+            if (!File.Exists(includeParameterSet))
             {
-              throw new FileNotFoundException("");
+              // TODO log warning about invalid file path and skip
+              continue;
             }
 
-            ConfigParser.LoadConfiguration(includeParameterSet.FilePath);
+            ConfigParser.LoadConfiguration(includeParameterSet);
           }
           else
           {
@@ -102,21 +57,27 @@ public class Configuration
               throw new InvalidOperationException("Failed to retrieve directory from current config file path");
             }
 
-            var includedFile = Path.Combine(configDir, includeParameterSet.FilePath);
+            var includedFile = Path.Combine(configDir, includeParameterSet);
             if (!File.Exists(includedFile))
             {
-              throw new FileNotFoundException("");
+              // TODO log warning about invalid file path and skip
+              continue;
             }
 
             var recConfig = ConfigParser.LoadConfiguration(includedFile);
-            recConfig.UpdateParameterDictionary(includeParameterSet.RefName, ref parameterDictionary);
+            recConfig.UpdateParameterDictionary(ref parameterDictionary);
           }
         }
       }
     }
 
+    if (ParameterSet.Parameters == null)
+    {
+      return;
+    }
+
     // Add locally defined parameters after all parameter sets were read
-    foreach (var parameter in paramSet.Parameters)
+    foreach (var parameter in ParameterSet.Parameters)
     {
       // Create or update parameter value
       parameterDictionary[parameter.VarName] = parameter;

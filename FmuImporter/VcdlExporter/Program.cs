@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
@@ -35,13 +36,13 @@ internal class Program
 
       switch (ModelLoader.FindFmiVersion(inputFile))
       {
-        case ModelLoader.FmiVersions.Fmi2:
+        case FmiVersions.Fmi2:
           ParseFmi2(Fmi2BindingFactory.CreateFmi2Binding(inputFile), interfaceSb, objectsSb);
           break;
-        case ModelLoader.FmiVersions.Fmi3:
+        case FmiVersions.Fmi3:
           ParseFmi3(Fmi3BindingFactory.CreateFmi3Binding(inputFile), interfaceSb, objectsSb);
           break;
-        case ModelLoader.FmiVersions.Invalid:
+        case FmiVersions.Invalid:
         default:
           throw new InvalidDataException($"The FMU uses an unsupported FMU version.");
       }

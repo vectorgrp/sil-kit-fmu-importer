@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
-using FmuImporter.Config;
 using SilKit;
 using SilKit.Config;
 using SilKit.Services.Logger;
@@ -60,9 +60,9 @@ public class FmuImporter
 
   private readonly bool useStopTime;
 
-  private Configuration fmuImporterConfig;
+  private Config.Configuration fmuImporterConfig;
 
-  private Dictionary<string, Configuration.Parameter>? configuredParameters;
+  private Dictionary<string, Config.Parameter>? configuredParameters;
 
   private static void LogCallback(LogLevel logLevel, string message)
   {
@@ -76,7 +76,7 @@ public class FmuImporter
     }
   }
 
-  public FmuImporter(string fmuPath, string? silKitConfigurationPath, string? fmuImporterConfigFilePath, string participantName, string? parameterSetName, bool useStopTime)
+  public FmuImporter(string fmuPath, string? silKitConfigurationPath, string? fmuImporterConfigFilePath, string participantName, bool useStopTime)
   {
     // Initialize SIL Kit first to allow logging
     InitializeSilKit(silKitConfigurationPath, participantName);
@@ -85,11 +85,11 @@ public class FmuImporter
     {
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
       {
-        fmuImporterConfig = new Configuration();
+        fmuImporterConfig = new Config.Configuration();
       }
       else
       {
-        fmuImporterConfig = ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
+        fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
       }
     }
     catch (Exception e)
@@ -120,10 +120,10 @@ public class FmuImporter
     DataBuffer = new Dictionary<uint, byte[]>();
     FutureDataBuffer = new Dictionary<uint, byte[]>();
 
-    InitializeFMU(fmuPath, fmuImporterConfig.GetParameters(parameterSetName));
+    InitializeFMU(fmuPath);
     PrepareVariableDistribution();
 
-    ConfigureSilKitServices();
+    ConfigureSilKitTimeSyncService();
   }
 
   #region IDisposable
@@ -255,26 +255,26 @@ public class FmuImporter
     }
   }
 
-  private void InitializeFMU(string fmuPath, Dictionary<string, Configuration.Parameter> configuredParameters)
+  private void InitializeFMU(string fmuPath)
   {
-    this.configuredParameters = configuredParameters;
+    configuredParameters = fmuImporterConfig.GetParameters();
     var fmiVersion = ModelLoader.FindFmiVersion(fmuPath);
     switch (fmiVersion)
     {
-      case ModelLoader.FmiVersions.Fmi2:
-        PrepareFmi2Fmu(fmuPath, configuredParameters);
+      case FmiVersions.Fmi2:
+        PrepareFmi2Fmu(fmuPath);
         break;
-      case ModelLoader.FmiVersions.Fmi3:
-        PrepareFmi3Fmu(fmuPath, configuredParameters);
+      case FmiVersions.Fmi3:
+        PrepareFmi3Fmu(fmuPath);
         break;
-      case ModelLoader.FmiVersions.Invalid:
+      case FmiVersions.Invalid:
       // fallthrough
       default:
         throw new ArgumentException("fmu did not provide a supported FMI version.");
     }
   }
 
-  private void PrepareFmi2Fmu(string fmuPath, Dictionary<string, Configuration.Parameter> configuredParameters)
+  private void PrepareFmi2Fmu(string fmuPath)
   {
     // Get FMI Model binding
     var fmi2Binding = Fmi2BindingFactory.CreateFmi2Binding(fmuPath);
@@ -328,65 +328,12 @@ public class FmuImporter
 
     fmi2Binding.EnterInitializationMode();
 
-    if (configuredParameters != null)
-    {
-      foreach (var configuredParameter in configuredParameters.Values)
-      {
-        if (configuredParameter.Value == null)
-        {
-          throw new BadImageFormatException(
-            $"configured parameter for '{configuredParameter.VarName}' did not contain a value.");
-        }
-
-        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VarName, out var refValue);
-        if (!result)
-        {
-          throw new ArgumentException(
-            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
-        }
-        result = ModelDescription.Variables.TryGetValue(refValue, out var v);
-        if (!result || v == null)
-        {
-          throw new ArgumentException(
-            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
-        }
-
-        byte[] data;
-        var binSizes = new List<int>();
-        if (configuredParameter.Value is List<object> objectList)
-        {
-          // the parameter is an array
-          data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
-          if (binSizes.Count == 0)
-          {
-            Binding.SetValue(refValue, data);
-          }
-          else
-          {
-            // binary array handling
-            Binding.SetValue(refValue, data, binSizes.ToArray());
-          }
-        }
-        else
-        {
-          data = Fmi.Helpers.EncodeData(configuredParameter.Value, v.VariableType, ref binSizes);
-          if (binSizes.Count == 0)
-          {
-            Binding.SetValue(refValue, data);
-          }
-          else
-          {
-            // binary array handling
-            Binding.SetValue(refValue, data, binSizes.ToArray());
-          }
-        }
-      }
-    }
+    ApplyParameterConfiguration();
 
     fmi2Binding.ExitInitializationMode();
   }
 
-  private void PrepareFmi3Fmu(string fmuPath, Dictionary<string, Configuration.Parameter>? configuredParameters)
+  private void PrepareFmi3Fmu(string fmuPath)
   {
     // Get FMI Model binding
     var fmi3Binding = Fmi3BindingFactory.CreateFmi3Binding(fmuPath);
@@ -408,6 +355,14 @@ public class FmuImporter
       ModelDescription.DefaultExperiment.StartTime,
       ModelDescription.DefaultExperiment.StopTime);
 
+    // initialize all configured parameters
+    ApplyParameterConfiguration();
+
+    fmi3Binding.ExitInitializationMode();
+  }
+
+  private void ApplyParameterConfiguration()
+  {
     // initialize all configured parameters
 
     if (configuredParameters != null)
@@ -437,6 +392,11 @@ public class FmuImporter
         var binSizes = new List<int>();
         if (configuredParameter.Value is List<object> objectList)
         {
+          // the parameter is an array
+          if (Binding.GetFmiVersion() == FmiVersions.Fmi2)
+          {
+            throw new NotSupportedException("FMI 2.0.x does not support arrays.");
+          }
           data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
         }
         else
@@ -451,12 +411,14 @@ public class FmuImporter
         else
         {
           // binary type
+          if (Binding.GetFmiVersion() == FmiVersions.Fmi2)
+          {
+            throw new NotSupportedException("FMI 2.0.x does not support the binary data type.");
+          }
           Binding.SetValue(refValue, data, binSizes.ToArray());
         }
       }
     }
-
-    fmi3Binding.ExitInitializationMode();
   }
 
   private void Logger(IntPtr instanceEnvironment, Fmi3Statuses status, string category, string message)
@@ -509,7 +471,7 @@ public class FmuImporter
     config.Dispose();
   }
 
-  private void ConfigureSilKitServices()
+  private void ConfigureSilKitTimeSyncService()
   {
     ulong stepDuration;
     if (ModelDescription.DefaultExperiment.StepSize.HasValue)
