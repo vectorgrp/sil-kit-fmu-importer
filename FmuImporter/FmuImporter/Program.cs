@@ -72,7 +72,7 @@ internal class Program
           participantName,
           useStopTime);
 
-        instance.RunSimulation();
+        instance.StartSimulation();
         instance.Dispose();
       },
       fmuPathOption,

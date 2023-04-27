@@ -72,10 +72,14 @@ public class LifecycleService : ILifecycleService
       private set { timeSyncServicePtr = value; }
     }
 
+    private readonly SilKit_TimeSyncService_SetSimulationStepHandler_t simStepHandlerDelegate;
+
     #region ctor & dtor
 
     internal TimeSyncService(LifecycleService lifecycleService)
     {
+      simStepHandlerDelegate = SimulationStepHandlerInternal;
+
       this.lifecycleService = lifecycleService;
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_TimeSyncService_Create(
@@ -112,7 +116,7 @@ public class LifecycleService : ILifecycleService
         (Helpers.SilKit_ReturnCodes)SilKit_TimeSyncService_SetSimulationStepHandler(
           TimeSyncServicePtr,
           out var context,
-          SimulationStepHandlerInternal,
+          simStepHandlerDelegate,
           initialStepSize),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
@@ -161,10 +165,18 @@ public class LifecycleService : ILifecycleService
     private set { lifecycleServicePtr = value; }
   }
 
+  private readonly SilKit_LifecycleService_CommunicationReadyHandler_t communicationReadyHandlerDelegate;
+  private readonly SilKit_LifecycleService_StopHandler_t stopHandlerDelegate;
+  private readonly SilKit_LifecycleService_ShutdownHandler_t shutdownHandlerDelegate;
+
   #region ctor & dtor
 
   internal LifecycleService(Participant participant, LifecycleConfiguration lc)
   {
+    communicationReadyHandlerDelegate = CommunicationReadyHandlerInternal;
+    stopHandlerDelegate = StopHandlerInternal;
+    shutdownHandlerDelegate = ShutdownHandlerInternal;
+
     this.participant = participant;
     this.lifecycleConfiguration = lc;
     var internalLc = lc.LifecycleConfigurationInternal;
@@ -273,7 +285,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetCommunicationReadyHandler(
         LifecycleServicePtr,
         out var context,
-        CommunicationReadyHandlerInternal),
+        communicationReadyHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -298,9 +310,9 @@ public class LifecycleService : ILifecycleService
   private static extern int SilKit_LifecycleService_SetCommunicationReadyHandler(
     [In] IntPtr lifecycleService,
     [Out] out IntPtr context,
-    SilKit_LifecycleService_StopHandler_t handler);
+    SilKit_LifecycleService_CommunicationReadyHandler_t handler);
 
-  private delegate void SilKit_LifecycleService_SetCommunicationReadyHandler_t(
+  private delegate void SilKit_LifecycleService_CommunicationReadyHandler_t(
     IntPtr context,
     IntPtr lifecycleService);
 
@@ -313,7 +325,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetStopHandler(
         LifecycleServicePtr,
         out var context,
-        StopHandlerInternal),
+        stopHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -350,7 +362,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetShutdownHandler(
         LifecycleServicePtr,
         out var context,
-        ShutdownHandlerInternal),
+        shutdownHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -374,9 +386,9 @@ public class LifecycleService : ILifecycleService
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
   private static extern int SilKit_LifecycleService_SetShutdownHandler([In] IntPtr lifecycleService,
     [Out] out IntPtr context,
-    SilKit_LifecycleService_StopHandler_t handler);
+    SilKit_LifecycleService_ShutdownHandler_t handler);
 
-  private delegate void SilKit_LifecycleService_SetShutdownHandler_t(IntPtr context, IntPtr lifecycleService);
+  private delegate void SilKit_LifecycleService_ShutdownHandler_t(IntPtr context, IntPtr lifecycleService);
 
   #endregion callback handling
 }

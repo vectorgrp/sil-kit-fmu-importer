@@ -1,10 +1,7 @@
 ﻿namespace FmuImporter.Config;
 
-public class Configuration
+public class Configuration : ConfigurationInternal
 {
-  public string? Description { get; set; }
-  public ParameterSet? ParameterSet { get; set; }
-
   public string? ConfigurationPath { get; set; }
 
   public Dictionary<string, Parameter> GetParameters()
@@ -14,10 +11,11 @@ public class Configuration
     return dict;
   }
 
-  public void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
+  private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
   {
     if (ParameterSet == null)
     {
+      // the configuration does not have a defined parameter set
       return;
     }
 
@@ -27,7 +25,7 @@ public class Configuration
       for (var i = 0; i < ParameterSet.IncludeParameterSets.Count; i++)
       {
         var includeParameterSet = ParameterSet.IncludeParameterSets[i];
-        if (includeParameterSet == null)
+        if (string.IsNullOrEmpty(includeParameterSet))
         {
           // TODO log warning about missing file path and skip
           continue;

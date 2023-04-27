@@ -9,7 +9,8 @@ public interface IDataSubscriber
 
 public class DataSubscriber : IDataSubscriber
 {
-  private DataMessageHandler? dataMessageHandler;
+  private DataMessageHandler? _dataMessageHandler;
+  private readonly SilKit_DataMessageHandler_t dataMessageHandlerDelegate;
 
   private readonly Participant participant;
   private readonly IntPtr datahandlerContext;
@@ -28,9 +29,11 @@ public class DataSubscriber : IDataSubscriber
     IntPtr dataHandlerContext,
     DataMessageHandler dataMessageHandler)
   {
+    dataMessageHandlerDelegate = DataMessageHandlerInternal;
+
     this.participant = participant;
     this.datahandlerContext = dataHandlerContext;
-    this.dataMessageHandler = dataMessageHandler;
+    _dataMessageHandler = dataMessageHandler;
     var silKitDataSpec = dataSpec.toSilKitDataSpec();
 
     Helpers.ProcessReturnCode(
@@ -40,19 +43,20 @@ public class DataSubscriber : IDataSubscriber
         controllerName,
         silKitDataSpec,
         dataHandlerContext,
-        DataMessageHandlerInternal),
+        dataMessageHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
 
   public void SetDataMessageHandler(DataMessageHandler dataMessageHandler)
   {
-    this.dataMessageHandler = dataMessageHandler;
+    _dataMessageHandler = dataMessageHandler;
+
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_SetDataMessageHandler(
         DataSubscriberPtr,
         IntPtr.Zero,
-        DataMessageHandlerInternal),
+        dataMessageHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -67,7 +71,7 @@ public class DataSubscriber : IDataSubscriber
       return;
     }
 
-    dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
+    _dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
   }
 
   /*
