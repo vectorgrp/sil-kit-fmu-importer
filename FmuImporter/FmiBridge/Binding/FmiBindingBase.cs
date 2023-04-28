@@ -6,19 +6,7 @@ namespace Fmi.Binding;
 
 public interface IFmiBindingCommon : IDisposable
 {
-  public void GetValue(uint[] valueRefs, out ReturnVariable<float> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<double> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<byte> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<short> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<int> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<uint> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<long> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<bool> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<string> result);
-  public void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result);
+  public void GetValue(uint[] valueRefs, out ReturnVariable result, Type type);
 
   public void SetValue(uint valueRef, byte[] data);
   public void SetValue(uint valueRef, byte[] data, int[] binSizes);
@@ -153,19 +141,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     deleg = (T)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
   }
 
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<float> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<double> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<byte> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<short> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<int> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<uint> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<long> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<bool> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<string> result);
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable result, Type type);
 
   public abstract void SetValue(uint valueRef, byte[] data);
   internal abstract void SetValue(Variable mdVar, byte[] data);

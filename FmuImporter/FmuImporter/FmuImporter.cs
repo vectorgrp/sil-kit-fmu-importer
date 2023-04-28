@@ -16,14 +16,14 @@ public class FmuImporter
   private SilKitManager SilKitManager { get; }
   private ConfiguredVariableManager? ConfiguredVariableManager { get; set; }
 
-  private Dictionary<uint, byte[]> DataBuffer { get; }
-  private Dictionary<uint, byte[]> FutureDataBuffer { get; }
+  private Dictionary<uint, byte[]> DataBuffer { get; } = new Dictionary<uint, byte[]>();
+  private Dictionary<uint, byte[]> FutureDataBuffer { get; } = new Dictionary<uint, byte[]>();
 
-  private readonly bool useStopTime;
+  private readonly bool _useStopTime;
 
-  private readonly Config.Configuration fmuImporterConfig;
+  private readonly Config.Configuration _fmuImporterConfig;
 
-  private Dictionary<string, Config.Parameter>? configuredParameters;
+  private Dictionary<string, Config.Parameter>? _configuredParameters;
 
   private void LogCallback(LogLevel logLevel, string message)
   {
@@ -38,11 +38,11 @@ public class FmuImporter
     {
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
       {
-        fmuImporterConfig = new Config.Configuration();
+        _fmuImporterConfig = new Config.Configuration();
       }
       else
       {
-        fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
+        _fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
       }
     }
     catch (Exception e)
@@ -51,10 +51,7 @@ public class FmuImporter
       throw;
     }
 
-    this.useStopTime = useStopTime;
-
-    DataBuffer = new Dictionary<uint, byte[]>();
-    FutureDataBuffer = new Dictionary<uint, byte[]>();
+    _useStopTime = useStopTime;
 
     InitializeFMU(fmuPath);
     PrepareConfiguredVariables();
@@ -112,11 +109,11 @@ public class FmuImporter
     var configuredVariableDictionary =
       new Dictionary<uint, Config.ConfiguredVariable>(ModelDescription.Variables.Values.Count);
 
-    if (fmuImporterConfig.ConfiguredVariables != null)
+    if (_fmuImporterConfig.ConfiguredVariables != null)
     {
-      for (var i = 0; i < fmuImporterConfig.ConfiguredVariables.Count; i++)
+      for (var i = 0; i < _fmuImporterConfig.ConfiguredVariables.Count; i++)
       {
-        var configuredVariable = fmuImporterConfig.ConfiguredVariables[i];
+        var configuredVariable = _fmuImporterConfig.ConfiguredVariables[i];
         if (configuredVariable.VariableName == null)
         {
           throw new BadImageFormatException($"The configured variable at index '{i}' does not have a variable name.");
@@ -149,7 +146,7 @@ public class FmuImporter
           configuredVariable = new Config.ConfiguredVariable
           {
             VariableName = modelDescriptionVariable.Name,
-            TopicName = /*"FMI/" + */modelDescriptionVariable.Name // default
+            TopicName = modelDescriptionVariable.Name // default
           };
           configuredVariableDictionary.Add(modelDescriptionVariable.ValueReference, configuredVariable);
         }
@@ -166,9 +163,7 @@ public class FmuImporter
           configuredVariable.TopicName = modelDescriptionVariable.Name;
         }
 
-        if (configuredVariable == null ||
-            configuredVariable.VariableName == null ||
-            configuredVariable.FmuVariableDefinition == null)
+        if (configuredVariable.VariableName == null)
         {
           // TODO elaborate
           throw new NullReferenceException();
@@ -237,7 +232,7 @@ public class FmuImporter
 
   private void InitializeFMU(string fmuPath)
   {
-    configuredParameters = fmuImporterConfig.GetParameters();
+    _configuredParameters = _fmuImporterConfig.GetParameters();
     var fmiVersion = ModelLoader.FindFmiVersion(fmuPath);
     switch (fmiVersion)
     {
@@ -353,9 +348,9 @@ public class FmuImporter
   private void ApplyParameterConfiguration()
   {
     // initialize all configured parameters
-    if (configuredParameters != null)
+    if (_configuredParameters != null)
     {
-      foreach (var configuredParameter in configuredParameters.Values)
+      foreach (var configuredParameter in _configuredParameters.Values)
       {
         if (configuredParameter.Value == null)
         {
@@ -472,7 +467,7 @@ public class FmuImporter
     {
       // skip initialization - it was done already.
       // However, publish all initial output variable values
-      ConfiguredVariableManager.PublishAllOutputData();
+      ConfiguredVariableManager.PublishInitialData();
       return;
     }
 
@@ -492,9 +487,9 @@ public class FmuImporter
       Helpers.SilKitTimeToFmiTime(durationInNs),
       out _);
 
-    ConfiguredVariableManager.PublishAllOutputData();
+    ConfiguredVariableManager.PublishOutputData(false);
 
-    if (useStopTime && ModelDescription.DefaultExperiment.StopTime.HasValue)
+    if (_useStopTime && ModelDescription.DefaultExperiment.StopTime.HasValue)
     {
       if (fmiNow >= ModelDescription.DefaultExperiment.StopTime)
       {

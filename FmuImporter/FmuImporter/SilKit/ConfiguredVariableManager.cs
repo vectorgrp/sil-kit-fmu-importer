@@ -2,6 +2,7 @@
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using SilKit.Services.PubSub;
+using SilKit.Supplements;
 
 namespace FmuImporter.SilKit;
 
@@ -10,17 +11,19 @@ public class ConfiguredVariableManager
   private IFmiBindingCommon Binding { get; }
   public ModelDescription ModelDescription { get; }
 
-  private List<ConfiguredVariable> OutConfiguredVariables { get; }
+  private List<ConfiguredVariable> OutputConfiguredVariables { get; }
+  private List<ConfiguredVariable> ParameterConfiguredVariables { get; }
 
-  private Dictionary<uint/* refValue*/, ConfiguredVariable> InConfiguredVariables { get; }
+  private Dictionary<uint/* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
 
   public ConfiguredVariableManager(IFmiBindingCommon binding, ModelDescription modelDescription)
   {
     Binding = binding;
     ModelDescription = modelDescription;
 
-    OutConfiguredVariables = new List<ConfiguredVariable>();
-    InConfiguredVariables = new Dictionary<uint, ConfiguredVariable>();
+    OutputConfiguredVariables = new List<ConfiguredVariable>();
+    ParameterConfiguredVariables = new List<ConfiguredVariable>();
+    InputConfiguredVariables = new Dictionary<uint, ConfiguredVariable>();
   }
 
   private void AddConfiguredVariable(ConfiguredVariable c)
@@ -34,12 +37,14 @@ public class ConfiguredVariableManager
     switch (c.FmuVariableDefinition.Causality)
     {
       case Variable.Causalities.Output:
+        OutputConfiguredVariables.Add(c);
+        break;
       case Variable.Causalities.Parameter:
       case Variable.Causalities.StructuralParameter:
-        OutConfiguredVariables.Add(c);
+        ParameterConfiguredVariables.Add(c);
         break;
       case Variable.Causalities.Input:
-        InConfiguredVariables.Add(c.FmuVariableDefinition.ValueReference, c);
+        InputConfiguredVariables.Add(c.FmuVariableDefinition.ValueReference, c);
         break;
     }
   }
@@ -70,24 +75,47 @@ public class ConfiguredVariableManager
     AddConfiguredVariable(c);
   }
 
-  public void PublishAllOutputData()
+  public void PublishInitialData()
   {
-    foreach (var configuredVariable in OutConfiguredVariables)
+    PublishParameterData();
+    PublishOutputData(true);
+  }
+
+  public void PublishOutputData(bool initialKnownsOnly)
+  {
+    PublishData(initialKnownsOnly, OutputConfiguredVariables);
+  }
+
+  public void PublishParameterData()
+  {
+    PublishData(true, ParameterConfiguredVariables);
+  }
+
+  private void PublishData(bool initialKnownsOnly, List<ConfiguredVariable> configuredVariables)
+  {
+    foreach (var configuredVariable in configuredVariables)
     {
-      if (configuredVariable.SilKitService == null)
+      if (configuredVariable.SilKitService == null || configuredVariable.FmuVariableDefinition == null)
       {
         // TODO throw or warn
         continue;
       }
+
+      if (initialKnownsOnly && ModelDescription.ModelStructure.InitialUnknowns.Contains(configuredVariable.FmuVariableDefinition.ValueReference))
+      {
+        // skip initially unknown variables
+        continue;
+      }
+
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
       // TODO: Extend when introducing signal groups
-      var valueRefArr = new [] { configuredVariable.FmuVariableDefinition!.ValueReference };
-      if (configuredVariableType == typeof(float))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<float> result);
+      var valueRefArr = new [] { configuredVariable.FmuVariableDefinition.ValueReference };
 
-        // Apply regular unit transformation
-        // SIL Kit value = ([FMU value] / factor) - offset
+      Binding.GetValue(valueRefArr, out ReturnVariable result, configuredVariableType);
+      if (configuredVariable.FmuVariableDefinition.VariableType == typeof(float) ||
+          configuredVariable.FmuVariableDefinition.VariableType == typeof(double))
+      {
+        // apply FMI unit transformation
         foreach (var variable in result.ResultArray)
         {
           var mdVar = ModelDescription.Variables[variable.ValueReference];
@@ -96,167 +124,39 @@ public class ConfiguredVariableManager
             var unit = mdVar.TypeDefinition?.Unit;
             if (unit != null)
             {
-              var value = variable.Values[i];
-              // first reverse offset...
-              if (unit.Offset.HasValue)
+              if (configuredVariableType == typeof(float))
               {
-                value = Convert.ToSingle(value - unit.Offset.Value);
-              }
+                var value = (float)(variable.Values[i]);
+                // first reverse offset...
+                if (unit.Offset.HasValue)
+                {
+                  value = Convert.ToSingle(value - unit.Offset.Value);
+                }
 
-              // ...then reverse factor
-              if (unit.Factor.HasValue)
-              {
-                value = Convert.ToSingle(value / unit.Factor.Value);
-              }
+                // ...then reverse factor
+                if (unit.Factor.HasValue)
+                {
+                  value = Convert.ToSingle(value / unit.Factor.Value);
+                }
 
-              variable.Values[i] = value;
+                variable.Values[i] = value;
+              }
             }
           }
+        }
+      }
 
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(double))
+      foreach (var variable in result.ResultArray)
       {
-        Binding.GetValue(valueRefArr, out ReturnVariable<double> result);
-
-        // Apply regular unit transformation
-        // SIL Kit value = ([FMU value] / factor) - offset
-        foreach (var variable in result.ResultArray)
-        {
-          var mdVar = ModelDescription.Variables[variable.ValueReference];
-          for (int i = 0; i < variable.Values.Length; i++)
-          {
-            var unit = mdVar.TypeDefinition?.Unit;
-            if (unit != null)
-            {
-              var value = variable.Values[i];
-              // first reverse offset...
-              if (unit.Offset.HasValue)
-              {
-                value -= unit.Offset.Value;
-              }
-
-              // ...then reverse factor
-              if (unit.Factor.HasValue)
-              {
-                value /= unit.Factor.Value;
-              }
-
-              variable.Values[i] = value;
-            }
-          }
-
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(sbyte))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<sbyte> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(byte))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<byte> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(short))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<short> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(ushort))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<ushort> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(int))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<int> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(uint))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<uint> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(long))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<long> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(ulong))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<ulong> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(bool))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<bool> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(string))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<string> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
-      }
-      else if (configuredVariableType == typeof(IntPtr))
-      {
-        Binding.GetValue(valueRefArr, out ReturnVariable<IntPtr> result);
-        foreach (var variable in result.ResultArray)
-        {
-          var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
-          ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
-        }
+        var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
+        ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
       }
     }
   }
 
   public void SetValue(uint refValue, byte[] data)
   {
-    var success = InConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
+    var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
     if (success && configuredVariable != null)
     {
       if (configuredVariable.Transformation != null)
@@ -300,7 +200,7 @@ public class ConfiguredVariableManager
       {
         // convert data to target type
         var offset = 0;
-        targetArray[i] = Helpers.FromByteArray(inputData, mdVar.VariableType, offset, out offset);
+        targetArray[i] = Helpers.FromByteArray(inputData, mdVar.VariableType, ref offset);
       }
     }
     else
@@ -310,9 +210,9 @@ public class ConfiguredVariableManager
       for (int i = 0; i < arraySize; i++)
       {
         var transformType = Helpers.StringToType(transformation.TypeDuringTransmission.ToLowerInvariant());
-        var transmissionData = Helpers.FromByteArray(inputData, transformType, offset, out offset);
+        var transmissionData = Helpers.FromByteArray(inputData, transformType, ref offset);
         // re-encode data with variable type
-        targetArray[i] = Convert.ChangeType(transmissionData, (Type)(mdVar.VariableType));
+        targetArray[i] = Convert.ChangeType(transmissionData, mdVar.VariableType);
       }
     }
 
@@ -324,602 +224,31 @@ public class ConfiguredVariableManager
       Helpers.ApplyLinearTransformation(ref targetArray[i], factor, offset, mdVar.VariableType);
     }
 
-    return Helpers.ToByteArray(targetArray, mdVar.VariableType);
+    return SerDes.Serialize(targetArray, isScalar, mdVar.VariableType);
   }
 
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<float>.Variable variable, ConfiguredVariable configuredVariable)
+  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable.Variable variable, ConfiguredVariable configuredVariable)
   {
     if (configuredVariable.Transformation != null)
     {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
+      // Apply factor and offset transform
+      for (int i = 0; i < variable.Values.Length; i++)
       {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = (float)(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = (float)(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
+        var factor = configuredVariable.Transformation.Factor ?? 1;
+        var offset = configuredVariable.Transformation.Offset ?? 0;
+        Helpers.ApplyLinearTransformation(ref variable.Values[i], factor, offset, variable.Type);
       }
 
       if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
       {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
+        return SerDes.Serialize(variable.Values, variable.IsScalar, Helpers.StringToType(configuredVariable.Transformation.TypeDuringTransmission), null);
       }
       else
       {
         // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
+        return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, null);
       }
     }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<double>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = variable.Values[i] * configuredVariable.Transformation.Factor.Value;
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = variable.Values[i] + configuredVariable.Transformation.Offset.Value;
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<byte>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToByte(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToByte(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<UInt16>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt16(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt16(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<UInt32>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt32(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt32(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<UInt64>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt64(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToUInt64(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<sbyte>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToSByte(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToSByte(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<Int16>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt16(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt16(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<Int32>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt32(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt32(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<Int64>.Variable variable, ConfiguredVariable configuredVariable)
-  {
-    // TODO (general) Convert.ToXXX behavior
-    if (configuredVariable.Transformation != null)
-    {
-      // apply factor, then apply offset
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        if (configuredVariable.Transformation.Factor.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt64(variable.Values[i] * configuredVariable.Transformation.Factor.Value);
-        }
-
-        if (configuredVariable.Transformation.Offset.HasValue)
-        {
-          variable.Values[i] = Convert.ToInt64(variable.Values[i] + configuredVariable.Transformation.Offset.Value);
-        }
-
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
-      {
-        // cast type & encode
-        switch (configuredVariable.Transformation.TypeDuringTransmission.ToLowerInvariant())
-        {
-          case "uint8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToByte), variable.IsScalar);
-          case "uint16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt16), variable.IsScalar);
-          case "uint32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt32), variable.IsScalar);
-          case "uint64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToUInt64), variable.IsScalar);
-          case "int8":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSByte), variable.IsScalar);
-          case "int16":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt16), variable.IsScalar);
-          case "int32":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt32), variable.IsScalar);
-          case "int64":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToInt64), variable.IsScalar);
-          case "float32":
-          case "float":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToSingle), variable.IsScalar);
-          case "float64":
-          case "double":
-            return SilKitManager.EncodeData(Array.ConvertAll(variable.Values, Convert.ToDouble), variable.IsScalar);
-        }
-      }
-      else
-      {
-        // encode
-        return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-      }
-    }
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<bool>.Variable variable, ConfiguredVariable _)
-  {
-    // bools do not support transformation
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<string>.Variable variable, ConfiguredVariable _)
-  {
-    // strings do not support transformation
-    return SilKitManager.EncodeData(variable.Values, variable.IsScalar);
-  }
-
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable<IntPtr>.Variable variable, ConfiguredVariable _)
-  {
-    // binaries do not support transformation
-    return SilKitManager.EncodeData(variable.Values, variable.ValueSizes, variable.IsScalar);
+    return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, Array.ConvertAll(variable.ValueSizes, e=>(Int32)e));
   }
 }

@@ -31,6 +31,8 @@ public class ModelDescription
 
   public Dictionary<string /*typeName*/, TypeDefinition> TypeDefinitions;
 
+  public ModelStructure ModelStructure { get; set; }
+
   public ModelDescription(Fmi3.fmiModelDescription input)
   {
     // init of local fields & properties
@@ -63,6 +65,8 @@ public class ModelDescription
     {
       InitVariableMap(input.ModelVariables);
     }
+
+    ModelStructure = new ModelStructure(input.ModelStructure);
   }
 
   public ModelDescription(Fmi2.fmiModelDescription input)
@@ -102,6 +106,8 @@ public class ModelDescription
     {
       InitVariableMap(input.ModelVariables);
     }
+
+    ModelStructure = new ModelStructure(input.ModelStructure);
   }
 
   private void InitTypeDefMap(Fmi3.fmiModelDescriptionTypeDefinitions input)

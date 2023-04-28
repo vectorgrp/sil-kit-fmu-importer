@@ -48,19 +48,19 @@ public interface IFmi3Binding : IFmiBindingCommon
     string[]? categories);
 
   // Getters & Setters
-  public ReturnVariable<float> GetFloat32(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<double> GetFloat64(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<sbyte> GetInt8(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<byte> GetUInt8(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<short> GetInt16(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<ushort> GetUInt16(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<int> GetInt32(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<uint> GetUInt32(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<long> GetInt64(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<ulong> GetUInt64(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<bool> GetBoolean(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<string> GetString(fmi3ValueReference[] valueReferences);
-  public ReturnVariable<fmi3Binary> GetBinary(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetFloat32(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetFloat64(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetInt8(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetUInt8(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetInt16(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetUInt16(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetInt32(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetUInt32(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetInt64(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetUInt64(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetBoolean(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetString(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetBinary(fmi3ValueReference[] valueReferences);
   public void SetFloat32(fmi3ValueReference[] valueReferences, float[] values);
   public void SetFloat64(fmi3ValueReference[] valueReferences, double[] values);
   public void SetInt8(fmi3ValueReference[] valueReferences, sbyte[] values);
@@ -311,69 +311,75 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     size_t nCategories,
     string[]? categories);
 
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
+  public override void GetValue(uint[] valueRefs, out ReturnVariable result, Type type)
   {
-    result = GetFloat32(valueRefs);
-  }
+    if (type == typeof(float))
+    {
+      result = GetFloat32(valueRefs);
+      return;
+    }
+    if (type == typeof(double))
+    {
+      result = GetFloat64(valueRefs);
+      return;
+    }
+    if (type == typeof(sbyte))
+    {
+      result = GetInt8(valueRefs);
+      return;
+    }
+    if (type == typeof(byte))
+    {
+      result = GetUInt8(valueRefs);
+      return;
+    }
+    if (type == typeof(Int16))
+    {
+      result = GetInt16(valueRefs);
+      return;
+    }
+    if (type == typeof(UInt16))
+    {
+      result = GetUInt16(valueRefs);
+      return;
+    }
+    if (type == typeof(Int32))
+    {
+      result = GetInt32(valueRefs);
+      return;
+    }
+    if (type == typeof(UInt32))
+    {
+      result = GetUInt32(valueRefs);
+      return;
+    }
+    if (type == typeof(Int64))
+    {
+      result = GetInt64(valueRefs);
+      return;
+    }
+    if (type == typeof(UInt64))
+    {
+      result = GetUInt64(valueRefs);
+      return;
+    }
+    if (type == typeof(bool))
+    {
+      result = GetBoolean(valueRefs);
+      return;
+    }
+    if (type == typeof(string))
+    {
+      result = GetString(valueRefs);
+      return;
+    }
+    if (type == typeof(IntPtr))
+    {
+      result = GetBinary(valueRefs);
+      return;
+    }
 
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<double> result)
-  {
-    result = GetFloat64(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result)
-  {
-    result = GetInt8(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<byte> result)
-  {
-    result = GetUInt8(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<short> result)
-  {
-    result = GetInt16(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result)
-  {
-    result = GetUInt16(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<int> result)
-  {
-    result = GetInt32(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<uint> result)
-  {
-    result = GetUInt32(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<long> result)
-  {
-    result = GetInt64(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result)
-  {
-    result = GetUInt64(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<bool> result)
-  {
-    result = GetBoolean(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<string> result)
-  {
-    result = GetString(valueRefs);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result)
-  {
-    result = GetBinary(valueRefs);
+    throw new NotSupportedException($"The type '{type.Name}' is not supported.");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -757,7 +763,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   /////////////
   // Getters //
   /////////////
-  public ReturnVariable<float> GetFloat32(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetFloat32(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -777,7 +783,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
 
-    return ReturnVariable<float>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -800,7 +806,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     float[] values,
     size_t nValues);
 
-  public ReturnVariable<double> GetFloat64(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetFloat64(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -819,7 +825,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<double>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -842,7 +848,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     double[] values,
     size_t nValues);
 
-  public ReturnVariable<sbyte> GetInt8(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetInt8(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -861,7 +867,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<sbyte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -884,7 +890,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     sbyte[] values,
     size_t nValues);
 
-  public ReturnVariable<byte> GetUInt8(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetUInt8(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -903,7 +909,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<byte>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -926,7 +932,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     byte[] values,
     size_t nValues);
 
-  public ReturnVariable<short> GetInt16(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetInt16(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -945,7 +951,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<short>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -968,7 +974,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     short[] values,
     size_t nValues);
 
-  public ReturnVariable<ushort> GetUInt16(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetUInt16(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -987,7 +993,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<ushort>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1010,7 +1016,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     ushort[] values,
     size_t nValues);
 
-  public ReturnVariable<int> GetInt32(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetInt32(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1029,7 +1035,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<int>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1052,7 +1058,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     int[] values,
     size_t nValues);
 
-  public ReturnVariable<uint> GetUInt32(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetUInt32(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1071,7 +1077,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<uint>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1094,7 +1100,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     uint[] values,
     size_t nValues);
 
-  public ReturnVariable<long> GetInt64(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetInt64(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1113,7 +1119,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<long>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1136,7 +1142,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     long[] values,
     size_t nValues);
 
-  public ReturnVariable<ulong> GetUInt64(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetUInt64(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1155,7 +1161,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<ulong>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1178,7 +1184,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     ulong[] values,
     size_t nValues);
 
-  public ReturnVariable<bool> GetBoolean(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetBoolean(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1197,7 +1203,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<bool>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1220,7 +1226,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     bool[] values,
     size_t nValues);
 
-  public ReturnVariable<string> GetString(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetString(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1250,7 +1256,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       result[i] = str;
     }
 
-    return ReturnVariable<string>.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref modelDescription);
   }
 
   /*
@@ -1273,7 +1279,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr[] values,
     size_t nValues);
 
-  public ReturnVariable<fmi3Binary> GetBinary(fmi3ValueReference[] valueReferences)
+  public ReturnVariable GetBinary(fmi3ValueReference[] valueReferences)
   {
     if (component == IntPtr.Zero)
     {
@@ -1294,7 +1300,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable<fmi3Binary>.CreateReturnVariable(
+    return ReturnVariable.CreateReturnVariable(
       valueReferences,
       result,
       nValues,

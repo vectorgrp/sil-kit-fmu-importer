@@ -203,73 +203,34 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   #endregion IDisposable
 
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<float> result)
+  public override void GetValue(uint[] valueRefs, out ReturnVariable result, Type type)
   {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
+    if (type == typeof(double))
+    {
+      var vFmi = GetReal(valueRefs);
+      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+      return;
+    }
+    if (type == typeof(int))
+    {
+      var vFmi = GetInteger(valueRefs);
+      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+      return;
+    }
+    if (type == typeof(bool))
+    {
+      var vFmi = GetBoolean(valueRefs);
+      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+      return;
+    }
+    if (type == typeof(string))
+    {
+      var vFmi = GetString(valueRefs);
+      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+      return;
+    }
 
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<double> result)
-  {
-    var vFmi = GetReal(valueRefs);
-    result = ReturnVariable<double>.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<sbyte> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<byte> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<short> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<ushort> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<int> result)
-  {
-    var vFmi = GetInteger(valueRefs);
-    result = ReturnVariable<int>.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<uint> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<long> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<ulong> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<bool> result)
-  {
-    var vFmi = GetBoolean(valueRefs);
-    result = ReturnVariable<bool>.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<string> result)
-  {
-    var vFmi = GetString(valueRefs);
-    result = ReturnVariable<string>.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-  }
-
-  public override void GetValue(uint[] valueRefs, out ReturnVariable<IntPtr> result)
-  {
-    throw new NotSupportedException("Not available in FMI 2.0.");
+    throw new NotSupportedException($"The provided type '{type.Name}' is not supported in FMI 2.0");
   }
 
   public override void SetValue(uint valueRef, byte[] data)

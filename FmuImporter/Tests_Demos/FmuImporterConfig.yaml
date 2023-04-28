@@ -2,12 +2,6 @@ ParameterSet:
   IncludeParameterSets:
     - ./FmuImporterIncludeConfig.yaml
   Parameters:
-    - VarName: Float64_discrete_input
-      Description: Initialize with 4 to test linear transformation in configured variables
-      Value: 4.0
-    - VarName: Float64_continuous_input
-      Description: Initialize with 4 to test linear transformation in configured variables
-      Value: 4.0
     - VarName: Float64_fixed_parameter
       Description: Overrides external include parameter
       Value: 7.0
@@ -22,14 +16,14 @@ ConfiguredVariables:
   - VariableName: Float64_tunable_parameter
     TopicName: Float64_tunable_parameter_To_Int32
     Transformation:
-      Offset: -2.0
+      Offset: 1.0
       Factor: 2.0
       TypeDuringTransmission: Int32
   - VariableName: Float64_discrete_input
     Transformation:
-      Offset: -1
+      Offset: 1
       Factor: 2
   - VariableName: Float64_continuous_output
     Transformation:
-      Offset: -1
+      Offset: 1
       Factor: 2

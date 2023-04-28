@@ -1,6 +1,4 @@
-﻿using FmuImporter.Config;
-using System;
-using System.Text;
+﻿using System.Text;
 
 namespace FmuImporter;
 
@@ -27,12 +25,6 @@ public static class Helpers
   }
 
   public const ulong DefaultSimStepDuration = 1000000 /* 1ms */;
-
-  public static void ToLittleEndian(ref byte[] bytes)
-  {
-    if (!BitConverter.IsLittleEndian)
-      Array.Reverse(bytes);
-  }
 
   public static Type StringToType(string s)
   {
@@ -64,199 +56,96 @@ public static class Helpers
         throw new NotSupportedException($"The transformDuringTransmissionType '{s}' does not exist.");
     }
   }
-
-  public static object FromByteArray(byte[] data, Type type, out int nextIndex)
-  {
-    return FromByteArray(data, type, 0, out nextIndex);
-  }
-
-  public static object FromByteArray(byte[] data, Type type, int startIndex, out int nextIndex)
+  
+  public static object FromByteArray(byte[] data, Type type, ref int currentScanIndex)
   {
     if (type == typeof(float))
     {
-      nextIndex = startIndex + sizeof(float);
-      return BitConverter.ToSingle(data, startIndex);
+      var result = BitConverter.ToSingle(data, currentScanIndex);
+      currentScanIndex += sizeof(float);
+      return result;
     }
-
+  
     if (type == typeof(double))
     {
-      nextIndex = startIndex + sizeof(double);
-      return BitConverter.ToDouble(data, startIndex);
+      var result = BitConverter.ToDouble(data, currentScanIndex);
+      currentScanIndex += sizeof(double);
+      return result;
     }
-
+  
     if (type == typeof(byte))
     {
-      nextIndex = startIndex + sizeof(byte);
-      return data[startIndex];
+      currentScanIndex += sizeof(byte);
+      return data[currentScanIndex - sizeof(byte)];
     }
-
+  
     if (type == typeof(Int16))
     {
-      nextIndex = startIndex + sizeof(Int16);
-      return BitConverter.ToInt16(data, startIndex);
+      var result = BitConverter.ToInt16(data, currentScanIndex);
+      currentScanIndex += sizeof(Int16);
+      return result;
     }
-
+  
     if (type == typeof(Int32))
     {
-      nextIndex = startIndex + sizeof(Int32);
-      return BitConverter.ToInt32(data, startIndex);
+      var result = BitConverter.ToInt32(data, currentScanIndex);
+      currentScanIndex += sizeof(Int32);
+      return result;
     }
-
+  
     if (type == typeof(Int64))
     {
-      nextIndex = startIndex + sizeof(Int64);
-      return BitConverter.ToInt64(data, startIndex);
+      var result = BitConverter.ToInt64(data, currentScanIndex);
+      currentScanIndex += sizeof(Int64);
+      return result;
     }
-
+  
     if (type == typeof(sbyte))
     {
-      nextIndex = startIndex + sizeof(sbyte);
-      return (sbyte)(data[startIndex]);
+      var result = (sbyte)(data[currentScanIndex]);
+      currentScanIndex += sizeof(sbyte);
+      return result;
     }
-
+  
     if (type == typeof(UInt16))
     {
-      nextIndex = startIndex + sizeof(UInt16);
-      return BitConverter.ToUInt16(data, startIndex);
+      var result = BitConverter.ToUInt16(data, currentScanIndex);
+      currentScanIndex += sizeof(UInt16);
+      return result;
     }
-
+  
     if (type == typeof(UInt32))
     {
-      nextIndex = startIndex + sizeof(UInt32);
-      return BitConverter.ToUInt32(data, startIndex);
+      var result = BitConverter.ToUInt32(data, currentScanIndex);
+      currentScanIndex += sizeof(UInt32);
+      return result;
     }
-
+  
     if (type == typeof(UInt64))
     {
-      nextIndex = startIndex + sizeof(UInt64);
-      return BitConverter.ToUInt64(data, startIndex);
+      var result = BitConverter.ToUInt64(data, currentScanIndex);
+      currentScanIndex += sizeof(UInt64);
+      return result;
     }
-
+  
     if (type == typeof(bool))
     {
-      nextIndex = startIndex + sizeof(bool);
-      return BitConverter.ToBoolean(data, startIndex);
+      var result = BitConverter.ToBoolean(data, currentScanIndex);
+      currentScanIndex += sizeof(bool);
+      return result;
     }
-
+  
     if (type == typeof(string))
     {
-      var stringLength = BitConverter.ToInt32(data, startIndex);
-      nextIndex = startIndex + stringLength;
-      return Encoding.UTF8.GetString(data, startIndex + 4, stringLength);
+      // NB this assumes a SIL Kit encoded string
+      // string = [character count (4 byte/Int32)][chars...]
+      var stringLength = BitConverter.ToInt32(data, currentScanIndex);
+      var result = Encoding.UTF8.GetString(data, currentScanIndex + 4, stringLength);
+      currentScanIndex += stringLength;
+      return result;
     }
-
+  
     throw new NotSupportedException($"Failed to convert byte array into requested type '{type.Name}'");
-  }
-
-  public static byte[] ToByteArray(object[] objectArray, Type type)
-  {
-    var byteList = new List<byte>();
-
-    if (type == typeof(float))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (float)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(double))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (double)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(byte))
-    {
-      return Array.ConvertAll(objectArray, e => (byte)e);
-    }
-
-    if (type == typeof(Int16))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (Int16)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(Int32))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (Int32)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(Int64))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (Int64)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(sbyte))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (sbyte)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(UInt16))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (UInt16)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(UInt32))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (UInt32)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (type == typeof(UInt64))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, e => (UInt64)e);
-      for (int i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    throw new NotSupportedException("Unknown data. TODO improve message; extend method");
   }
 
   public static void ApplyLinearTransformation(ref object o, double factor, double offset, Type type)

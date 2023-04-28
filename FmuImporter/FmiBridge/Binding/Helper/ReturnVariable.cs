@@ -2,14 +2,15 @@
 
 namespace Fmi.Binding;
 
-public class ReturnVariable<T>
+public class ReturnVariable
 {
   public struct Variable
   {
     public uint ValueReference;
-    public T[] Values;
+    public object[] Values;
     public IntPtr[] ValueSizes;
     public bool IsScalar;
+    public Type Type;
   }
 
   public Variable[] ResultArray;
@@ -19,13 +20,14 @@ public class ReturnVariable<T>
     ResultArray = Array.Empty<Variable>();
   }
 
-  public static ReturnVariable<T> CreateReturnVariable(
+  public static ReturnVariable CreateReturnVariable<T> (
     uint[] valueReferences,
     T[] values,
     nint nValues,
     ref ModelDescription modelDescription)
+  where T : notnull
   {
-    var result = new ReturnVariable<T>();
+    var result = new ReturnVariable();
     result.ResultArray = new Variable[valueReferences.Length];
 
     int indexCounter = 0;
@@ -40,7 +42,8 @@ public class ReturnVariable<T>
       {
         ValueReference = valueReference,
         ValueSizes = Array.Empty<IntPtr>(),
-        Values = new T[arrayLength],
+        Values = new object[arrayLength],
+        Type = typeof(T),
         IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
       };
       for (ulong j = 0; j < arrayLength; j++)
@@ -55,14 +58,15 @@ public class ReturnVariable<T>
     return result;
   }
 
-  public static ReturnVariable<T> CreateReturnVariable(
+  public static ReturnVariable CreateReturnVariable<T>(
     uint[] valueReferences,
     T[] values,
     nint nValues,
     ref ModelDescription modelDescription,
     size_t[] nValueSizes)
+  where T : notnull
   {
-    var result = new ReturnVariable<T>();
+    var result = new ReturnVariable();
     result.ResultArray = new Variable[valueReferences.Length];
 
     int indexCounter = 0;
@@ -79,7 +83,8 @@ public class ReturnVariable<T>
         ValueReference = valueReference,
         ValueSizes = new IntPtr[arrayLength],
         // T ~ Array of Binaries -> IntPtr[]
-        Values = new T[arrayLength],
+        Values = new object[arrayLength],
+        Type = typeof(T),
         IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
       };
       for (ulong j = 0; j < arrayLength; j++)
