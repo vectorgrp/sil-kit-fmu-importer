@@ -24,4 +24,22 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <DefineConstants>OS_WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <DefineConstants>OS_LINUX</DefineConstants>
+  </PropertyGroup>
+  <!--
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('FreeBSD'))">
+  <DefineConstants>OS_FREEBSD</DefineConstants>
+  </PropertyGroup>-->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <DefineConstants>OS_MAC</DefineConstants>
+  </PropertyGroup>
+
 </Project>

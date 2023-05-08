@@ -5,6 +5,9 @@
         <Message Text="Configuration = $(Configuration)" />
     </Target>
     <PropertyGroup>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
         <Nullable>enable</Nullable>
         <OutDir>$(OutputPath)</OutDir>
         <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
@@ -13,21 +16,27 @@
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
         <Platforms>x64</Platforms>
         <Platform>x64</Platform>
+        <PlatformTarget>x64</PlatformTarget>
         <TargetFramework>net6.0</TargetFramework>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     </PropertyGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)/_obj/$(Configuration)/</IntermediateOutputPath>
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/linux-$(Platform)-$(Configuration)</IntermediateOutputPath>
         <OutputPath>$(MSBuildProjectDirectory)/../_build/linux-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(MSBuildProjectDirectory)/../_publish/linux-$(Platform)-$(Configuration)</PublishDir>
+        <PublishTrimmed>true</PublishTrimmed>
     </PropertyGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)/_obj/$(Configuration)/</IntermediateOutputPath>
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/osx-$(Platform)-$(Configuration)/</IntermediateOutputPath>
         <OutputPath>$(MSBuildProjectDirectory)/../_build/osx-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(MSBuildProjectDirectory)/../_publish/osx-$(Platform)-$(Configuration)</PublishDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) ">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)\_obj\$(Configuration)\</IntermediateOutputPath>
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\win-$(Platform)-$(Configuration)</IntermediateOutputPath>
         <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)-$(Configuration)</PublishDir>
     </PropertyGroup>
 </Project>
