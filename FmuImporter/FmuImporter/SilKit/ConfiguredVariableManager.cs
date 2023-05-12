@@ -101,7 +101,8 @@ public class ConfiguredVariableManager
         continue;
       }
 
-      if (initialKnownsOnly && ModelDescription.ModelStructure.InitialUnknowns.Contains(configuredVariable.FmuVariableDefinition.ValueReference))
+      if (initialKnownsOnly &&
+        ModelDescription.ModelStructure.InitialUnknowns.Contains(configuredVariable.FmuVariableDefinition.ValueReference))
       {
         // skip initially unknown variables
         continue;
@@ -177,7 +178,10 @@ public class ConfiguredVariableManager
   private byte[] TransformAndReencode(byte[] inputData, ConfiguredVariable configuredVariable, Variable mdVar)
   {
     var transformation = configuredVariable.Transformation;
-    if (transformation == null || transformation.Factor == null && transformation.Offset == null && string.IsNullOrEmpty(transformation.TypeDuringTransmission))
+    if (transformation == null ||
+        (transformation.Factor == null &&
+         transformation.Offset == null &&
+         string.IsNullOrEmpty(transformation.TransmissionType)))
     {
       // the transformation block has no (useful) information -> return original data
       return inputData;
@@ -194,7 +198,7 @@ public class ConfiguredVariableManager
 
     var targetArray = new object[arraySize];
 
-    if (string.IsNullOrEmpty(transformation.TypeDuringTransmission))
+    if (string.IsNullOrEmpty(transformation.TransmissionType))
     {
       for (int i = 0; i < arraySize; i++)
       {
@@ -209,7 +213,7 @@ public class ConfiguredVariableManager
       var offset = 0;
       for (int i = 0; i < arraySize; i++)
       {
-        var transformType = Helpers.StringToType(transformation.TypeDuringTransmission.ToLowerInvariant());
+        var transformType = Helpers.StringToType(transformation.TransmissionType.ToLowerInvariant());
         var transmissionData = Helpers.FromByteArray(inputData, transformType, ref offset);
         // re-encode data with variable type
         targetArray[i] = Convert.ChangeType(transmissionData, mdVar.VariableType);
@@ -227,7 +231,9 @@ public class ConfiguredVariableManager
     return SerDes.Serialize(targetArray, isScalar, mdVar.VariableType);
   }
 
-  private byte[] ApplyConfiguredTransformationAndEncode(ReturnVariable.Variable variable, ConfiguredVariable configuredVariable)
+  private byte[] ApplyConfiguredTransformationAndEncode(
+    ReturnVariable.Variable variable,
+    ConfiguredVariable configuredVariable)
   {
     if (configuredVariable.Transformation != null)
     {
@@ -239,9 +245,13 @@ public class ConfiguredVariableManager
         Helpers.ApplyLinearTransformation(ref variable.Values[i], factor, offset, variable.Type);
       }
 
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TypeDuringTransmission))
+      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TransmissionType))
       {
-        return SerDes.Serialize(variable.Values, variable.IsScalar, Helpers.StringToType(configuredVariable.Transformation.TypeDuringTransmission), null);
+        return SerDes.Serialize(
+          variable.Values,
+          variable.IsScalar,
+          Helpers.StringToType(configuredVariable.Transformation.TransmissionType),
+          null);
       }
       else
       {
@@ -249,6 +259,10 @@ public class ConfiguredVariableManager
         return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, null);
       }
     }
-    return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, Array.ConvertAll(variable.ValueSizes, e=>(Int32)e));
+    return SerDes.Serialize(
+      variable.Values,
+      variable.IsScalar,
+      variable.Type,
+      Array.ConvertAll(variable.ValueSizes, e=>(Int32)e));
   }
 }

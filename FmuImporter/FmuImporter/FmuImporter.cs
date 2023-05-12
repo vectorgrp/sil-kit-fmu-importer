@@ -39,10 +39,16 @@ public class FmuImporter
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
       {
         _fmuImporterConfig = new Config.Configuration();
+        _fmuImporterConfig.MergeIncludes();
       }
       else
       {
         _fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
+        if (_fmuImporterConfig.Version == null || _fmuImporterConfig.Version == 0)
+        {
+          throw new BadImageFormatException("The provided configuration file did not contain a valid 'Version' field.");
+        }
+        _fmuImporterConfig.MergeIncludes();
       }
     }
     catch (Exception e)
@@ -109,11 +115,11 @@ public class FmuImporter
     var configuredVariableDictionary =
       new Dictionary<uint, Config.ConfiguredVariable>(ModelDescription.Variables.Values.Count);
 
-    if (_fmuImporterConfig.ConfiguredVariables != null)
+    if (_fmuImporterConfig.VariableConfiguration?.Mappings != null)
     {
-      for (var i = 0; i < _fmuImporterConfig.ConfiguredVariables.Count; i++)
+      for (var i = 0; i < _fmuImporterConfig.VariableConfiguration.Mappings.Count; i++)
       {
-        var configuredVariable = _fmuImporterConfig.ConfiguredVariables[i];
+        var configuredVariable = _fmuImporterConfig.VariableConfiguration.Mappings[i];
         if (configuredVariable.VariableName == null)
         {
           throw new BadImageFormatException($"The configured variable at index '{i}' does not have a variable name.");

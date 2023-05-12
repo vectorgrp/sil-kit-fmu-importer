@@ -1,6 +1,8 @@
+Version: 1
+Include:
+  - ./FmuImporterIncludeConfig.yaml
+
 ParameterSet:
-  IncludeParameterSets:
-    - ./FmuImporterIncludeConfig.yaml
   Parameters:
     - VarName: Float64_fixed_parameter
       Description: Overrides external include parameter
@@ -10,20 +12,22 @@ ParameterSet:
       Value: "Local Data"
     - VarName: Binary_input
       Description: Test override for binary parameter
-      Value: "626172"
+      Value: 626172
 
-ConfiguredVariables:
-  - VariableName: Float64_tunable_parameter
-    TopicName: Float64_tunable_parameter_To_Int32
-    Transformation:
-      Offset: 1.0
-      Factor: 2.0
-      TypeDuringTransmission: Int32
-  - VariableName: Float64_discrete_input
-    Transformation:
-      Offset: 1
-      Factor: 2
-  - VariableName: Float64_continuous_output
-    Transformation:
-      Offset: 1
-      Factor: 2
+VariableConfiguration:
+  UseAsWhitelist: False
+  Mappings:
+    - VariableName: Float64_tunable_parameter
+      TopicName: Float64_tunable_parameter_To_Int32
+      Transformation:
+        Offset: 1.0
+        Factor: 2.0
+        TransmissionType: Int32
+    - VariableName: Float64_discrete_input
+      Transformation:
+        Offset: 1
+        Factor: 2
+    - VariableName: Float64_continuous_output
+      Transformation:
+        Offset: 1
+        Factor: 2
