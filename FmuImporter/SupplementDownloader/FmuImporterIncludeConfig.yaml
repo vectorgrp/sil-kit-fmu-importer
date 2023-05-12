@@ -1,4 +1,9 @@
-﻿ParameterSet:
+﻿Version: 1
+
+Include:
+  - ./FmuImporterConfig.yaml
+
+ParameterSet:
   Description: Externally included ParamSet
   Parameters:
     - VarName: Float64_fixed_parameter

@@ -33,7 +33,7 @@ public class Configuration : ConfigurationPublic
   /// <exception cref="FileNotFoundException">Thrown if the path in the include block of a configuration did not point to a file.</exception>
   public void MergeIncludes()
   {
-    var configHashes = new HashSet<byte[]>();
+    var configHashes = new HashSet<string>();
     AllConfigurations = new LinkedList<Configuration>();
 
     if (Include == null || ConfigurationPath == null)
@@ -67,7 +67,7 @@ public class Configuration : ConfigurationPublic
 
   }
 
-  private List<Configuration>? MergeIncludes(ref HashSet<byte[]> configHashes, Configuration currentConfiguration)
+  private List<Configuration>? MergeIncludes(ref HashSet<string> configHashes, Configuration currentConfiguration)
   {
     var includes = currentConfiguration.Include;
     if (includes == null)
@@ -161,11 +161,11 @@ public class Configuration : ConfigurationPublic
     return Path.Combine(configDir, path);
   }
 
-  private byte[] SHA512CheckSum(string path)
+  private string SHA512CheckSum(string path)
   {
     using SHA512 sha512 = SHA512.Create();
     using FileStream fileStream = File.OpenRead(path);
 
-    return sha512.ComputeHash(fileStream);
+    return BitConverter.ToString(sha512.ComputeHash(fileStream));
   }
 }
