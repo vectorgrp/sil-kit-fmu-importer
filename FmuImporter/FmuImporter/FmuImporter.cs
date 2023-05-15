@@ -115,11 +115,11 @@ public class FmuImporter
     var configuredVariableDictionary =
       new Dictionary<uint, Config.ConfiguredVariable>(ModelDescription.Variables.Values.Count);
 
-    if (_fmuImporterConfig.VariableConfiguration?.Mappings != null)
+    if (_fmuImporterConfig.VariableMappings != null)
     {
-      for (var i = 0; i < _fmuImporterConfig.VariableConfiguration.Mappings.Count; i++)
+      for (var i = 0; i < _fmuImporterConfig.VariableMappings.Count; i++)
       {
-        var configuredVariable = _fmuImporterConfig.VariableConfiguration.Mappings[i];
+        var configuredVariable = _fmuImporterConfig.VariableMappings[i];
         if (configuredVariable.VariableName == null)
         {
           throw new BadImageFormatException($"The configured variable at index '{i}' does not have a variable name.");
@@ -439,17 +439,24 @@ public class FmuImporter
   {
     LogCallback(LogLevel.Info, "Starting Simulation.");
     ulong stepDuration;
-    if (ModelDescription.DefaultExperiment.StepSize.HasValue)
+    if (_fmuImporterConfig.StepSize != null)
     {
-      stepDuration = Helpers.FmiTimeToSilKitTime(ModelDescription.DefaultExperiment.StepSize.Value);
-    }
-    else if (ModelDescription.CoSimulation.FixedInternalStepSize.HasValue)
-    {
-      stepDuration = Helpers.FmiTimeToSilKitTime(ModelDescription.CoSimulation.FixedInternalStepSize.Value);
+      stepDuration = _fmuImporterConfig.StepSize.Value;
     }
     else
     {
-      stepDuration = Helpers.DefaultSimStepDuration;
+      if (ModelDescription.DefaultExperiment.StepSize.HasValue)
+      {
+        stepDuration = Helpers.FmiTimeToSilKitTime(ModelDescription.DefaultExperiment.StepSize.Value);
+      }
+      else if (ModelDescription.CoSimulation.FixedInternalStepSize.HasValue)
+      {
+        stepDuration = Helpers.FmiTimeToSilKitTime(ModelDescription.CoSimulation.FixedInternalStepSize.Value);
+      }
+      else
+      {
+        stepDuration = Helpers.DefaultSimStepDuration;
+      }
     }
 
     SilKitManager.StartSimulation(SimulationStepReached, stepDuration);

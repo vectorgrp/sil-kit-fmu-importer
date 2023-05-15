@@ -10,7 +10,7 @@ public class Configuration : ConfigurationPublic
 
   internal LinkedList<Configuration>? AllConfigurations { get; set; }
 
-  internal Dictionary<string, Parameter>? _resolvedParameters = null;
+  private Dictionary<string, Parameter>? _resolvedParameters = null;
   internal Dictionary<string, Parameter> ResolvedParameters
   {
     get
@@ -47,7 +47,7 @@ public class Configuration : ConfigurationPublic
       throw new FileNotFoundException($"The configuration file '{ConfigurationPath}' was not initialized properly.");
     }
 
-    var hashValue = SHA512CheckSum(fullPath);
+    var hashValue = Sha512CheckSum(fullPath);
     configHashes.Add(hashValue);
     LinkedListNode<Configuration>? currentNode = AllConfigurations.AddFirst(this);
 
@@ -84,7 +84,7 @@ public class Configuration : ConfigurationPublic
         throw new FileNotFoundException($"The file '{includePath}' included in '{ConfigurationPath}' was not found. Searched in '{fullPath}.");
       }
 
-      var hashValue = SHA512CheckSum(fullPath);
+      var hashValue = Sha512CheckSum(fullPath);
       if (configHashes.Contains(hashValue))
       {
         // skip already existing configurations
@@ -115,9 +115,9 @@ public class Configuration : ConfigurationPublic
     do
     {
       var config = currentConfigNode.Value;
-      if (config.ParameterSet != null && config.ParameterSet.Parameters != null)
+      if (config.Parameters != null)
       {
-        foreach (var parameter in config.ParameterSet.Parameters)
+        foreach (var parameter in config.Parameters)
         {
           if (parameterDictionary.ContainsKey(parameter.VarName))
           {
@@ -161,7 +161,7 @@ public class Configuration : ConfigurationPublic
     return Path.Combine(configDir, path);
   }
 
-  private string SHA512CheckSum(string path)
+  private string Sha512CheckSum(string path)
   {
     using SHA512 sha512 = SHA512.Create();
     using FileStream fileStream = File.OpenRead(path);

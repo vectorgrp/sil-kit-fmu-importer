@@ -9,6 +9,7 @@ public static class ConfigParser
 
     var config = deserializer.Deserialize<Configuration>(File.ReadAllText(path));
     config.ConfigurationPath = path;
+    config.IgnoreUnmappedVariables = config.IgnoreUnmappedVariables ?? false;
     ValidateConfig(config);
     return config;
   }
