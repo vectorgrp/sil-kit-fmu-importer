@@ -9,7 +9,8 @@ public class SerDes
   {
     if (isScalar && objectArray.Length > 1)
     {
-      throw new ArgumentOutOfRangeException("objectArray",
+      throw new ArgumentOutOfRangeException(
+        "objectArray",
         "the encoded data was supposed to be scalar, but had more than one entry to encode.");
     }
 
@@ -34,15 +35,15 @@ public class SerDes
       byteList = new List<byte>();
     }
 
-    for (int i = 0; i < objectArray.Length; i++)
+    for (var i = 0; i < objectArray.Length; i++)
     {
       var binDataPtr = (IntPtr)objectArray[i];
-      var rawDataLength = (int)valueSizes[i];
+      var rawDataLength = valueSizes[i];
       var binData = new byte[rawDataLength];
       Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
 
       // append length of following binary blob
-      byteList.AddRange(SerDes.GetArrayHeader(binData.Length));
+      byteList.AddRange(GetArrayHeader(binData.Length));
       // add the data blob
       byteList.AddRange(binData);
     }
@@ -59,10 +60,8 @@ public class SerDes
       result.AddRange(Serialize(objectArray, sourceType));
       return result.ToArray();
     }
-    else
-    {
-      return Serialize(objectArray, sourceType);
-    }
+
+    return Serialize(objectArray, sourceType);
   }
 
   private static byte[] Serialize(object[] objectArray, Type sourceType)
@@ -72,7 +71,7 @@ public class SerDes
     if (sourceType == typeof(float))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToSingle);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -83,7 +82,7 @@ public class SerDes
     if (sourceType == typeof(double))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToDouble);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -99,7 +98,7 @@ public class SerDes
     if (sourceType == typeof(Int16))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt16);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -110,7 +109,7 @@ public class SerDes
     if (sourceType == typeof(Int32))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt32);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -121,7 +120,7 @@ public class SerDes
     if (sourceType == typeof(Int64))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt64);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -132,7 +131,7 @@ public class SerDes
     if (sourceType == typeof(sbyte))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToSByte);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -143,7 +142,7 @@ public class SerDes
     if (sourceType == typeof(UInt16))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt16);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -154,7 +153,7 @@ public class SerDes
     if (sourceType == typeof(UInt32))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt32);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -165,7 +164,7 @@ public class SerDes
     if (sourceType == typeof(UInt64))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt64);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -176,7 +175,7 @@ public class SerDes
     if (sourceType == typeof(bool))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToBoolean);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
       }
@@ -193,11 +192,11 @@ public class SerDes
 
       // strings cannot be convert
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToString);
-      for (int i = 0; i < convertedArray.Length; i++)
+      for (var i = 0; i < convertedArray.Length; i++)
       {
         // TODO check if this conversion works as intended
         var encodedString = Encoding.UTF8.GetBytes((string)(objectArray[i]));
-        Int32 byteCount = encodedString.Length;
+        var byteCount = encodedString.Length;
         var res = new List<byte>(BitConverter.GetBytes(byteCount));
         res.AddRange(encodedString);
         byteList.AddRange(res);

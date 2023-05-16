@@ -10,7 +10,7 @@ public delegate void fmi3LogMessageCallback(
   string category,
   string message);
 
-public enum Fmi3Statuses : int
+public enum Fmi3Statuses
 {
   OK,
   Warning,
@@ -79,7 +79,7 @@ public interface IFmi3Binding : IFmiBindingCommon
 internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 {
   private IntPtr component;
-  GCHandle? loggerHandlerGcHandle;
+  private readonly GCHandle? loggerHandlerGcHandle;
 
 #if OS_WINDOWS
   private const string osPath = "/binaries/x86_64-windows";
@@ -131,7 +131,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out fmi3SetBinary);
   }
 
-  #region IDisposable
+#region IDisposable
 
   ~Fmi3Binding()
   {
@@ -145,6 +145,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   }
 
   private bool mDisposedValue;
+
   protected override void Dispose(bool disposing)
   {
     if (!mDisposedValue)
@@ -161,14 +162,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     base.Dispose(disposing);
   }
 
-  #endregion IDisposable
+#endregion IDisposable
 
   public ModelDescription GetModelDescription()
   {
     return ModelDescription;
   }
 
-  #region Common & Co-Simulation Functions for FMI 3.0
+#region Common & Co-Simulation Functions for FMI 3.0
 
   public void InstantiateCoSimulation(
     string instanceName,
@@ -318,61 +319,73 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       result = GetFloat32(valueRefs);
       return;
     }
+
     if (type == typeof(double))
     {
       result = GetFloat64(valueRefs);
       return;
     }
+
     if (type == typeof(sbyte))
     {
       result = GetInt8(valueRefs);
       return;
     }
+
     if (type == typeof(byte))
     {
       result = GetUInt8(valueRefs);
       return;
     }
+
     if (type == typeof(Int16))
     {
       result = GetInt16(valueRefs);
       return;
     }
+
     if (type == typeof(UInt16))
     {
       result = GetUInt16(valueRefs);
       return;
     }
+
     if (type == typeof(Int32))
     {
       result = GetInt32(valueRefs);
       return;
     }
+
     if (type == typeof(UInt32))
     {
       result = GetUInt32(valueRefs);
       return;
     }
+
     if (type == typeof(Int64))
     {
       result = GetInt64(valueRefs);
       return;
     }
+
     if (type == typeof(UInt64))
     {
       result = GetUInt64(valueRefs);
       return;
     }
+
     if (type == typeof(bool))
     {
       result = GetBoolean(valueRefs);
       return;
     }
+
     if (type == typeof(string))
     {
       result = GetString(valueRefs);
       return;
     }
+
     if (type == typeof(IntPtr))
     {
       result = GetBinary(valueRefs);
@@ -393,7 +406,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var type = mdVar.VariableType;
     var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
 
-    int arraySize = 1;
+    var arraySize = 1;
     if (!isScalar)
     {
       arraySize = BitConverter.ToInt32(data, 0);
@@ -421,7 +434,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         // Apply unit transformation
         // FMU value = [SIL Kit value] * factor + offset
-        for (int i = 0; i < values.Length; i++)
+        for (var i = 0; i < values.Length; i++)
         {
           var value = values[i];
           // first apply factor, then offset
@@ -460,7 +473,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         // Apply unit transformation
         // FMU value = [SIL Kit value] * factor + offset
-        for (int i = 0; i < values.Length; i++)
+        for (var i = 0; i < values.Length; i++)
         {
           var value = values[i];
           // first apply factor, then offset
@@ -624,9 +637,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       var values = new string[arraySize];
 
       // arrays are encoded as arrays of characters and thus always have a leading length indicator of 32 bit
-      int dataOffset = 0;
+      var dataOffset = 0;
 
-      for (int i = 0; i < arraySize; i++)
+      for (var i = 0; i < arraySize; i++)
       {
         var byteLength = BitConverter.ToInt32(data, dataOffset);
         dataOffset += 4; // 4 byte -> 32 bit
@@ -650,7 +663,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
 
-    int arraySize = 1;
+    var arraySize = 1;
     if (!isScalar)
     {
       arraySize = BitConverter.ToInt32(data, 0);
@@ -673,8 +686,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var values = new IntPtr[arraySize];
     var handlers = new GCHandle[arraySize];
 
-    int dataOffset = 0;
-    for (int i = 0; i < arraySize; i++)
+    var dataOffset = 0;
+    for (var i = 0; i < arraySize; i++)
     {
       var currentBinary = new byte[binSizes[i]];
       Buffer.BlockCopy(data, dataOffset, currentBinary, 0, binSizes[i]);
@@ -756,9 +769,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3TerminateTYPE(IntPtr instance);
 
-  #endregion Common & Co-Simulation Functions for FMI 3.0
+#endregion Common & Co-Simulation Functions for FMI 3.0
 
-  #region Getters & Setters
+#region Getters & Setters
 
   /////////////
   // Getters //
@@ -770,7 +783,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new float[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -813,7 +826,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new double[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -855,7 +868,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new sbyte[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -897,7 +910,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new byte[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -939,7 +952,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new short[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -981,7 +994,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new ushort[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1023,7 +1036,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new int[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1065,7 +1078,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new uint[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1107,7 +1120,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new long[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1149,7 +1162,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new ulong[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1191,7 +1204,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new bool[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1233,7 +1246,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var nValues = CalculateValueLength(ref valueReferences);
     var resultRaw = new IntPtr[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1246,13 +1259,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     var result = new string[resultRaw.Length];
-    for (int i = 0; i < result.Length; i++)
+    for (var i = 0; i < result.Length; i++)
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
       if (str == null)
       {
         throw new BadImageFormatException("TODO");
       }
+
       result[i] = str;
     }
 
@@ -1286,8 +1300,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    size_t[] valueSizes = new size_t[valueReferences.Length];
-    size_t nValues = CalculateValueLength(ref valueReferences);
+    var valueSizes = new size_t[valueReferences.Length];
+    var nValues = CalculateValueLength(ref valueReferences);
     var result = new fmi3Binary[(int)nValues];
 
     Helpers.ProcessReturnCode(
@@ -1748,8 +1762,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    IntPtr[] valuePtrs = new IntPtr[values.Length];
-    for (int i = 0; i < values.Length; i++)
+    var valuePtrs = new IntPtr[values.Length];
+    for (var i = 0; i < values.Length; i++)
     {
       valuePtrs[i] = Marshal.StringToHGlobalAnsi(values[i]);
     }
@@ -1825,7 +1839,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr[] values,
     size_t nValues);
 
-  #endregion Getters & Setters
+#endregion Getters & Setters
 
   private size_t CalculateValueLength(ref fmi3ValueReference[] valueReferences)
   {

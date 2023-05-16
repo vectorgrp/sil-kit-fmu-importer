@@ -21,8 +21,14 @@ public class ModelDescription
 
   public Dictionary<uint /* ValueReference */, Variable> Variables
   {
-    get { return variables; }
-    set { variables = value; }
+    get
+    {
+      return variables;
+    }
+    set
+    {
+      variables = value;
+    }
   }
 
   public Dictionary<string, uint> NameToValueReference { get; set; }
@@ -87,7 +93,7 @@ public class ModelDescription
     // Node init
     if (input.CoSimulation.Length < 1)
     {
-      throw new InvalidDataException($"The model description does not provide a CoSimulation description.");
+      throw new InvalidDataException("The model description does not provide a CoSimulation description.");
     }
 
     CoSimulation = new CoSimulation(input.CoSimulation[0]);
@@ -129,7 +135,7 @@ public class ModelDescription
         var typeDef = new TypeDefinition()
         {
           Name = typeDefinitionBase.name,
-          Unit = UnitDefinitions[typeDefFloat64.unit],
+          Unit = UnitDefinitions[typeDefFloat64.unit]
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
@@ -143,13 +149,12 @@ public class ModelDescription
         var typeDef = new TypeDefinition()
         {
           Name = typeDefinitionBase.name,
-          Unit = UnitDefinitions[typeDefFloat32.unit],
+          Unit = UnitDefinitions[typeDefFloat32.unit]
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
       else
       {
-        continue;
       }
     }
   }
@@ -173,7 +178,7 @@ public class ModelDescription
         var typeDef = new TypeDefinition()
         {
           Name = fmi2SimpleType.name,
-          Unit = UnitDefinitions[typeDefReal.unit],
+          Unit = UnitDefinitions[typeDefReal.unit]
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
@@ -278,7 +283,7 @@ public class ModelDescription
 
   public override string ToString()
   {
-    StringBuilder stringBuilder = new StringBuilder();
+    var stringBuilder = new StringBuilder();
     stringBuilder.AppendLine("ModelName: " + ModelName);
     stringBuilder.AppendLine("FMI version: " + FmiVersion);
     stringBuilder.AppendLine("Description: " + Description);

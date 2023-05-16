@@ -26,7 +26,7 @@ public struct Fmi2BindingCallbackFunctions
         Fmi.Helpers.Log(Fmi.Helpers.LogSeverity.Debug, "Step finished with status = " + status);
         stepFinishedDelegate((Fmi2Statuses)status);
       },
-      componentEnvironment = IntPtr.Zero,
+      componentEnvironment = IntPtr.Zero
     };
   }
 
@@ -75,7 +75,7 @@ public struct Fmi2BindingCallbackFunctions
   }
 }
 
-public enum Fmi2Statuses : int
+public enum Fmi2Statuses
 {
   OK,
   Warning,
@@ -140,7 +140,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   private const string osPath = "/binaries/darwin64";
 #endif
 
-  private static AutoResetEvent waitForDoStepEvent = new AutoResetEvent(false);
+  private static readonly AutoResetEvent waitForDoStepEvent = new AutoResetEvent(false);
 
   public Fmi2Binding(string fmuPath) : base(fmuPath, osPath)
   {
@@ -171,7 +171,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     SetDelegate(out fmi2GetFMUstate);
   }
 
-  #region IDisposable
+#region IDisposable
 
   ~Fmi2Binding()
   {
@@ -201,7 +201,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     base.Dispose(disposing);
   }
 
-  #endregion IDisposable
+#endregion IDisposable
 
   public override void GetValue(uint[] valueRefs, out ReturnVariable result, Type type)
   {
@@ -211,18 +211,21 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
       return;
     }
+
     if (type == typeof(int))
     {
       var vFmi = GetInteger(valueRefs);
       result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
       return;
     }
+
     if (type == typeof(bool))
     {
       var vFmi = GetBoolean(valueRefs);
       result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
       return;
     }
+
     if (type == typeof(string))
     {
       var vFmi = GetString(valueRefs);
@@ -306,7 +309,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     waitForDoStepEvent.Set();
   }
 
-  #region Common & Co-Simulation Functions for FMI 2.x
+#region Common & Co-Simulation Functions for FMI 2.x
 
   public void SetDebugLogging(bool loggingOn, string[] categories)
   {
@@ -526,9 +529,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi2CancelStepTYPE(IntPtr c);
 
-  #endregion Common & Co-Simulation Functions for FMI 2.x
+#endregion Common & Co-Simulation Functions for FMI 2.x
 
-  #region Variable Getters & Setters
+#region Variable Getters & Setters
 
   /////////////
   // Getters //
@@ -637,13 +640,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     var result = new string[resultRaw.Length];
-    for (int i = 0; i < result.Length; i++)
+    for (var i = 0; i < result.Length; i++)
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
       if (str == null)
       {
         throw new BadImageFormatException("TODO");
       }
+
       result[i] = str;
     }
 
@@ -757,8 +761,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    IntPtr[] valuePtrs = new IntPtr[values.Length];
-    for (int i = 0; i < values.Length; i++)
+    var valuePtrs = new IntPtr[values.Length];
+    for (var i = 0; i < values.Length; i++)
     {
       valuePtrs[i] = Marshal.StringToHGlobalAnsi(values[i]);
     }
@@ -782,7 +786,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
     IntPtr[] valuePtrs);
 
-  #endregion Variable Getters & Setters
+#endregion Variable Getters & Setters
 
   /*
    typedef fmi2Status fmi2GetFMUstateTYPE(fmi2Component c, fmi2FMUstate* FMUstate);

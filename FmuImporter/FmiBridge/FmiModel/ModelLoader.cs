@@ -57,7 +57,7 @@ public class ModelLoader
       case FmiVersions.Fmi2:
       {
         ser = new XmlSerializer(typeof(Fmi2.fmiModelDescription));
-        Fmi2.fmiModelDescription? fmiModelDescription = ser.Deserialize(fileStream) as Fmi2.fmiModelDescription;
+        var fmiModelDescription = ser.Deserialize(fileStream) as Fmi2.fmiModelDescription;
         if (fmiModelDescription != null)
         {
           commonDescription = new ModelDescription(fmiModelDescription);
@@ -68,7 +68,7 @@ public class ModelLoader
       case FmiVersions.Fmi3:
       {
         ser = new XmlSerializer(typeof(Fmi3.fmiModelDescription));
-        Fmi3.fmiModelDescription? fmiModelDescription = ser.Deserialize(fileStream) as Fmi3.fmiModelDescription;
+        var fmiModelDescription = ser.Deserialize(fileStream) as Fmi3.fmiModelDescription;
         if (fmiModelDescription != null)
         {
           commonDescription = new ModelDescription(fmiModelDescription);
@@ -97,7 +97,7 @@ public class ModelLoader
     }
     else
     {
-      ZipArchive zip = ZipFile.Open(fmuPath, ZipArchiveMode.Read);
+      var zip = ZipFile.Open(fmuPath, ZipArchiveMode.Read);
       var zipEntry = zip.GetEntry("modelDescription.xml");
       if (zipEntry == null)
       {
@@ -107,11 +107,11 @@ public class ModelLoader
       stream = zipEntry.Open();
     }
 
-    XmlDocument doc = new XmlDocument();
+    var doc = new XmlDocument();
     doc.Load(stream);
 
-    XmlElement? root = doc.DocumentElement;
-    XmlNode? node = root?.SelectSingleNode("//fmiModelDescription");
+    var root = doc.DocumentElement;
+    var node = root?.SelectSingleNode("//fmiModelDescription");
     var attr = node?.Attributes?.GetNamedItem("fmiVersion");
     var returnValue = attr?.Value;
 

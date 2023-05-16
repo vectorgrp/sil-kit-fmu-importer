@@ -43,30 +43,31 @@ public class PubSubSpec
 
   public void AddLabel(string key, string value, MatchingLabel.Kinds kind)
   {
-    Labels.Add(new MatchingLabel()
-    {
-      Key = key,
-      Value = value,
-      Kind = kind
-    });
+    Labels.Add(
+      new MatchingLabel
+      {
+        Key = key,
+        Value = value,
+        Kind = kind
+      });
   }
 
   internal IntPtr toSilKitDataSpec()
   {
     var dataSpec = new SilKit_DataSpec
     {
-      mediaType = this.MediaType,
-      topic = this.Topic
+      mediaType = MediaType,
+      topic = Topic
     };
 
     var labelList = new SilKit_LabelList
     {
-      numLabels = (IntPtr)this.Labels.Count
+      numLabels = (IntPtr)Labels.Count
     };
 
     var labels = new SilKit_Label[(int)labelList.numLabels];
     var labelsPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_Label>() * (int)labelList.numLabels);
-    for (int i = 0; i < (int)labelList.numLabels; i++)
+    for (var i = 0; i < (int)labelList.numLabels; i++)
     {
       var l = Labels[i];
       labels[i] = new SilKit_Label()
@@ -113,7 +114,7 @@ internal struct SilKit_LabelList
 {
   internal IntPtr /* size_t */ numLabels;
   internal IntPtr labels;
-};
+}
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
 internal struct SilKit_Label

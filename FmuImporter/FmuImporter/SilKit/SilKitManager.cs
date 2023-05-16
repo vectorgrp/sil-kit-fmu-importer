@@ -1,7 +1,7 @@
-﻿using SilKit.Config;
-using SilKit.Services.Orchestration;
-using SilKit;
+﻿using SilKit;
+using SilKit.Config;
 using SilKit.Services.Logger;
+using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
 using SilKit.Supplements.VendorData;
 
@@ -38,7 +38,8 @@ public class SilKitManager : IDisposable
     config.Dispose();
   }
 
-  #region service creation
+#region service creation
+
   public IDataPublisher CreatePublisher(string serviceName, string topicName, byte historySize)
   {
     var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData);
@@ -46,7 +47,11 @@ public class SilKitManager : IDisposable
     return _participant.CreateDataPublisher(serviceName, dataSpec, historySize);
   }
 
-  public IDataSubscriber CreateSubscriber(string serviceName, string topicName, IntPtr context, DataMessageHandler handler)
+  public IDataSubscriber CreateSubscriber(
+    string serviceName,
+    string topicName,
+    IntPtr context,
+    DataMessageHandler handler)
   {
     var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData);
 
@@ -56,9 +61,11 @@ public class SilKitManager : IDisposable
       context,
       handler);
   }
-  #endregion service creation
-  
-  #region simulation control
+
+#endregion service creation
+
+#region simulation control
+
   public void StartSimulation(SimulationStepHandler handler, ulong initialStepSizeInNs)
   {
     _timeSyncService.SetSimulationStepHandler(handler, initialStepSizeInNs);
@@ -70,9 +77,11 @@ public class SilKitManager : IDisposable
   {
     _lifecycleService.Stop(reason);
   }
-  #endregion simulation control
 
-  #region IDisposable
+#endregion simulation control
+
+#region IDisposable
+
   ~SilKitManager()
   {
     Dispose(false);
@@ -104,5 +113,6 @@ public class SilKitManager : IDisposable
     Dispose(true);
     GC.SuppressFinalize(this);
   }
-  #endregion
+
+#endregion
 }

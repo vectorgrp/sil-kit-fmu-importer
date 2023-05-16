@@ -5,7 +5,7 @@ namespace FmuImporter;
 public static class Helpers
 {
   /// <summary>
-  /// Converts SIL Kit time (measured in nanoseconds) to FMI time (measured in seconds)
+  ///   Converts SIL Kit time (measured in nanoseconds) to FMI time (measured in seconds)
   /// </summary>
   /// <param name="silKitTimeInNs">The time used in SIL Kit (ns as ulong)</param>
   /// <returns>The time used in FMI (s as double)</returns>
@@ -15,7 +15,7 @@ public static class Helpers
   }
 
   /// <summary>
-  /// Converts FMI time (measured in seconds) to SIL Kit time (measured in nanoseconds)
+  ///   Converts FMI time (measured in seconds) to SIL Kit time (measured in nanoseconds)
   /// </summary>
   /// <param name="fmiTimeInS">The time used in FMI (s as double)</param>
   /// <returns>The time used in SIL Kit (ns as ulong)</returns>
@@ -56,7 +56,7 @@ public static class Helpers
         throw new NotSupportedException($"The transformDuringTransmissionType '{s}' does not exist.");
     }
   }
-  
+
   public static object FromByteArray(byte[] data, Type type, ref int currentScanIndex)
   {
     if (type == typeof(float))
@@ -65,76 +65,76 @@ public static class Helpers
       currentScanIndex += sizeof(float);
       return result;
     }
-  
+
     if (type == typeof(double))
     {
       var result = BitConverter.ToDouble(data, currentScanIndex);
       currentScanIndex += sizeof(double);
       return result;
     }
-  
+
     if (type == typeof(byte))
     {
       currentScanIndex += sizeof(byte);
       return data[currentScanIndex - sizeof(byte)];
     }
-  
+
     if (type == typeof(Int16))
     {
       var result = BitConverter.ToInt16(data, currentScanIndex);
       currentScanIndex += sizeof(Int16);
       return result;
     }
-  
+
     if (type == typeof(Int32))
     {
       var result = BitConverter.ToInt32(data, currentScanIndex);
       currentScanIndex += sizeof(Int32);
       return result;
     }
-  
+
     if (type == typeof(Int64))
     {
       var result = BitConverter.ToInt64(data, currentScanIndex);
       currentScanIndex += sizeof(Int64);
       return result;
     }
-  
+
     if (type == typeof(sbyte))
     {
       var result = (sbyte)(data[currentScanIndex]);
       currentScanIndex += sizeof(sbyte);
       return result;
     }
-  
+
     if (type == typeof(UInt16))
     {
       var result = BitConverter.ToUInt16(data, currentScanIndex);
       currentScanIndex += sizeof(UInt16);
       return result;
     }
-  
+
     if (type == typeof(UInt32))
     {
       var result = BitConverter.ToUInt32(data, currentScanIndex);
       currentScanIndex += sizeof(UInt32);
       return result;
     }
-  
+
     if (type == typeof(UInt64))
     {
       var result = BitConverter.ToUInt64(data, currentScanIndex);
       currentScanIndex += sizeof(UInt64);
       return result;
     }
-  
+
     if (type == typeof(bool))
     {
       var result = BitConverter.ToBoolean(data, currentScanIndex);
       currentScanIndex += sizeof(bool);
       return result;
     }
-  
+
     if (type == typeof(string))
     {
       // NB this assumes a SIL Kit encoded string
@@ -144,7 +144,7 @@ public static class Helpers
       currentScanIndex += stringLength;
       return result;
     }
-  
+
     throw new NotSupportedException($"Failed to convert byte array into requested type '{type.Name}'");
   }
 

@@ -18,7 +18,8 @@ public static class ConfigParser
   {
     if (config.Version == null || config.Version == 0)
     {
-      throw new InvalidConfigurationException($"The loaded configuration is missing a Version field. Path: {config.ConfigurationPath}");
+      throw new InvalidConfigurationException(
+        $"The loaded configuration is missing a Version field. Path: {config.ConfigurationPath}");
     }
   }
 }

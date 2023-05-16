@@ -12,10 +12,17 @@ public class DataPublisher : IDataPublisher
   private readonly Participant participant;
 
   private IntPtr dataPublisherPtr;
+
   internal IntPtr DataPublisherPtr
   {
-    get { return dataPublisherPtr; }
-    private set { dataPublisherPtr = value; }
+    get
+    {
+      return dataPublisherPtr;
+    }
+    private set
+    {
+      dataPublisherPtr = value;
+    }
   }
 
   internal DataPublisher(Participant participant, string controllerName, PubSubSpec dataSpec, byte history)
@@ -51,9 +58,9 @@ public class DataPublisher : IDataPublisher
 
   public void Publish(byte[] data)
   {
-    GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+    var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
     var dataPtr = handle.AddrOfPinnedObject();
-    var byteVector = new SilKit_ByteVector()
+    var byteVector = new SilKit_ByteVector
     {
       data = dataPtr,
       size = (IntPtr)data.Length

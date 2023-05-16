@@ -22,7 +22,10 @@ public class SilKitWrapper
 
   public static SilKitWrapper Instance
   {
-    get { return sSilKitWrapperInstance.Value; }
+    get
+    {
+      return sSilKitWrapperInstance.Value;
+    }
   }
 
   public ParticipantConfiguration GetConfigurationFromFile(string configPath)
@@ -69,7 +72,7 @@ internal static class SilKitVersion
     Lin = 4,
     Data = 5,
     Rpc = 6,
-    Participant = 7,
+    Participant = 7
   }
 
   public enum DatatypeId : byte
@@ -234,7 +237,7 @@ internal static class SilKitVersion
 
     ParticipantStatus = 1,
     LifecycleConfiguration = 2,
-    WorkflowConfiguration = 3,
+    WorkflowConfiguration = 3
 
     // // Participant data type Versions
     // #define SilKit_ParticipantStatus_VERSION 1
@@ -247,9 +250,9 @@ internal static class SilKitVersion
     // #define SilKit_WorkflowConfiguration_STRUCT_VERSION        SK_ID_MAKE(Participant, SilKit_WorkflowConfiguration)
   }
 
-  private static ulong GetVersion(SilKitVersion.ServiceId serviceName, SilKitVersion.DatatypeId datatypeName)
+  private static ulong GetVersion(ServiceId serviceName, DatatypeId datatypeName)
   {
-    var id = SilKitVersion.SK_ID_MAKE(serviceName, datatypeName, 1);
+    var id = SK_ID_MAKE(serviceName, datatypeName, 1);
     return id;
   }
 

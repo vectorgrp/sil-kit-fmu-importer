@@ -14,7 +14,7 @@ public class ConfiguredVariableManager
   private List<ConfiguredVariable> OutputConfiguredVariables { get; }
   private List<ConfiguredVariable> ParameterConfiguredVariables { get; }
 
-  private Dictionary<uint/* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
+  private Dictionary<uint /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
 
   public ConfiguredVariableManager(IFmiBindingCommon binding, ModelDescription modelDescription)
   {
@@ -102,7 +102,8 @@ public class ConfiguredVariableManager
       }
 
       if (initialKnownsOnly &&
-        ModelDescription.ModelStructure.InitialUnknowns.Contains(configuredVariable.FmuVariableDefinition.ValueReference))
+          ModelDescription.ModelStructure.InitialUnknowns.Contains(
+            configuredVariable.FmuVariableDefinition.ValueReference))
       {
         // skip initially unknown variables
         continue;
@@ -110,9 +111,9 @@ public class ConfiguredVariableManager
 
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
       // TODO: Extend when introducing signal groups
-      var valueRefArr = new [] { configuredVariable.FmuVariableDefinition.ValueReference };
+      var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
 
-      Binding.GetValue(valueRefArr, out ReturnVariable result, configuredVariableType);
+      Binding.GetValue(valueRefArr, out var result, configuredVariableType);
       if (configuredVariable.FmuVariableDefinition.VariableType == typeof(float) ||
           configuredVariable.FmuVariableDefinition.VariableType == typeof(double))
       {
@@ -120,7 +121,7 @@ public class ConfiguredVariableManager
         foreach (var variable in result.ResultArray)
         {
           var mdVar = ModelDescription.Variables[variable.ValueReference];
-          for (int i = 0; i < variable.Values.Length; i++)
+          for (var i = 0; i < variable.Values.Length; i++)
           {
             var unit = mdVar.TypeDefinition?.Unit;
             if (unit != null)
@@ -171,6 +172,7 @@ public class ConfiguredVariableManager
         // Reverse type transformation
         data = TransformAndReencode(data, configuredVariable, ModelDescription.Variables[refValue]);
       }
+
       Binding.SetValue(refValue, data);
     }
   }
@@ -200,7 +202,7 @@ public class ConfiguredVariableManager
 
     if (string.IsNullOrEmpty(transformation.TransmissionType))
     {
-      for (int i = 0; i < arraySize; i++)
+      for (var i = 0; i < arraySize; i++)
       {
         // convert data to target type
         var offset = 0;
@@ -211,7 +213,7 @@ public class ConfiguredVariableManager
     {
       // convert byte array to transform type
       var offset = 0;
-      for (int i = 0; i < arraySize; i++)
+      for (var i = 0; i < arraySize; i++)
       {
         var transformType = Helpers.StringToType(transformation.TransmissionType.ToLowerInvariant());
         var transmissionData = Helpers.FromByteArray(inputData, transformType, ref offset);
@@ -221,7 +223,7 @@ public class ConfiguredVariableManager
     }
 
     // Apply factor and offset transform
-    for (int i = 0; i < arraySize; i++)
+    for (var i = 0; i < arraySize; i++)
     {
       var factor = transformation.Factor ?? 1;
       var offset = transformation.Offset ?? 0;
@@ -238,7 +240,7 @@ public class ConfiguredVariableManager
     if (configuredVariable.Transformation != null)
     {
       // Apply factor and offset transform
-      for (int i = 0; i < variable.Values.Length; i++)
+      for (var i = 0; i < variable.Values.Length; i++)
       {
         var factor = configuredVariable.Transformation.Factor ?? 1;
         var offset = configuredVariable.Transformation.Offset ?? 0;
@@ -253,16 +255,15 @@ public class ConfiguredVariableManager
           Helpers.StringToType(configuredVariable.Transformation.TransmissionType),
           null);
       }
-      else
-      {
-        // encode
-        return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, null);
-      }
+
+      // encode
+      return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, null);
     }
+
     return SerDes.Serialize(
       variable.Values,
       variable.IsScalar,
       variable.Type,
-      Array.ConvertAll(variable.ValueSizes, e=>(Int32)e));
+      Array.ConvertAll(variable.ValueSizes, e => (Int32)e));
   }
 }

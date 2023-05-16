@@ -20,19 +20,19 @@ public class ReturnVariable
     ResultArray = Array.Empty<Variable>();
   }
 
-  public static ReturnVariable CreateReturnVariable<T> (
+  public static ReturnVariable CreateReturnVariable<T>(
     uint[] valueReferences,
     T[] values,
     nint nValues,
     ref ModelDescription modelDescription)
-  where T : notnull
+    where T : notnull
   {
     var result = new ReturnVariable();
     result.ResultArray = new Variable[valueReferences.Length];
 
-    int indexCounter = 0;
+    var indexCounter = 0;
 
-    for (int i = 0; i < valueReferences.Length; i++)
+    for (var i = 0; i < valueReferences.Length; i++)
     {
       var valueReference = valueReferences[i];
       var modelVar = modelDescription.Variables[valueReference];
@@ -64,15 +64,15 @@ public class ReturnVariable
     nint nValues,
     ref ModelDescription modelDescription,
     size_t[] nValueSizes)
-  where T : notnull
+    where T : notnull
   {
     var result = new ReturnVariable();
     result.ResultArray = new Variable[valueReferences.Length];
 
-    int indexCounter = 0;
+    var indexCounter = 0;
 
     // outer loop -> value references
-    for (int i = 0; i < valueReferences.Length; i++)
+    for (var i = 0; i < valueReferences.Length; i++)
     {
       var valueReference = valueReferences[i];
       var modelVar = modelDescription.Variables[valueReference];

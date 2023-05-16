@@ -9,23 +9,23 @@ namespace SilKit;
 public class Participant : IDisposable
 {
   private static readonly object lockObject = new object();
-  private static ILogger? _logger = null;
-  internal static ILogger? Logger
+  internal static ILogger? Logger { get; private set; }
+
+  private IntPtr participantPtr = IntPtr.Zero;
+
+  internal IntPtr ParticipantPtr
   {
     get
     {
-      return _logger;
+      return participantPtr;
+    }
+    private set
+    {
+      participantPtr = value;
     }
   }
 
-  private IntPtr participantPtr = IntPtr.Zero;
-  internal IntPtr ParticipantPtr
-  {
-    get { return participantPtr; }
-    private set { participantPtr = value; }
-  }
-
-  #region ctor & dtor
+#region ctor & dtor
 
   public Participant(ParticipantConfiguration configuration, string participantName, string registryUri)
   {
@@ -36,7 +36,7 @@ public class Participant : IDisposable
         participantName,
         registryUri),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
-    _logger = new Logger(ParticipantPtr);
+    Logger = new Logger(ParticipantPtr);
   }
 
   /*
@@ -93,7 +93,7 @@ public class Participant : IDisposable
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
   private static extern int SilKit_Participant_Destroy([In] IntPtr participant);
 
-  #endregion ctor & dtor
+#endregion ctor & dtor
 
   public ILifecycleService CreateLifecycleService(LifecycleService.LifecycleConfiguration lc)
   {
@@ -120,6 +120,7 @@ public class Participant : IDisposable
     {
       throw new NullReferenceException("GetLogger failed to retrieve a logger object");
     }
+
     return Logger;
   }
 }

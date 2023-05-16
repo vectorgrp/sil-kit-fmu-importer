@@ -1,6 +1,6 @@
-﻿using System.Globalization;
+﻿using System.CommandLine;
+using System.Globalization;
 using System.IO.Compression;
-using System.CommandLine;
 
 namespace Tests_Demos;
 
@@ -16,17 +16,21 @@ public class Demo
     var rootCommand = new RootCommand("Supplement Downloader for FMU Importer for SIL Kit");
 
     var silKitCommand = new Command("sil-kit", "Download SIL Kit library");
-    silKitCommand.SetHandler(async () =>
-    {
-      await DownloadSilKit();
-    });
+    silKitCommand.SetHandler(
+      async () =>
+      {
+        await DownloadSilKit();
+      });
     rootCommand.Add(silKitCommand);
 
-    var referenceFmuCommand = new Command("reference-fmus", "Download Modelica Reference FMUs and create sample config for SIL Kit FMU Importer");
-    referenceFmuCommand.SetHandler(async () =>
-    {
-      await DownloadModelicaReferenceFmus();
-    });
+    var referenceFmuCommand = new Command(
+      "reference-fmus",
+      "Download Modelica Reference FMUs and create sample config for SIL Kit FMU Importer");
+    referenceFmuCommand.SetHandler(
+      async () =>
+      {
+        await DownloadModelicaReferenceFmus();
+      });
     rootCommand.Add(referenceFmuCommand);
 
 
@@ -50,7 +54,7 @@ public class Demo
     return;
 #endif
 
-    string silKitVersionName = $"SilKit-{silKitVersion}-{usedOsArch}";
+    var silKitVersionName = $"SilKit-{silKitVersion}-{usedOsArch}";
     var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
     if (assemblyLocation == null)
     {
@@ -64,6 +68,7 @@ public class Demo
       Console.WriteLine("Failed to retrieve directory of current application.");
       return;
     }
+
     var destinationPath = Path.GetFullPath(Path.Combine(assemblyDirectory, libraryName));
 
     if (File.Exists(destinationPath))
@@ -74,17 +79,19 @@ public class Demo
 
     // Automatically download sil-kit
     // SampleURL: https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.23/SilKit-4.0.23-Win-x86_64-VS2017.zip
-    var uriWindows = new Uri($"https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv{silKitVersion}/{silKitVersionName}.zip");
+    var uriWindows = new Uri(
+      $"https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv{silKitVersion}/{silKitVersionName}.zip");
 
     var client = new HttpClient();
     client.DefaultRequestHeaders.Accept.Clear();
-    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Accept.Add(
+      new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
     Console.Write("Downloading SIL Kit package from github.com...");
     var response = await client.GetAsync(uriWindows);
     var contentStream = await response.Content.ReadAsStreamAsync();
     Console.Write($" Done.\nExtracting SIL Kit library ({libraryName})...");
 
-    ZipArchive zip = new ZipArchive(contentStream, ZipArchiveMode.Read, false);
+    var zip = new ZipArchive(contentStream, ZipArchiveMode.Read, false);
 #if OS_WINDOWS
     var zipEntry = zip.GetEntry($"{silKitVersionName}/SilKit/bin/{libraryName}");
 #elif OS_LINUX
@@ -100,14 +107,14 @@ public class Demo
     }
 
     zipEntry.ExtractToFile(destinationPath);
-    Console.WriteLine($" Done.");
+    Console.WriteLine(" Done.");
   }
 
   private static async Task DownloadModelicaReferenceFmus()
   {
     const string refFmuVersion = "0.0.23";
 
-    string refFmuArchiveNameNoExt = $"Reference-FMUs-{refFmuVersion}";
+    var refFmuArchiveNameNoExt = $"Reference-FMUs-{refFmuVersion}";
     var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
     if (assemblyLocation == null)
     {
@@ -121,6 +128,7 @@ public class Demo
       Console.WriteLine("Failed to retrieve directory of current application.");
       return;
     }
+
     var destinationPath = Path.GetFullPath(Path.Combine(assemblyDirectory, refFmuArchiveNameNoExt));
 
     if (Directory.Exists(destinationPath))
@@ -131,18 +139,20 @@ public class Demo
 
     // Automatically download reference FMU
     // Sample URL: https://github.com/modelica/Reference-FMUs/releases/download/v0.0.23/Reference-FMUs-0.0.23.zip
-    var uriWindows = new Uri($"https://github.com/modelica/Reference-FMUs/releases/download/v{refFmuVersion}/{refFmuArchiveNameNoExt}.zip");
+    var uriWindows = new Uri(
+      $"https://github.com/modelica/Reference-FMUs/releases/download/v{refFmuVersion}/{refFmuArchiveNameNoExt}.zip");
 
     var client = new HttpClient();
     client.DefaultRequestHeaders.Accept.Clear();
-    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Accept.Add(
+      new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
     Console.Write("Downloading Modelica reference FMU archive from github.com...");
     var response = await client.GetAsync(uriWindows);
     var contentStream = await response.Content.ReadAsStreamAsync();
-    Console.Write($" Done.\nExtracting content...");
+    Console.Write(" Done.\nExtracting content...");
 
-    ZipArchive zip = new ZipArchive(contentStream, ZipArchiveMode.Read, false);
+    var zip = new ZipArchive(contentStream, ZipArchiveMode.Read, false);
     zip.ExtractToDirectory(destinationPath);
-    Console.WriteLine($" Done.");
+    Console.WriteLine(" Done.");
   }
 }

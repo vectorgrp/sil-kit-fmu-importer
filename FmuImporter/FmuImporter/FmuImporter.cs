@@ -30,7 +30,12 @@ public class FmuImporter
     SilKitManager.Logger.Log(logLevel, message);
   }
 
-  public FmuImporter(string fmuPath, string? silKitConfigurationPath, string? fmuImporterConfigFilePath, string participantName, bool useStopTime)
+  public FmuImporter(
+    string fmuPath,
+    string? silKitConfigurationPath,
+    string? fmuImporterConfigFilePath,
+    string participantName,
+    bool useStopTime)
   {
     SilKitManager = new SilKitManager(silKitConfigurationPath, participantName);
 
@@ -48,6 +53,7 @@ public class FmuImporter
         {
           throw new BadImageFormatException("The provided configuration file did not contain a valid 'Version' field.");
         }
+
         _fmuImporterConfig.MergeIncludes();
       }
     }
@@ -63,7 +69,7 @@ public class FmuImporter
     PrepareConfiguredVariables();
   }
 
-  #region IDisposable
+#region IDisposable
 
   ~FmuImporter()
   {
@@ -102,7 +108,7 @@ public class FmuImporter
     GC.SuppressFinalize(this);
   }
 
-  #endregion IDisposable
+#endregion IDisposable
 
   private void PrepareConfiguredVariables()
   {
@@ -129,7 +135,8 @@ public class FmuImporter
           ModelDescription.NameToValueReference.TryGetValue(configuredVariable.VariableName, out var refValue);
         if (!success)
         {
-          throw new BadImageFormatException($"The configured variable '{configuredVariable.VariableName}' cannot be found in the model description.");
+          throw new BadImageFormatException(
+            $"The configured variable '{configuredVariable.VariableName}' cannot be found in the model description.");
         }
 
         configuredVariableDictionary.Add(refValue, configuredVariable);
@@ -177,8 +184,11 @@ public class FmuImporter
 
         if (configuredVariable.FmuVariableDefinition.Causality == Variable.Causalities.Input)
         {
-          var sub = SilKitManager.CreateSubscriber(configuredVariable.VariableName, configuredVariable.TopicName,
-            new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference), DataMessageHandler);
+          var sub = SilKitManager.CreateSubscriber(
+            configuredVariable.VariableName,
+            configuredVariable.TopicName,
+            new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+            DataMessageHandler);
 
           ConfiguredVariableManager.AddSubscriber(configuredVariable, sub);
         }
@@ -269,9 +279,9 @@ public class FmuImporter
 
     // Prepare FMU
     var functions = new Fmi2BindingCallbackFunctions(
-      loggerDelegate: (name, status, category, message) =>
+      (name, status, category, message) =>
       {
-        string msg = $"Logger: Name={name}; status={status}; category={category};\n  message={message}";
+        var msg = $"Logger: Name={name}; status={status}; category={category};\n  message={message}";
         switch (status)
         {
           case Fmi2Statuses.OK:
@@ -291,9 +301,8 @@ public class FmuImporter
           default:
             throw new ArgumentOutOfRangeException(nameof(status), status, null);
         }
-
       },
-      stepFinishedDelegate: status =>
+      status =>
       {
         fmi2Binding.NotifyAsyncDoStepReturned(status);
       });
@@ -370,6 +379,7 @@ public class FmuImporter
           throw new ArgumentException(
             $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
         }
+
         result = ModelDescription.Variables.TryGetValue(refValue, out var v);
         if (!result || v == null)
         {
@@ -386,6 +396,7 @@ public class FmuImporter
           {
             throw new NotSupportedException("FMI 2.0.x does not support arrays.");
           }
+
           data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
         }
         else
@@ -404,6 +415,7 @@ public class FmuImporter
           {
             throw new NotSupportedException("FMI 2.0.x does not support the binary data type.");
           }
+
           Binding.SetValue(refValue, data, binSizes.ToArray());
         }
       }
@@ -412,8 +424,8 @@ public class FmuImporter
 
   private void Logger(IntPtr instanceEnvironment, Fmi3Statuses status, string category, string message)
   {
-    string msg = $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};" +
-                 $"\n  message={message}";
+    var msg = $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};" +
+              $"\n  message={message}";
 
     switch (status)
     {

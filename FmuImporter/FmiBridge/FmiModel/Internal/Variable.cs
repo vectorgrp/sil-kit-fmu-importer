@@ -49,9 +49,13 @@ public class Variable
   public object[]? Start { get; set; }
 
   private ulong[]? dimensions;
+
   public ulong[]? Dimensions
   {
-    get { return dimensions; }
+    get
+    {
+      return dimensions;
+    }
     set
     {
       dimensions = value;
@@ -88,6 +92,7 @@ public class Variable
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
         }
+
         break;
       case Fmi3.fmi3Float64 inputVar:
         VariableType = typeof(double);
@@ -95,6 +100,7 @@ public class Variable
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
         }
+
         break;
       case Fmi3.fmi3Int8:
         VariableType = typeof(sbyte);
@@ -234,6 +240,7 @@ public class Variable
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
         }
+
         break;
       case Fmi2.fmi2ScalarVariableBoolean:
         VariableType = typeof(bool);
@@ -323,6 +330,7 @@ public class Variable
           {
             InitialValue = InitialValues.Exact;
           }
+
           break;
         }
         case Causalities.CalculatedParameter:
@@ -330,6 +338,7 @@ public class Variable
           {
             InitialValue = InitialValues.Calculated;
           }
+
           break;
         case Causalities.Input:
           // no sets allowed
@@ -343,6 +352,7 @@ public class Variable
           {
             InitialValue = InitialValues.Calculated;
           }
+
           break;
         case Causalities.Local:
           if (Variability == Variabilities.Constant)
@@ -357,6 +367,7 @@ public class Variable
           {
             InitialValue = InitialValues.Calculated;
           }
+
           break;
         case Causalities.Independent:
           // no sets allowed

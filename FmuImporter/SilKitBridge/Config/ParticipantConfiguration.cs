@@ -5,10 +5,17 @@ namespace SilKit.Config;
 public class ParticipantConfiguration : IDisposable
 {
   private IntPtr configurationPtr;
+
   internal IntPtr ParticipantConfigurationPtr
   {
-    get { return configurationPtr; }
-    private set { configurationPtr = value; }
+    get
+    {
+      return configurationPtr;
+    }
+    private set
+    {
+      configurationPtr = value;
+    }
   }
 
   internal ParticipantConfiguration(string configurationString)
@@ -20,7 +27,7 @@ public class ParticipantConfiguration : IDisposable
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
-  #region IDisposable
+#region IDisposable
 
   ~ParticipantConfiguration()
   {
@@ -57,7 +64,7 @@ public class ParticipantConfiguration : IDisposable
     GC.SuppressFinalize(this);
   }
 
-  #endregion IDisposable
+#endregion IDisposable
 
   /*
       SilKit_ParticipantConfiguration_FromString(

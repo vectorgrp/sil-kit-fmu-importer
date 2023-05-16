@@ -12,8 +12,8 @@ public struct DataMessageEvent
 {
   internal DataMessageEvent(DataMessageEventInternal internalDataMessageEvent)
   {
-    this.timestampInNs = internalDataMessageEvent.timestampInNs;
-    this.data = new byte[(int)internalDataMessageEvent.data.size];
+    timestampInNs = internalDataMessageEvent.timestampInNs;
+    data = new byte[(int)internalDataMessageEvent.data.size];
     Marshal.Copy(internalDataMessageEvent.data.data, data, 0, data.Length);
   }
 

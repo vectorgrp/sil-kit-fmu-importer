@@ -13,15 +13,16 @@ internal class Program
     Provider,
     Consumer
   }
+
   private class FmiVariable
   {
     public string? Name { get; set; }
     public string? Type { get; set; }
   }
 
-  static void Main(string[] args)
+  private static void Main(string[] args)
   {
-    string outputFile = args[0];
+    var outputFile = args[0];
 
     var commonTextSb = new StringBuilder();
     var interfaceSb = new StringBuilder();
@@ -30,9 +31,9 @@ internal class Program
     commonTextSb.AppendLine("version 2.0;\nimport module \"SilKit\";\n");
     commonTextSb.AppendLine($"namespace {typeof(Program).Namespace}\n{{");
 
-    for (int i = 1; i < args.Length; i++)
+    for (var i = 1; i < args.Length; i++)
     {
-      string inputFile = args[i];
+      var inputFile = args[i];
 
       switch (ModelLoader.FindFmiVersion(inputFile))
       {
@@ -44,7 +45,7 @@ internal class Program
           break;
         case FmiVersions.Invalid:
         default:
-          throw new InvalidDataException($"The FMU uses an unsupported FMU version.");
+          throw new InvalidDataException("The FMU uses an unsupported FMU version.");
       }
     }
 
@@ -60,8 +61,8 @@ internal class Program
   {
     var modelDescription = binding.GetModelDescription();
 
-    HashSet<FmiVariable> vcdlProviderVariables = new HashSet<FmiVariable>();
-    HashSet<FmiVariable> vcdlConsumerVariables = new HashSet<FmiVariable>();
+    var vcdlProviderVariables = new HashSet<FmiVariable>();
+    var vcdlConsumerVariables = new HashSet<FmiVariable>();
 
     foreach (var variable in modelDescription.Variables)
     {
@@ -124,6 +125,7 @@ internal class Program
     {
       bodySb.Append(providerSbRaw.ToString());
     }
+
     var consumerSbRaw = GenerateInterfaceBody(vcdlConsumerVariables, Causality.Consumer);
     if (consumerSbRaw != null)
     {
@@ -131,6 +133,7 @@ internal class Program
       {
         bodySb.AppendLine();
       }
+
       bodySb.Append(consumerSbRaw.ToString());
     }
 
@@ -148,8 +151,8 @@ internal class Program
   {
     var modelDescription = binding.GetModelDescription();
 
-    HashSet<FmiVariable> vcdlProviderVariables = new HashSet<FmiVariable>();
-    HashSet<FmiVariable> vcdlConsumerVariables = new HashSet<FmiVariable>();
+    var vcdlProviderVariables = new HashSet<FmiVariable>();
+    var vcdlConsumerVariables = new HashSet<FmiVariable>();
 
     foreach (var variable in modelDescription.Variables)
     {
@@ -211,6 +214,7 @@ internal class Program
     {
       bodySb.Append(providerSbRaw.ToString());
     }
+
     var consumerSbRaw = GenerateInterfaceBody(vcdlConsumerVariables, Causality.Consumer);
     if (consumerSbRaw != null)
     {
@@ -218,6 +222,7 @@ internal class Program
       {
         bodySb.AppendLine();
       }
+
       bodySb.Append(consumerSbRaw.ToString());
     }
 
@@ -233,7 +238,7 @@ internal class Program
 
   private static StringBuilder GenerateInterfaceHeader(string interfaceName)
   {
-    StringBuilder interfaceSb = new StringBuilder();
+    var interfaceSb = new StringBuilder();
 
     interfaceSb.AppendLine("  [Binding=\"SilKit\"]");
     interfaceSb.AppendLine($"  interface {interfaceName}\n  {{");
@@ -247,7 +252,7 @@ internal class Program
       return null;
     }
 
-    StringBuilder interfaceSb = new StringBuilder();
+    var interfaceSb = new StringBuilder();
 
     foreach (var variable in variables)
     {
@@ -275,8 +280,8 @@ internal class Program
 
   private static StringBuilder GenerateInterfaceFooter()
   {
-    StringBuilder interfaceSb = new StringBuilder();
-    interfaceSb.AppendLine($"  }}");
+    var interfaceSb = new StringBuilder();
+    interfaceSb.AppendLine("  }");
 
     return interfaceSb;
   }

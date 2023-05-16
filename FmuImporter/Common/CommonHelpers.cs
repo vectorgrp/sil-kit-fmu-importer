@@ -33,7 +33,7 @@ internal static class Helpers
 
     var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
 
-    StringBuilder errorMessageBuilder = new StringBuilder();
+    var errorMessageBuilder = new StringBuilder();
     errorMessageBuilder.Append(
       $"FMU Importer encountered an error with code '{resultCode}' ({returnCodeName})");
     if (!string.IsNullOrEmpty(fullName))

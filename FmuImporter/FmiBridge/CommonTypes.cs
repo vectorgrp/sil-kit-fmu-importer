@@ -2,7 +2,7 @@
 
 public enum FmiVersions
 {
-    Invalid,
-    Fmi2,
-    Fmi3
+  Invalid,
+  Fmi2,
+  Fmi3
 }

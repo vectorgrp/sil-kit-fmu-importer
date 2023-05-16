@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 
 namespace FmuImporter.Config;
 
@@ -10,7 +8,8 @@ public class Configuration : ConfigurationPublic
 
   internal LinkedList<Configuration>? AllConfigurations { get; set; }
 
-  private Dictionary<string, Parameter>? _resolvedParameters = null;
+  private Dictionary<string, Parameter>? _resolvedParameters;
+
   internal Dictionary<string, Parameter> ResolvedParameters
   {
     get
@@ -20,17 +19,24 @@ public class Configuration : ConfigurationPublic
         _resolvedParameters = new Dictionary<string, Parameter>();
         UpdateParameterDictionary(ref _resolvedParameters);
       }
+
       return _resolvedParameters;
     }
   }
 
   /// <summary>
-  /// This method uses a breadth-first approach read all configuration files that were included by the current configuration, then in the included configurations, etc.
-  /// Configurations that were loaded by a previous configuration will be skipped (breaking loops).
-  /// After all configurations were loaded, their parameters and mapped variables are merged. Already existing values are overridden (last-is-best approach).
-  /// The configurations with the lowest depth are handled last (~ locally configured attributes take precedence to included attributes).
+  ///   This method uses a breadth-first approach read all configuration files that were included by the current
+  ///   configuration, then in the included configurations, etc.
+  ///   Configurations that were loaded by a previous configuration will be skipped (breaking loops).
+  ///   After all configurations were loaded, their parameters and mapped variables are merged. Already existing values are
+  ///   overridden (last-is-best approach).
+  ///   The configurations with the lowest depth are handled last (~ locally configured attributes take precedence to
+  ///   included attributes).
   /// </summary>
-  /// <exception cref="FileNotFoundException">Thrown if the path in the include block of a configuration did not point to a file.</exception>
+  /// <exception cref="FileNotFoundException">
+  ///   Thrown if the path in the include block of a configuration did not point to a
+  ///   file.
+  /// </exception>
   public void MergeIncludes()
   {
     var configHashes = new HashSet<string>();
@@ -53,7 +59,7 @@ public class Configuration : ConfigurationPublic
 
     do
     {
-      var newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
+      List<Configuration>? newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
       if (newConfigs != null && newConfigs.Count > 0)
       {
         foreach (var newConfig in newConfigs)
@@ -61,15 +67,14 @@ public class Configuration : ConfigurationPublic
           AllConfigurations.AddLast(newConfig);
         }
       }
-      currentNode = currentNode.Next;
-    }
-    while (currentNode != null);
 
+      currentNode = currentNode.Next;
+    } while (currentNode != null);
   }
 
   private List<Configuration>? MergeIncludes(ref HashSet<string> configHashes, Configuration currentConfiguration)
   {
-    var includes = currentConfiguration.Include;
+    List<string>? includes = currentConfiguration.Include;
     if (includes == null)
     {
       return null;
@@ -79,9 +84,10 @@ public class Configuration : ConfigurationPublic
     foreach (var includePath in includes)
     {
       var fullPath = GetFullPath(includePath);
-      if (!File.Exists(fullPath)) 
+      if (!File.Exists(fullPath))
       {
-        throw new FileNotFoundException($"The file '{includePath}' included in '{ConfigurationPath}' was not found. Searched in '{fullPath}.");
+        throw new FileNotFoundException(
+          $"The file '{includePath}' included in '{ConfigurationPath}' was not found. Searched in '{fullPath}.");
       }
 
       var hashValue = Sha512CheckSum(fullPath);
@@ -90,10 +96,12 @@ public class Configuration : ConfigurationPublic
         // skip already existing configurations
         continue;
       }
+
       var config = ConfigParser.LoadConfiguration(fullPath);
       configHashes.Add(hashValue);
       result.Add(config);
     }
+
     return result;
   }
 
@@ -130,9 +138,9 @@ public class Configuration : ConfigurationPublic
           }
         }
       }
+
       currentConfigNode = currentConfigNode.Previous;
-    } 
-    while (currentConfigNode != null);
+    } while (currentConfigNode != null);
   }
 
   private string? GetFullPath(string path)
@@ -163,8 +171,8 @@ public class Configuration : ConfigurationPublic
 
   private string Sha512CheckSum(string path)
   {
-    using SHA512 sha512 = SHA512.Create();
-    using FileStream fileStream = File.OpenRead(path);
+    using var sha512 = SHA512.Create();
+    using var fileStream = File.OpenRead(path);
 
     return BitConverter.ToString(sha512.ComputeHash(fileStream));
   }

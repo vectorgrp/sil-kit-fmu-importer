@@ -18,8 +18,14 @@ public class DataSubscriber : IDataSubscriber
 
   internal IntPtr DataSubscriberPtr
   {
-    get { return dataSubscriberPtr; }
-    private set { dataSubscriberPtr = value; }
+    get
+    {
+      return dataSubscriberPtr;
+    }
+    private set
+    {
+      dataSubscriberPtr = value;
+    }
   }
 
   internal DataSubscriber(
@@ -32,7 +38,7 @@ public class DataSubscriber : IDataSubscriber
     dataMessageHandlerDelegate = DataMessageHandlerInternal;
 
     this.participant = participant;
-    this.datahandlerContext = dataHandlerContext;
+    datahandlerContext = dataHandlerContext;
     _dataMessageHandler = dataMessageHandler;
     var silKitDataSpec = dataSpec.toSilKitDataSpec();
 

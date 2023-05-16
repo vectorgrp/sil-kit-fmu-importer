@@ -25,8 +25,14 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 {
   public ModelDescription ModelDescription
   {
-    get { return modelDescription; }
-    private set { modelDescription = value; }
+    get
+    {
+      return modelDescription;
+    }
+    private set
+    {
+      modelDescription = value;
+    }
   }
 
   public string FullFmuLibPath { get; }
@@ -49,7 +55,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     InitializeModelBinding(FullFmuLibPath);
   }
 
-  #region IDisposable
+#region IDisposable
 
   ~FmiBindingBase()
   {
@@ -83,7 +89,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     GC.SuppressFinalize(this);
   }
 
-  #endregion
+#endregion
 
   private void InitializeModelDescription(string extractedFolderPath)
   {
@@ -114,12 +120,12 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   }
 
   protected void SetDelegate<T>(out T deleg)
-    where T : System.Delegate
+    where T : Delegate
   {
     var delegateTypeName = typeof(T).Name;
     if (string.IsNullOrEmpty(delegateTypeName))
     {
-      throw new FileLoadException($"Failed to retrieve method name by reflection.");
+      throw new FileLoadException("Failed to retrieve method name by reflection.");
     }
 
     delegateTypeName = delegateTypeName.Substring(0, delegateTypeName.Length - 4);

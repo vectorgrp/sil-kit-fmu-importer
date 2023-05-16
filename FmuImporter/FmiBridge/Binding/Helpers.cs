@@ -15,7 +15,8 @@ internal static class Helpers
   public static void ProcessReturnCode(int resultCode, string returnCodeName, RuntimeMethodHandle? methodHandle)
   {
     var result = Common.Helpers.ProcessReturnCode(resultCode, returnCodeName, methodHandle);
-    if (result.Item1) return;
+    if (result.Item1)
+      return;
     try
     {
       throw new ApplicationException(result.Item2?.ToString());
