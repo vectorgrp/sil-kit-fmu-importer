@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+    <PropertyGroup>
+        <PublishProtocol>FileSystem</PublishProtocol>
+        <_TargetId>Folder</_TargetId>
+        <PublishSingleFile>false</PublishSingleFile>
+        <PublishReadyToRun>false</PublishReadyToRun>
+
+        <Configuration>Release</Configuration>
+        <ConfigurationOverride>Release</ConfigurationOverride>
+    </PropertyGroup>
+
+    <Import Project="../../../common.props" Condition="$(CommonImported) == ''" />
+
+    <Target Name="ConfigOverride" BeforeTargets="Build">
+        <PropertyGroup>
+            <ConfigurationOverride>Release</ConfigurationOverride>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="PostPublish"
+            AfterTargets="Publish" >
+        <Delete Files="$(PublishDir)/BuildAll.dll" />
+        <Delete Files="$(PublishDir)/BuildAll.pdb" />
+        <Delete Files="$(PublishDir)/BuildAll.deps.json" />
+        <Message Text="PublishDir = '$(PublishDir)" Importance="High" />
+        <Message Text="Zipping to '$(PublishDir)/../../SilKitFmuImporter-$(Version).zip'..." Importance="High" />
+        <ZipDirectory SourceDirectory="$(PublishDir)/../" DestinationFile="$(PublishDir)/../../SilKitFmuImporter-$(Version)-$(RuntimeIdentifier).zip" Overwrite="True" />
+    </Target>
+
+</Project>

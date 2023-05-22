@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\common.props" />
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+    <Import Project="..\build.props" />
 
-  <ItemGroup>
-    <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
+    </ItemGroup>
 
 </Project>

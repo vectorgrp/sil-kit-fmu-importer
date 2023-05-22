@@ -15,6 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SupplementDownloader", "Sup
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51A350CE-A97C-4AB8-BE83-716A07DEC9D3}"
 	ProjectSection(SolutionItems) = preProject
+		build.props = build.props
 		common.props = common.props
 	EndProjectSection
 EndProject
@@ -27,6 +28,7 @@ Global
 		{087B1571-A27C-47C8-BF48-14AAE23EE72F}.Debug|x64.ActiveCfg = Debug|x64
 		{087B1571-A27C-47C8-BF48-14AAE23EE72F}.Debug|x64.Build.0 = Debug|x64
 		{087B1571-A27C-47C8-BF48-14AAE23EE72F}.Release|x64.ActiveCfg = Release|x64
+		{087B1571-A27C-47C8-BF48-14AAE23EE72F}.Release|x64.Build.0 = Release|x64
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Debug|x64.ActiveCfg = Debug|x64
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Debug|x64.Build.0 = Debug|x64
 		{E88B3F7A-2596-42D9-9054-25CF7276A442}.Release|x64.ActiveCfg = Release|x64
@@ -34,12 +36,15 @@ Global
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Debug|x64.ActiveCfg = Debug|x64
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Debug|x64.Build.0 = Debug|x64
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|x64.ActiveCfg = Release|x64
+		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|x64.Build.0 = Release|x64
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Debug|x64.ActiveCfg = Debug|x64
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Debug|x64.Build.0 = Debug|x64
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Release|x64.ActiveCfg = Release|x64
+		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Release|x64.Build.0 = Release|x64
 		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Debug|x64.ActiveCfg = Debug|x64
 		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Debug|x64.Build.0 = Debug|x64
 		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Release|x64.ActiveCfg = Release|x64
+		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

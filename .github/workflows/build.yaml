@@ -18,8 +18,8 @@ jobs:
     # Check out this Git repo
     - uses: actions/checkout@v3
 
-    - name: Build
-      run: dotnet build ./FmuImporter/FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r win-x64
+    - name: Build & Publish
+      run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
 
   build-linux:
 
@@ -27,5 +27,5 @@ jobs:
     steps:
     # Check out this Git repo
     - uses: actions/checkout@v3
-    - name: build step
-      run: dotnet build ./FmuImporter/FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64
+    - name: Build & Publish
+      run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m

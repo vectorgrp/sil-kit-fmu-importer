@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Import Project="common.props" Condition="$(CommonImported) == ''" />
+
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="$(SetupPrinted) == ''">
+        <Message Text="MSBuildProjectName = $(MSBuildProjectName)" Importance="high" />
+        <!--<Message Text="SolutionDir = $(SolutionDir)" Importance="high" />-->
+        <Message Text="Configuration = $(Configuration)" Importance="high" />
+        <!--<Message Text="ConfigurationOverride = $(ConfigurationOverride)" Importance="high" />-->
+        <Message Text="RuntimeIdentifier = $(RuntimeIdentifier)" Importance="high" />
+        <Message Text="Standalone = $(Standalone)" Importance="high" />
+        <PropertyGroup>
+            <SetupPrinted>True</SetupPrinted>
+        </PropertyGroup>
+    </Target>
+
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <OutDir>$(OutputPath)</OutDir>
+    </PropertyGroup>
+</Project>

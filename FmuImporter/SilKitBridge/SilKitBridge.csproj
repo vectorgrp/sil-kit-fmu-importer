@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\common.props" />
 
-  <PropertyGroup>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
-  </PropertyGroup>
+    <Import Project="..\build.props" />
 
-  <ItemGroup>
-    <Compile Include="..\Common\CommonHelpers.cs" Link="CommonHelpers.cs" />
-  </ItemGroup>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\Common\CommonHelpers.cs" Link="CommonHelpers.cs" />
+    </ItemGroup>
 
 </Project>

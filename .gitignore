@@ -12,7 +12,7 @@
 *.dll.config
 *.cache
 *.suo
-# Include dlls if they’re in the NuGet packages directory
+# Include dlls if theyâ€™re in the NuGet packages directory
 !/packages/*/lib/*.dll
 # Include dlls if they're in the CommonReferences directory
 !*CommonReferences/*.dll
@@ -30,7 +30,7 @@ TestResults/
 ############
 # Packages #
 ############
-# it’s better to unpack these files and commit the raw source
+# itâ€™s better to unpack these files and commit the raw source
 # git has its own built in compression methods
 *.7z
 *.dmg
@@ -64,16 +64,21 @@ Thumbs.db
 x64/
 x86/
 build/
+*/_build/
 bld/
 [Bb]in/
 [Oo]bj/
+_obj/
 
 # Visual Studio cache/options directory
 .vs/
-*.csproj.DotSettings
+*.csproj.DotSettings*
+*.csproj.user
+*/JSON/Schemas/Catalog/*
 
 # Click-Once directory
 publish/
+_publish
 
 # NuGet Packages
 *.nupkg
@@ -94,3 +99,6 @@ FakesAssemblies/
 
 # Debug settings
 launchSettings.json
+
+# User specific part of publish profiles
+*.pubxml.user

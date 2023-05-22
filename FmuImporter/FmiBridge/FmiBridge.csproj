@@ -1,26 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\common.props" />
 
-  <PropertyGroup>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
-  </PropertyGroup>
+    <Import Project="..\build.props" />
 
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <DefineConstants>OS_WINDOWS</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <DefineConstants>OS_LINUX</DefineConstants>
-  </PropertyGroup>
-  <!--
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('FreeBSD'))">
-    <DefineConstants>OS_FREEBSD</DefineConstants>
-  </PropertyGroup>-->
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <DefineConstants>OS_MAC</DefineConstants>
-  </PropertyGroup>  
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="..\Common\CommonHelpers.cs" Link="Binding\CommonHelpers.cs" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Include="..\Common\CommonHelpers.cs" Link="Binding\CommonHelpers.cs" />
+    </ItemGroup>
+
 </Project>

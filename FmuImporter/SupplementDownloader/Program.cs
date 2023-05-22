@@ -2,9 +2,9 @@
 using System.Globalization;
 using System.IO.Compression;
 
-namespace Tests_Demos;
+namespace SupplementDownloader;
 
-public class Demo
+public class SupplementDownloader
 {
   // Entry point
   public static async Task Main(string[] args)

@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Target Name="DisplayMessages">
-        <Message Text="SolutionDir = $(SolutionDir)" />
-        <Message Text="Configuration = $(Configuration)" />
-    </Target>
+
+    <PropertyGroup>
+        <Version>0.1.0</Version>
+    </PropertyGroup>
+
+    <!-- Apply Configuration override, if applicable -->
+    <PropertyGroup Condition="$(ConfigurationOverride) != ''">
+        <Configuration>$(ConfigurationOverride)</Configuration>
+    </PropertyGroup>
+
+    <!-- Define OS constants-->
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <DefineConstants>OS_WINDOWS</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+        <DefineConstants>OS_LINUX</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+        <DefineConstants>OS_MAC</DefineConstants>
+    </PropertyGroup>
+    
     <PropertyGroup>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
 
-        <Nullable>enable</Nullable>
-        <OutDir>$(OutputPath)</OutDir>
         <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -18,26 +33,54 @@
         <Platforms>x64</Platforms>
         <Platform>x64</Platform>
         <PlatformTarget>x64</PlatformTarget>
-        <TargetFramework>net6.0</TargetFramework>
-        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <TargetFramework>net6.0</TargetFramework>     
+        <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>   
+        <InvariantGlobalization>true</InvariantGlobalization>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/linux-$(Platform)-$(Configuration)</IntermediateOutputPath>
-        <OutputPath>$(MSBuildProjectDirectory)/../_build/linux-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(MSBuildProjectDirectory)/../_publish/linux-$(Platform)-$(Configuration)</PublishDir>
-        <PublishTrimmed>true</PublishTrimmed>
+    <!-- Output/Publish directory configuration -->
+    <PropertyGroup>
+        <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
+        <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PropertyGroup Condition="$(Standalone) == 'True' AND 
+                   ($(RuntimeIdentifier)=='linux-x64' OR 
+                   ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('Linux'))))">
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/linux-$(Platform)-$(Configuration)/</IntermediateOutputPath>
+        <OutputPath>$(OutputPathBase)linux-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(PublishDirBase)linux-$(Platform)/$(Version)</PublishDir>
+        <RuntimeIdentifier>linux-$(Platform)</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Standalone) == 'True' AND 
+                   ($(RuntimeIdentifier)=='osx-x64' OR 
+                   ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('OSX'))))">
         <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/osx-$(Platform)-$(Configuration)/</IntermediateOutputPath>
-        <OutputPath>$(MSBuildProjectDirectory)/../_build/osx-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(MSBuildProjectDirectory)/../_publish/osx-$(Platform)-$(Configuration)</PublishDir>
+        <OutputPath>$(OutputPathBase)osx-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(PublishDirBase)osx-$(Platform)/$(Version)</PublishDir>
+        <RuntimeIdentifier>osx-$(Platform)</RuntimeIdentifier>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) ">
+    <PropertyGroup Condition="$(Standalone) == 'True' AND 
+                   ($(RuntimeIdentifier)=='win-x64' OR 
+                   ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('Windows'))))">
         <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\win-$(Platform)-$(Configuration)</IntermediateOutputPath>
         <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)-$(Configuration)</PublishDir>
+        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)\$(Version)</PublishDir>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Standalone) != 'True'">
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\crossplatform-$(Platform)-$(Configuration)</IntermediateOutputPath>
+        <OutputPath>$(MSBuildProjectDirectory)\..\_build\crossplatform-$(Platform)-$(Configuration)</OutputPath>
+        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\crossplatform-$(Platform)\$(Version)</PublishDir>
+        <OsDefined>True</OsDefined>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <CommonImported>True</CommonImported>
     </PropertyGroup>
 </Project>
