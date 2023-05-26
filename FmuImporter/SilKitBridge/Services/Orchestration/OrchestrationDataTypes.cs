@@ -1,4 +1,7 @@
-﻿namespace SilKit.Services.Orchestration;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+namespace SilKit.Services.Orchestration;
 
 // LifecycleService
 public delegate void CommunicationReadyHandler();

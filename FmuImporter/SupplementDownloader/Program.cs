@@ -1,4 +1,7 @@
-﻿using System.CommandLine;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.CommandLine;
 using System.Globalization;
 using System.IO.Compression;
 

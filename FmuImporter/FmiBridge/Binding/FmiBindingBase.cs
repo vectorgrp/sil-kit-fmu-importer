@@ -1,4 +1,7 @@
-﻿using System.Runtime.InteropServices;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Runtime.InteropServices;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 

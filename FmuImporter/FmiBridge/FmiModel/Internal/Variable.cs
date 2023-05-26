@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Text;
 using Fmi2;
 using Fmi3;
 
@@ -102,40 +105,40 @@ public class Variable
         }
 
         break;
-      case Fmi3.fmi3Int8:
+      case fmi3Int8:
         VariableType = VariableTypes.Int8;
         break;
-      case Fmi3.fmi3UInt8:
+      case fmi3UInt8:
         VariableType = VariableTypes.UInt8;
         break;
-      case Fmi3.fmi3Int16:
+      case fmi3Int16:
         VariableType = VariableTypes.Int16;
         break;
-      case Fmi3.fmi3UInt16:
+      case fmi3UInt16:
         VariableType = VariableTypes.UInt16;
         break;
-      case Fmi3.fmi3Int32:
+      case fmi3Int32:
         VariableType = VariableTypes.Int32;
         break;
-      case Fmi3.fmi3UInt32:
+      case fmi3UInt32:
         VariableType = VariableTypes.UInt32;
         break;
-      case Fmi3.fmi3Int64:
+      case fmi3Int64:
         VariableType = VariableTypes.Int64;
         break;
-      case Fmi3.fmi3UInt64:
+      case fmi3UInt64:
         VariableType = VariableTypes.UInt64;
         break;
-      case Fmi3.fmi3Boolean:
+      case fmi3Boolean:
         VariableType = VariableTypes.Boolean;
         break;
-      case Fmi3.fmi3String:
+      case fmi3String:
         VariableType = VariableTypes.String;
         break;
       case Fmi3.fmi3Binary:
         VariableType = VariableTypes.Binary;
         break;
-      case Fmi3.fmi3Enumeration:
+      case fmi3Enumeration:
         VariableType = VariableTypes.EnumFmi3;
         break;
       default:
@@ -234,7 +237,7 @@ public class Variable
 
     switch (input.Item)
     {
-      case Fmi2.fmi2ScalarVariableInteger:
+      case fmi2ScalarVariableInteger:
         VariableType = VariableTypes.Int32;
         break;
       case Fmi2.fmi2ScalarVariableReal inputVar:
@@ -245,13 +248,13 @@ public class Variable
         }
 
         break;
-      case Fmi2.fmi2ScalarVariableBoolean:
+      case fmi2ScalarVariableBoolean:
         VariableType = VariableTypes.Boolean;
         break;
-      case Fmi2.fmi2ScalarVariableString:
+      case fmi2ScalarVariableString:
         VariableType = VariableTypes.String;
         break;
-      case Fmi2.fmi2ScalarVariableEnumeration:
+      case fmi2ScalarVariableEnumeration:
         VariableType = VariableTypes.EnumFmi2;
         break;
       default:

@@ -1,4 +1,7 @@
-﻿namespace SilKit.Supplements.VendorData;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+namespace SilKit.Supplements.VendorData;
 
 public class Vector
 {

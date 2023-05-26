@@ -1,4 +1,7 @@
-﻿using System.Security.Cryptography;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Security.Cryptography;
 
 namespace FmuImporter.Config;
 
@@ -55,11 +58,11 @@ public class Configuration : ConfigurationPublic
 
     var hashValue = Sha512CheckSum(fullPath);
     configHashes.Add(hashValue);
-    LinkedListNode<Configuration>? currentNode = AllConfigurations.AddFirst(this);
+    var currentNode = AllConfigurations.AddFirst(this);
 
     do
     {
-      List<Configuration>? newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
+      var newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
       if (newConfigs != null && newConfigs.Count > 0)
       {
         foreach (var newConfig in newConfigs)
@@ -74,7 +77,7 @@ public class Configuration : ConfigurationPublic
 
   private List<Configuration>? MergeIncludes(ref HashSet<string> configHashes, Configuration currentConfiguration)
   {
-    List<string>? includes = currentConfiguration.Include;
+    var includes = currentConfiguration.Include;
     if (includes == null)
     {
       return null;

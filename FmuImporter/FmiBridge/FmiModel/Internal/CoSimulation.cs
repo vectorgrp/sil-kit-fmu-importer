@@ -1,4 +1,7 @@
-﻿namespace Fmi.FmiModel.Internal;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+namespace Fmi.FmiModel.Internal;
 
 public class CoSimulation
 {

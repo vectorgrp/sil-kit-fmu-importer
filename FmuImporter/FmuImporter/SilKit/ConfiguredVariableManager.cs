@@ -1,4 +1,7 @@
-﻿using Fmi;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;

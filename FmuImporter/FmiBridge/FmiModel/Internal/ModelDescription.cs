@@ -1,4 +1,7 @@
-﻿using System.Data;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Data;
 using System.Text;
 
 namespace Fmi.FmiModel.Internal;
@@ -146,7 +149,7 @@ public class ModelDescription
           throw new DataException("The model description has a type definition with no matching unit.");
         }
 
-        var typeDef = new TypeDefinition()
+        var typeDef = new TypeDefinition
         {
           Name = typeDefinitionBase.name,
           Unit = UnitDefinitions[typeDefFloat32.unit]
@@ -172,7 +175,7 @@ public class ModelDescription
           throw new DataException("The model description has a type definition with no matching unit.");
         }
 
-        var typeDef = new TypeDefinition()
+        var typeDef = new TypeDefinition
         {
           Name = fmi2SimpleType.name,
           Unit = UnitDefinitions[typeDefReal.unit]
@@ -191,7 +194,7 @@ public class ModelDescription
 
     foreach (var fmi3Unit in input.Unit)
     {
-      var unitDefinition = new UnitDefinition()
+      var unitDefinition = new UnitDefinition
       {
         Name = fmi3Unit.name,
         Offset = fmi3Unit.BaseUnit.offset,
@@ -211,7 +214,7 @@ public class ModelDescription
 
     foreach (var fmi3Unit in input.Unit)
     {
-      var unitDefinition = new UnitDefinition()
+      var unitDefinition = new UnitDefinition
       {
         Name = fmi3Unit.name,
         Offset = fmi3Unit.BaseUnit.offset,

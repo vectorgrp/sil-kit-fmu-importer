@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Text;
 using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel;

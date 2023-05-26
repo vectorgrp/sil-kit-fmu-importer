@@ -1,4 +1,7 @@
-﻿using System.Diagnostics;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using static SilKit.Services.Orchestration.LifecycleService;
 

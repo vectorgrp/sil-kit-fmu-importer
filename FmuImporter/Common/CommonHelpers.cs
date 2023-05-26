@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.Text;
 
 namespace Common;
 

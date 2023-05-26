@@ -1,9 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildAll">
+﻿<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildAll">
   <Import Project="..\common.props" Condition="$(CommonImported) == ''" />
   <Target Name="BuildAll" BeforeTargets="Build">
       <PropertyGroup>
           <BuildPath>$(MSBuildThisFileDirectory)/../</BuildPath>
-          <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release </DefaultProperties>
+          <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release -p:Version=$(Version) </DefaultProperties>
       </PropertyGroup>
 
       <!-- win-x64 -->

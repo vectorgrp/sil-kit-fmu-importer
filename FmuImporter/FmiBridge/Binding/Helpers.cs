@@ -1,4 +1,7 @@
-﻿namespace Fmi.Binding;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+namespace Fmi.Binding;
 
 internal static class Helpers
 {

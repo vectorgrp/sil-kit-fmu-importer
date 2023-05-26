@@ -1,4 +1,7 @@
-﻿using System.IO.Compression;
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) Vector Informatik GmbH. All rights reserved.
+
+using System.IO.Compression;
 using System.Xml;
 using System.Xml.Serialization;
 using Fmi.FmiModel.Internal;
