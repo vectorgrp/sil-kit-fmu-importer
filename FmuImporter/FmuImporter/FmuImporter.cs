@@ -377,21 +377,21 @@ public class FmuImporter
         if (configuredParameter.Value == null)
         {
           throw new BadImageFormatException(
-            $"configured parameter for '{configuredParameter.VarName}' did not contain a value.");
+            $"configured parameter for '{configuredParameter.VariableName}' did not contain a value.");
         }
 
-        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VarName, out var refValue);
+        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VariableName, out var refValue);
         if (!result)
         {
           throw new ArgumentException(
-            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+            $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
         }
 
         result = ModelDescription.Variables.TryGetValue(refValue, out var v);
         if (!result || v == null)
         {
           throw new ArgumentException(
-            $"Configured parameter '{configuredParameter.VarName}' not found in model description.");
+            $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
         }
 
         byte[] data;

@@ -4,9 +4,7 @@ Include:
   - ./FmuImporterConfig.yaml
 
 Parameters:
-  - VarName: Float64_fixed_parameter
-    Description: 
+  - VariableName: Float64_fixed_parameter
     Value: 42
-  - VarName: Float64_tunable_parameter
-    Description: 
+  - VariableName: Float64_tunable_parameter
     Value: 42

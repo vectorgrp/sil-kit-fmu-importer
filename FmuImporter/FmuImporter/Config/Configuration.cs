@@ -130,14 +130,14 @@ public class Configuration : ConfigurationPublic
       {
         foreach (var parameter in config.Parameters)
         {
-          if (parameterDictionary.ContainsKey(parameter.VarName))
+          if (parameterDictionary.ContainsKey(parameter.VariableName))
           {
             // TODO print info to logger
-            parameterDictionary[parameter.VarName] = parameter;
+            parameterDictionary[parameter.VariableName] = parameter;
           }
           else
           {
-            parameterDictionary.Add(parameter.VarName, parameter);
+            parameterDictionary.Add(parameter.VariableName, parameter);
           }
         }
       }

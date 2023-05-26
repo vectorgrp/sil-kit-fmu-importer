@@ -3,14 +3,14 @@ Include:
   - ./FmuImporterIncludeConfig.yaml
 
 Parameters:
-  - VarName: Float64_fixed_parameter
-    Description: Overrides external include parameter
+    #Overrides external include parameter
+  - VariableName: Float64_fixed_parameter
     Value: 7.0
-  - VarName: String_parameter
-    Description: Test override for string parameter
+    # Test override for string parameter
+  - VariableName: String_parameter
     Value: "Local Data"
-  - VarName: Binary_input
-    Description: Test override for binary parameter
+    # Test override for binary parameter
+  - VariableName: Binary_input
     Value: 626172
 
 IgnoreUnmappedVariables: False
