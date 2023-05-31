@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuImporter", "FmuImporter\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VcdlExporter", "VcdlExporter\VcdlExporter.csproj", "{91B40804-CB98-4629-AD64-A99FAF45B7E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SupplementDownloader", "SupplementDownloader\SupplementDownloader.csproj", "{C58CB93E-4D32-465A-B02C-9C0219E39CFA}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51A350CE-A97C-4AB8-BE83-716A07DEC9D3}"
 	ProjectSection(SolutionItems) = preProject
 		build.props = build.props
@@ -41,10 +39,6 @@ Global
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Debug|x64.Build.0 = Debug|x64
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Release|x64.ActiveCfg = Release|x64
 		{91B40804-CB98-4629-AD64-A99FAF45B7E8}.Release|x64.Build.0 = Release|x64
-		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Debug|x64.ActiveCfg = Debug|x64
-		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Debug|x64.Build.0 = Debug|x64
-		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Release|x64.ActiveCfg = Release|x64
-		{C58CB93E-4D32-465A-B02C-9C0219E39CFA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
