@@ -158,6 +158,12 @@ public class FmuImporter
           configuredVariableDictionary.TryGetValue(modelDescriptionVariable.ValueReference, out var configuredVariable);
         if (!success)
         {
+          // Only subscribe and publish unmapped variables if they are not ignored
+          if (_fmuImporterConfig.IgnoreUnmappedVariables.GetValueOrDefault(false))
+          {
+            continue;
+          }
+
           // initialize a default configured variable
           configuredVariable = new Config.ConfiguredVariable
           {
