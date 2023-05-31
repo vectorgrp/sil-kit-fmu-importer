@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuImporter", "FmuImporter\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VcdlExporter", "VcdlExporter\VcdlExporter.csproj", "{91B40804-CB98-4629-AD64-A99FAF45B7E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prototype", "Prototype\Prototype.csproj", "{C58CB93E-4D32-465A-B02C-9C0219E39CFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests_Demos", "Tests_Demos\Tests_Demos.csproj", "{C58CB93E-4D32-465A-B02C-9C0219E39CFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
