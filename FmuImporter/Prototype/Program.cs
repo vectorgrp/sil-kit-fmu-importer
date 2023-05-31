@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Fmi.FmiModel;
 using SilKit;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
@@ -8,10 +9,32 @@ namespace Prototype
 {
   public class Demo
   {
-    private const bool testSilKitBinding = true;
+    private const bool testSilKitBinding = false;
+    private const bool testFmi2 = true;
+    private const bool testFmi3 = true;
     
     public Demo()
     {
+      if (testFmi2)
+      {
+        const string fmiFmuPathBouncingBall = @"FMUs\FMI2.0\BouncingBall.fmu";
+        var extractedFmuPath = ModelLoader.ExtractFmu(fmiFmuPathBouncingBall);
+        var modelDescription = ModelLoader.LoadModelFromExtractedPath(extractedFmuPath);
+        Console.WriteLine("-----------------\n---- FMI 2.0 ----\n-----------------");
+        Console.WriteLine(modelDescription.ToString());
+        ModelLoader.RemoveExtractedFmu(fmiFmuPathBouncingBall);
+      }
+
+      if (testFmi3)
+      {
+        const string fmiFmuPathBouncingBall = @"FMUs\FMI3.0\BouncingBall.fmu";
+        var extractedFmuPath = ModelLoader.ExtractFmu(fmiFmuPathBouncingBall);
+        var modelDescription = ModelLoader.LoadModelFromExtractedPath(extractedFmuPath);
+        Console.WriteLine("\n-----------------\n---- FMI 3.0 ----\n-----------------");
+        Console.WriteLine(modelDescription.ToString());
+        ModelLoader.RemoveExtractedFmu(fmiFmuPathBouncingBall);
+      }
+
       if (testSilKitBinding)
       {
         var pInvokeTest = new PInvokeTest();

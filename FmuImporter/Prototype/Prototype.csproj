@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
     <ProjectReference Include="..\SilKitBridge\SilKitBridge.csproj" />
   </ItemGroup>
 
