@@ -1,6 +1,4 @@
 ﻿using System.Globalization;
-using Fmi.Binding;
-using Fmi.FmiModel;
 using SilKit;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
@@ -11,25 +9,45 @@ namespace Prototype
   public class Demo
   {
     private const bool testSilKitBinding = false;
-    private const bool testFmi2 = true;
+    private const bool testFmi2 = false;
     private const bool testFmi3 = true;
 
-    public Demo()
+    private readonly HashSet<BindingTest.FmuTests> EnabledFmuTests = 
+      new HashSet<BindingTest.FmuTests>
+    {
+      BindingTest.FmuTests.BouncingBall,
+      BindingTest.FmuTests.Feedthrough
+    };
+
+  public Demo()
     {
       if (testFmi2)
       {
-        const string fmiFmuPathBouncingBall = @"FMUs\FMI2.0\BouncingBall.fmu";
-        var binding1 = new BindingTest(fmiFmuPathBouncingBall, 2, BindingTest.FmuTests.BouncingBall);
+        if (EnabledFmuTests.Contains(BindingTest.FmuTests.BouncingBall))
+        {
+          const string fmiFmuPath = @"FMUs\FMI2.0\BouncingBall.fmu";
+          var binding = new BindingTest(fmiFmuPath, 2, BindingTest.FmuTests.BouncingBall);
+        }
+
+        if (EnabledFmuTests.Contains(BindingTest.FmuTests.Feedthrough))
+        {
+          // not implemented yet
+        }
       }
 
       if (testFmi3)
       {
-        const string fmiFmuPathBouncingBall = @"FMUs\FMI3.0\BouncingBall.fmu";
-        var extractedFmuPath = ModelLoader.ExtractFmu(fmiFmuPathBouncingBall);
-        var modelDescription = ModelLoader.LoadModelFromExtractedPath(extractedFmuPath);
-        Console.WriteLine("\n-----------------\n---- FMI 3.0 ----\n-----------------");
-        Console.WriteLine(modelDescription.ToString());
-        ModelLoader.RemoveExtractedFmu(fmiFmuPathBouncingBall);
+        if (EnabledFmuTests.Contains(BindingTest.FmuTests.BouncingBall))
+        {
+          const string fmiFmuPath = @"FMUs\FMI3.0\BouncingBall.fmu";
+          var binding = new BindingTest(fmiFmuPath, 3, BindingTest.FmuTests.BouncingBall);
+        }
+        
+        if (EnabledFmuTests.Contains(BindingTest.FmuTests.Feedthrough))
+        {
+          const string fmiFmuPath = @"FMUs\FMI3.0\Feedthrough.fmu";
+          var binding = new BindingTest(fmiFmuPath, 3, BindingTest.FmuTests.Feedthrough);
+        }
       }
 
       if (testSilKitBinding)
