@@ -203,37 +203,72 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
 #endregion IDisposable
 
-  public override void GetValue(uint[] valueRefs, out ReturnVariable result, Type type)
+  public override void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type)
   {
-    if (type == typeof(double))
+    switch (type)
     {
-      var vFmi = GetReal(valueRefs);
-      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-      return;
+      case VariableTypes.Undefined:
+        break;
+      case VariableTypes.Float32:
+        break;
+      case VariableTypes.Float64:
+      {
+        var vFmi = GetReal(valueRefs);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+        return;
+      }
+      case VariableTypes.Int8:
+        break;
+      case VariableTypes.Int16:
+        break;
+      case VariableTypes.Int32:
+      {
+        var vFmi = GetInteger(valueRefs);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+        return;
+      }
+      case VariableTypes.Int64:
+        break;
+      case VariableTypes.UInt8:
+        break;
+      case VariableTypes.UInt16:
+        break;
+      case VariableTypes.UInt32:
+        break;
+      case VariableTypes.UInt64:
+        break;
+      case VariableTypes.Boolean:
+      {
+        var vFmi = GetBoolean(valueRefs);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+        return;
+      }
+      case VariableTypes.String:
+      {
+        var vFmi = GetString(valueRefs);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
+        return;
+      }
+      case VariableTypes.Binary:
+        break;
+      case VariableTypes.EnumFmi2:
+      {
+        var vFmi = GetInteger(valueRefs);
+        // FMU Importer handles enums as Int64, not as Int32
+        var convertedVFmi = Array.ConvertAll(vFmi, Convert.ToInt64);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, convertedVFmi, valueRefs.Length, ref modelDescription);
+        return;
+      }
+      case VariableTypes.EnumFmi3:
+        break;
+      default:
+        break;
     }
 
-    if (type == typeof(int))
-    {
-      var vFmi = GetInteger(valueRefs);
-      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-      return;
-    }
-
-    if (type == typeof(bool))
-    {
-      var vFmi = GetBoolean(valueRefs);
-      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-      return;
-    }
-
-    if (type == typeof(string))
-    {
-      var vFmi = GetString(valueRefs);
-      result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref modelDescription);
-      return;
-    }
-
-    throw new NotSupportedException($"The provided type '{type.Name}' is not supported in FMI 2.0");
+    throw new ArgumentOutOfRangeException(
+      nameof(type),
+      type,
+      $"The provided type '{type}' is not supported in FMI 2.0");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -251,46 +286,92 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NotSupportedException("FMI 2 does not support arrays natively.");
     }
 
-    if (type == typeof(double))
+    switch (type)
     {
-      var value = BitConverter.ToDouble(data);
-
-      // Apply unit transformation
-      // FMU value = [SIL Kit value] * factor + offset
-      var unit = mdVar.TypeDefinition?.Unit;
-      if (unit != null)
+      case VariableTypes.Undefined:
+        break;
+      case VariableTypes.Float32:
+        break;
+      case VariableTypes.Float64:
       {
-        // first apply factor, then offset
-        if (unit.Factor.HasValue)
+        var value = BitConverter.ToDouble(data);
+
+        // Apply unit transformation
+        // FMU value = [SIL Kit value] * factor + offset
+        var unit = mdVar.TypeDefinition?.Unit;
+        if (unit != null)
         {
-          value *= unit.Factor.Value;
+          // first apply factor, then offset
+          if (unit.Factor.HasValue)
+          {
+            value *= unit.Factor.Value;
+          }
+
+          if (unit.Offset.HasValue)
+          {
+            value += unit.Offset.Value;
+          }
         }
 
-        if (unit.Offset.HasValue)
-        {
-          value += unit.Offset.Value;
-        }
+        SetReal(new[] { mdVar.ValueReference }, new[] { value });
+        return;
       }
+      case VariableTypes.Int8:
+        break;
+      case VariableTypes.Int16:
+        break;
+      case VariableTypes.Int32:
+      {
+        var value = BitConverter.ToInt32(data);
+        SetInteger(new[] { mdVar.ValueReference }, new[] { value });
+        return;
+      }
+      case VariableTypes.Int64:
+        break;
+      case VariableTypes.UInt8:
+        break;
+      case VariableTypes.UInt16:
+        break;
+      case VariableTypes.UInt32:
+        break;
+      case VariableTypes.UInt64:
+        break;
+      case VariableTypes.Boolean:
+      {
+        var value = BitConverter.ToBoolean(data);
+        SetBoolean(new[] { mdVar.ValueReference }, new[] { value });
+        return;
+      }
+      case VariableTypes.String:
+      {
+        var byteLength = BitConverter.ToInt32(data, 0);
+        // offset = 4 byte -> 32 bit
+        var value = Encoding.UTF8.GetString(data, 4, byteLength);
+        SetString(new[] { mdVar.ValueReference }, new[] { value });
+        return;
+      }
+      case VariableTypes.Binary:
+        break;
+      case VariableTypes.EnumFmi2:
+      {
+        var value = BitConverter.ToInt64(data);
+        if (value > Int32.MaxValue)
+        {
+          throw new InvalidOperationException(
+            $"Failed to set enumerator for variable '{mdVar.Name}'. " +
+            $"Reason: The value is too large (> Int32) and therefore cannot be handled by FMI 2.0 FMUs.");
+        }
 
-      SetReal(new[] { mdVar.ValueReference }, new[] { value });
+        SetInteger(new[] { mdVar.ValueReference }, new[] { (int)value });
+        return;
+      }
+      case VariableTypes.EnumFmi3:
+        break;
+      default:
+        break;
     }
-    else if (type == typeof(int))
-    {
-      var value = BitConverter.ToInt32(data);
-      SetInteger(new[] { mdVar.ValueReference }, new[] { value });
-    }
-    else if (type == typeof(bool))
-    {
-      var value = BitConverter.ToBoolean(data);
-      SetBoolean(new[] { mdVar.ValueReference }, new[] { value });
-    }
-    else if (type == typeof(string))
-    {
-      var byteLength = BitConverter.ToInt32(data, 0);
-      // offset = 4 byte -> 32 bit
-      var value = Encoding.UTF8.GetString(data, 4, byteLength);
-      SetString(new[] { mdVar.ValueReference }, new[] { value });
-    }
+
+    throw new ArgumentOutOfRangeException();
   }
 
   public override void SetValue(uint valueRef, byte[] data, int[] binSizes)

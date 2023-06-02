@@ -6,7 +6,7 @@ namespace Fmi.FmiModel.Internal;
 
 public class Variable
 {
-  private Fmi3.fmi3AbstractVariable originalVariable = null!;
+  private readonly Fmi3.fmi3AbstractVariable originalVariable = null!;
 
   public enum Causalities
   {
@@ -44,7 +44,7 @@ public class Variable
   public Variabilities Variability { get; set; }
   public InitialValues InitialValue { get; set; }
 
-  public Type VariableType { get; private set; }
+  public VariableTypes VariableType { get; private set; }
 
   public object[]? Start { get; set; }
 
@@ -78,7 +78,7 @@ public class Variable
 
   public Variable(fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
   {
-    this.originalVariable = input;
+    originalVariable = input;
 
     Name = input.name;
     ValueReference = input.valueReference;
@@ -87,7 +87,7 @@ public class Variable
     switch (input)
     {
       case Fmi3.fmi3Float32 inputVar:
-        VariableType = typeof(float);
+        VariableType = VariableTypes.Float32;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
@@ -95,7 +95,7 @@ public class Variable
 
         break;
       case Fmi3.fmi3Float64 inputVar:
-        VariableType = typeof(double);
+        VariableType = VariableTypes.Float64;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
@@ -103,37 +103,40 @@ public class Variable
 
         break;
       case Fmi3.fmi3Int8:
-        VariableType = typeof(sbyte);
+        VariableType = VariableTypes.Int8;
         break;
       case Fmi3.fmi3UInt8:
-        VariableType = typeof(byte);
+        VariableType = VariableTypes.UInt8;
         break;
       case Fmi3.fmi3Int16:
-        VariableType = typeof(short);
+        VariableType = VariableTypes.Int16;
         break;
       case Fmi3.fmi3UInt16:
-        VariableType = typeof(ushort);
+        VariableType = VariableTypes.UInt16;
         break;
       case Fmi3.fmi3Int32:
-        VariableType = typeof(int);
+        VariableType = VariableTypes.Int32;
         break;
       case Fmi3.fmi3UInt32:
-        VariableType = typeof(uint);
+        VariableType = VariableTypes.UInt32;
         break;
       case Fmi3.fmi3Int64:
-        VariableType = typeof(long);
+        VariableType = VariableTypes.Int64;
         break;
       case Fmi3.fmi3UInt64:
-        VariableType = typeof(ulong);
+        VariableType = VariableTypes.UInt64;
         break;
       case Fmi3.fmi3Boolean:
-        VariableType = typeof(bool);
+        VariableType = VariableTypes.Boolean;
         break;
       case Fmi3.fmi3String:
-        VariableType = typeof(string);
+        VariableType = VariableTypes.String;
         break;
       case Fmi3.fmi3Binary:
-        VariableType = typeof(IntPtr);
+        VariableType = VariableTypes.Binary;
+        break;
+      case Fmi3.fmi3Enumeration:
+        VariableType = VariableTypes.EnumFmi3;
         break;
       default:
         throw new InvalidDataException("The FMI 3 datatype is unknown.");
@@ -205,7 +208,7 @@ public class Variable
         {
           arrLength = array.Length;
           Start = new object[arrLength];
-          for (int i = 0; i < arrLength; i++)
+          for (var i = 0; i < arrLength; i++)
           {
             Start[i] = array.GetValue(i) ?? throw new InvalidOperationException();
           }
@@ -232,10 +235,10 @@ public class Variable
     switch (input.Item)
     {
       case Fmi2.fmi2ScalarVariableInteger:
-        VariableType = typeof(Int32);
+        VariableType = VariableTypes.Int32;
         break;
       case Fmi2.fmi2ScalarVariableReal inputVar:
-        VariableType = typeof(double);
+        VariableType = VariableTypes.Float64;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
           TypeDefinition = typeDefinitions[inputVar.declaredType];
@@ -243,10 +246,13 @@ public class Variable
 
         break;
       case Fmi2.fmi2ScalarVariableBoolean:
-        VariableType = typeof(bool);
+        VariableType = VariableTypes.Boolean;
         break;
       case Fmi2.fmi2ScalarVariableString:
-        VariableType = typeof(string);
+        VariableType = VariableTypes.String;
+        break;
+      case Fmi2.fmi2ScalarVariableEnumeration:
+        VariableType = VariableTypes.EnumFmi2;
         break;
       default:
         throw new InvalidDataException($"The variable '{input.name}' has an unknown variable type.");
@@ -425,7 +431,7 @@ public class Variable
     ref Dictionary<uint /* ValueReference */, Variable> variables)
   {
     var res = new ulong[originalDimensions.Length];
-    for (int i = 0; i < originalDimensions.Length; i++)
+    for (var i = 0; i < originalDimensions.Length; i++)
     {
       if (originalDimensions[i].startSpecified)
       {
@@ -435,7 +441,7 @@ public class Variable
       {
         var v = variables[originalDimensions[i].valueReference];
 
-        if (v.VariableType != typeof(UInt64))
+        if (v.VariableType != VariableTypes.UInt64)
         {
           throw new ArgumentException("The referenced dimension variable must be of type UInt64.");
         }
@@ -468,7 +474,7 @@ public class Variable
 
   public override string ToString()
   {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.AppendLine($"{Name}");
     sb.AppendLine($"   Description: {Description}");
     sb.AppendLine($"   ValueReference: {ValueReference}");

@@ -66,6 +66,12 @@ internal class Program
 
     foreach (var variable in modelDescription.Variables)
     {
+      // TODO remove this block once enumeration export is supported
+      if (variable.Value.VariableType is VariableTypes.EnumFmi2 or VariableTypes.EnumFmi3)
+      {
+        continue;
+      }
+
       var vValue = variable.Value;
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
@@ -286,9 +292,9 @@ internal class Program
     return interfaceSb;
   }
 
-  private static string GetVarTypeString(Type variableType)
+  private static string GetVarTypeString(VariableTypes variableType)
   {
-    var typeName = variableType.Name.ToLowerInvariant();
+    var typeName = variableType.ToString().ToLowerInvariant();
     // replace types that do not match vCDL
     typeName = typeName.Replace("single", "float");
     typeName = typeName.Replace("sbyte", "int8");

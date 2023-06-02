@@ -6,7 +6,7 @@ namespace Fmi.Binding;
 
 public interface IFmiBindingCommon : IDisposable
 {
-  public void GetValue(uint[] valueRefs, out ReturnVariable result, Type type);
+  public void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type);
 
   public void SetValue(uint valueRef, byte[] data);
   public void SetValue(uint valueRef, byte[] data, int[] binSizes);
@@ -147,7 +147,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     deleg = (T)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
   }
 
-  public abstract void GetValue(uint[] valueRefs, out ReturnVariable result, Type type);
+  public abstract void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type);
 
   public abstract void SetValue(uint valueRef, byte[] data);
   internal abstract void SetValue(Variable mdVar, byte[] data);

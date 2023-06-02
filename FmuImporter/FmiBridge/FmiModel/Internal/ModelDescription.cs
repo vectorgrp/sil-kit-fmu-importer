@@ -153,9 +153,6 @@ public class ModelDescription
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
-      else
-      {
-      }
     }
   }
 

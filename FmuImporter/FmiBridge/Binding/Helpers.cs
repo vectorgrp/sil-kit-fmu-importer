@@ -16,7 +16,10 @@ internal static class Helpers
   {
     var result = Common.Helpers.ProcessReturnCode(resultCode, returnCodeName, methodHandle);
     if (result.Item1)
+    {
       return;
+    }
+
     try
     {
       throw new ApplicationException(result.Item2?.ToString());

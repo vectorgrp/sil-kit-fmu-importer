@@ -10,7 +10,7 @@ public class SerDes
     if (isScalar && objectArray.Length > 1)
     {
       throw new ArgumentOutOfRangeException(
-        "objectArray",
+        nameof(objectArray),
         "the encoded data was supposed to be scalar, but had more than one entry to encode.");
     }
 
@@ -117,7 +117,7 @@ public class SerDes
       return byteList.ToArray();
     }
 
-    if (sourceType == typeof(Int64))
+    if (sourceType == typeof(Int64) || sourceType == typeof(Enum))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt64);
       for (var i = 0; i < convertedArray.Length; i++)
@@ -224,6 +224,8 @@ public class SerDes
   private static void ToLittleEndian(ref byte[] bytes)
   {
     if (!BitConverter.IsLittleEndian)
+    {
       Array.Reverse(bytes);
+    }
   }
 }

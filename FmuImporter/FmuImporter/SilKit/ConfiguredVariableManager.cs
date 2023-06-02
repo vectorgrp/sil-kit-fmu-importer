@@ -1,4 +1,5 @@
-﻿using Fmi.Binding;
+﻿using Fmi;
+using Fmi.Binding;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using SilKit.Services.PubSub;
@@ -114,8 +115,8 @@ public class ConfiguredVariableManager
       var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
 
       Binding.GetValue(valueRefArr, out var result, configuredVariableType);
-      if (configuredVariable.FmuVariableDefinition.VariableType == typeof(float) ||
-          configuredVariable.FmuVariableDefinition.VariableType == typeof(double))
+      if (configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32 ||
+          configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float64)
       {
         // apply FMI unit transformation
         foreach (var variable in result.ResultArray)
@@ -126,7 +127,7 @@ public class ConfiguredVariableManager
             var unit = mdVar.TypeDefinition?.Unit;
             if (unit != null)
             {
-              if (configuredVariableType == typeof(float))
+              if (configuredVariableType == VariableTypes.Float32)
               {
                 var value = (float)(variable.Values[i]);
                 // first reverse offset...
@@ -169,7 +170,7 @@ public class ConfiguredVariableManager
           throw new Exception();
         }
 
-        // Reverse type transformation
+        // Reverse type transformation and apply linear transformation
         data = TransformAndReencode(data, configuredVariable, ModelDescription.Variables[refValue]);
       }
 
@@ -189,7 +190,6 @@ public class ConfiguredVariableManager
       return inputData;
     }
 
-    // TODO: Note in documentation that transformations on the receiver's side are a lot more expensive than on the sender's side
     var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
     var arraySize = 1; // scalar by default
     if (!isScalar)
@@ -215,10 +215,10 @@ public class ConfiguredVariableManager
       var offset = 0;
       for (var i = 0; i < arraySize; i++)
       {
-        var transformType = Helpers.StringToType(transformation.TransmissionType.ToLowerInvariant());
+        var transformType = Helpers.StringToVariableType(transformation.TransmissionType.ToLowerInvariant());
         var transmissionData = Helpers.FromByteArray(inputData, transformType, ref offset);
         // re-encode data with variable type
-        targetArray[i] = Convert.ChangeType(transmissionData, mdVar.VariableType);
+        targetArray[i] = Convert.ChangeType(transmissionData, Helpers.VariableTypeToType(mdVar.VariableType));
       }
     }
 
@@ -230,7 +230,7 @@ public class ConfiguredVariableManager
       Helpers.ApplyLinearTransformation(ref targetArray[i], factor, offset, mdVar.VariableType);
     }
 
-    return SerDes.Serialize(targetArray, isScalar, mdVar.VariableType);
+    return SerDes.Serialize(targetArray, isScalar, Helpers.VariableTypeToType(mdVar.VariableType));
   }
 
   private byte[] ApplyConfiguredTransformationAndEncode(
@@ -257,13 +257,13 @@ public class ConfiguredVariableManager
       }
 
       // encode
-      return SerDes.Serialize(variable.Values, variable.IsScalar, variable.Type, null);
+      return SerDes.Serialize(variable.Values, variable.IsScalar, Helpers.VariableTypeToType(variable.Type), null);
     }
 
     return SerDes.Serialize(
       variable.Values,
       variable.IsScalar,
-      variable.Type,
+      Helpers.VariableTypeToType(variable.Type),
       Array.ConvertAll(variable.ValueSizes, e => (Int32)e));
   }
 }

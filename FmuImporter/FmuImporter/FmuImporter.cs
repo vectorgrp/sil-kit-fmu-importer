@@ -328,6 +328,8 @@ public class FmuImporter
     fmi2Binding.ExitInitializationMode();
   }
 
+  private fmi3LogMessageCallback? _logger;
+
   private void PrepareFmi3Fmu(string fmuPath)
   {
     // Get FMI Model binding
@@ -340,12 +342,14 @@ public class FmuImporter
     // Initialize ConfiguredVariableManager
     ConfiguredVariableManager = new ConfiguredVariableManager(Binding, ModelDescription);
 
+    _logger = Logger;
+
     fmi3Binding.InstantiateCoSimulation(
       ModelDescription.ModelName,
       ModelDescription.InstantiationToken,
       true,
       true,
-      Logger);
+      _logger);
 
     fmi3Binding.SetDebugLogging(true, 0, null);
 
@@ -404,7 +408,7 @@ public class FmuImporter
           data = Fmi.Helpers.EncodeData(configuredParameter.Value, v.VariableType, ref binSizes);
         }
 
-        if (v.VariableType != typeof(IntPtr))
+        if (v.VariableType != VariableTypes.Binary)
         {
           Binding.SetValue(refValue, data);
         }
@@ -516,7 +520,7 @@ public class FmuImporter
 
     if (_useStopTime && ModelDescription.DefaultExperiment.StopTime.HasValue)
     {
-      if (fmiNow >= ModelDescription.DefaultExperiment.StopTime)
+      if (Helpers.SilKitTimeToFmiTime(nowInNs) >= ModelDescription.DefaultExperiment.StopTime)
       {
         // stop the SIL Kit simulation
         SilKitManager.StopSimulation("FMU stopTime reached.");
