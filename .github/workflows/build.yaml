@@ -1,5 +1,6 @@
 name: Build the SIL Kit FMU Importer (.NET 6)
 
+
 # Define the triggers for this workflow
 on:
   workflow_dispatch:
@@ -10,22 +11,43 @@ on:
 
 jobs:
   build-windows:
-
+  
     runs-on: windows
-
+  
     steps:
-
+  
     # Check out this Git repo
     - uses: actions/checkout@v3
-
+  
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
 
+  # Get environment variable for docker image URI and provide it to next build step
+  prep-linux:
+    runs-on: [Linux]
+    outputs:
+      image: ${{ steps.set_image.outputs.image }}
+    environment: build-action
+    steps:
+      - id: set_image
+        env: 
+          DOCKER_IMAGE_URI: ${{ vars.DOCKER_IMAGE_URI }} 
+        run: echo "image=${{vars.DOCKER_IMAGE_URI}}" >> "$GITHUB_OUTPUT"
+
+
+  # Build the project, then remove the built artifacts
   build-linux:
 
-    runs-on: [Linux]
+    runs-on: [Linux, Docker]
+    needs: prep-linux
+    container:
+      image: ${{ needs.prep-linux.outputs.image }}
     steps:
+    - run: ls -l
+    - run: pwd
+    - run: "echo ImageURI=${{needs.prep-linux.outputs.image}}"
     # Check out this Git repo
     - uses: actions/checkout@v3
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+    - run: rm -rf FmuImporter
