@@ -43,11 +43,11 @@ jobs:
     container:
       image: ${{ needs.prep-linux.outputs.image }}
     steps:
-    - run: ls -l
+    - run: ls -la
     - run: pwd
     - run: "echo ImageURI=${{needs.prep-linux.outputs.image}}"
     # Check out this Git repo
     - uses: actions/checkout@v3
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
-    - run: rm -rf FmuImporter
+    - run: rm -rfv * .??*
