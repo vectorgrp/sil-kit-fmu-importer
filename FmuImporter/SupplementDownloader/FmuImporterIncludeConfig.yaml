@@ -8,3 +8,13 @@ Parameters:
     Value: 42
   - VariableName: Float64_tunable_parameter
     Value: 42
+    
+VariableMappings:
+  - VariableName: Float64_discrete_input
+    Transformation:
+      Offset: 1
+      Factor: 2
+  - VariableName: Float64_continuous_output
+    Transformation:
+      Offset: 1
+      Factor: 3

@@ -124,13 +124,16 @@ public class FmuImporter
     var configuredVariableDictionary =
       new Dictionary<uint, Config.ConfiguredVariable>(ModelDescription.Variables.Values.Count);
 
-    if (_fmuImporterConfig.VariableMappings != null)
+    var VariableMappings = _fmuImporterConfig.GetVariables();
+
+    if (VariableMappings != null)
     {
-      for (var i = 0; i < _fmuImporterConfig.VariableMappings.Count; i++)
+      for (var i = 0; i < VariableMappings.Count; i++)
       {
-        var configuredVariable = _fmuImporterConfig.VariableMappings[i];
+        var configuredVariable = VariableMappings.ElementAt(i).Value;
         if (configuredVariable.VariableName == null)
         {
+          //TODO: this is redundant with Configuration.cs:UpdateVariablesDictionary:12
           throw new BadImageFormatException($"The configured variable at index '{i}' does not have a variable name.");
         }
 
@@ -383,7 +386,13 @@ public class FmuImporter
         if (configuredParameter.Value == null)
         {
           throw new BadImageFormatException(
-            $"configured parameter for '{configuredParameter.VariableName}' did not contain a value.");
+            $"Configured parameter for '{configuredParameter.VariableName}' did not contain a value.");
+        }
+
+        if (configuredParameter.VariableName == null)
+        {
+          throw new BadImageFormatException(
+            $"A configured parameter did not contain a variable name.");
         }
 
         var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VariableName, out var refValue);

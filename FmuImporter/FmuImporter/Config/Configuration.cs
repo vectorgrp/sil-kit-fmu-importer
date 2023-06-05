@@ -12,6 +12,7 @@ public class Configuration : ConfigurationPublic
   internal LinkedList<Configuration>? AllConfigurations { get; set; }
 
   private Dictionary<string, Parameter>? _resolvedParameters;
+  private Dictionary<string, ConfiguredVariable>? _resolvedVariables;
 
   internal Dictionary<string, Parameter> ResolvedParameters
   {
@@ -24,6 +25,20 @@ public class Configuration : ConfigurationPublic
       }
 
       return _resolvedParameters;
+    }
+  }
+ 
+  internal Dictionary<string, ConfiguredVariable> ResolvedVariables
+  {
+    get
+    {
+      if (_resolvedVariables == null)
+      {
+        _resolvedVariables = new Dictionary<string, ConfiguredVariable>();
+        UpdateVariablesDictionary(ref _resolvedVariables);
+      }
+
+      return _resolvedVariables;
     }
   }
 
@@ -112,7 +127,12 @@ public class Configuration : ConfigurationPublic
   {
     return ResolvedParameters;
   }
-
+ 
+  public Dictionary<string, ConfiguredVariable> GetVariables()
+  {
+    return ResolvedVariables;
+  }
+  
   private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
   {
     if (AllConfigurations == null || AllConfigurations.Count == 0)
@@ -121,7 +141,7 @@ public class Configuration : ConfigurationPublic
     }
 
     // Last cannot be null here -> omit nullable
-    // NB: The last entry of AllConfigurations is the configuration itself -> local parameters are already included
+    // NB: The last handled entry of AllConfigurations is the configuration itself -> local parameters are already included
     var currentConfigNode = AllConfigurations.Last!;
     do
     {
@@ -130,6 +150,12 @@ public class Configuration : ConfigurationPublic
       {
         foreach (var parameter in config.Parameters)
         {
+          if (parameter.VariableName == null)
+          {
+            //TODO throw something ?
+            continue;
+          }
+
           if (parameterDictionary.ContainsKey(parameter.VariableName))
           {
             // TODO print info to logger
@@ -138,6 +164,45 @@ public class Configuration : ConfigurationPublic
           else
           {
             parameterDictionary.Add(parameter.VariableName, parameter);
+          }
+        }
+      }
+
+      currentConfigNode = currentConfigNode.Previous;
+    } while (currentConfigNode != null);
+  }
+  
+  private void UpdateVariablesDictionary(ref Dictionary<string, ConfiguredVariable> variableDictionary)
+  {
+    if (AllConfigurations == null || AllConfigurations.Count == 0)
+    {
+      throw new NullReferenceException("AllConfigurations was not initialized.");
+    }
+
+    // Last cannot be null here -> omit nullable
+    // NB: The last handled entry of AllConfigurations is the configuration itself -> local parameters are already included
+    var currentConfigNode = AllConfigurations.Last!;
+    do
+    {
+      var config = currentConfigNode.Value;
+      if (config.VariableMappings != null)
+      {
+        foreach(var variableMapping in config.VariableMappings)
+        {
+          if (variableMapping.VariableName == null )
+          {
+            //TODO throw something ?
+            continue;
+          }
+
+          if (variableDictionary.ContainsKey(variableMapping.VariableName))
+          {
+            //TODO print info to logger
+            variableDictionary[variableMapping.VariableName] = variableMapping;
+          }
+          else
+          {
+            variableDictionary.Add(variableMapping.VariableName, variableMapping);
           }
         }
       }

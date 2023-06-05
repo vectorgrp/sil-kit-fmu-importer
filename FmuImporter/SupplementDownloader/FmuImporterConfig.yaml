@@ -23,10 +23,6 @@ VariableMappings:
       Offset: 1.0
       Factor: 2.0
       TransmissionType: Int32
-  - VariableName: Float64_discrete_input
-    Transformation:
-      Offset: 1
-      Factor: 2
   - VariableName: Float64_continuous_output
     Transformation:
       Offset: 1
