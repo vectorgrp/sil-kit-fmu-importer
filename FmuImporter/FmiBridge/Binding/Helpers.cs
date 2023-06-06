@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using Fmi.Exceptions;
+
 namespace Fmi.Binding;
 
 internal static class Helpers
@@ -25,7 +27,7 @@ internal static class Helpers
 
     try
     {
-      throw new ApplicationException(result.Item2?.ToString());
+      throw new NativeCallException(result.Item2?.ToString());
     }
     catch (Exception e)
     {

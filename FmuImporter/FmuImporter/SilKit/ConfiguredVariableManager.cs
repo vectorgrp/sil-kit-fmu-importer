@@ -5,6 +5,7 @@ using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
+using FmuImporter.Exceptions;
 using SilKit.Services.PubSub;
 using SilKit.Supplements;
 
@@ -34,8 +35,9 @@ public class ConfiguredVariableManager
   {
     if (c.FmuVariableDefinition == null)
     {
-      // TODO warn or throw
-      return;
+      throw new InvalidConfigurationException(
+        $"{nameof(c)} was not initialized correctly.",
+        new NullReferenceException($"{nameof(c.FmuVariableDefinition)} was null."));
     }
 
     switch (c.FmuVariableDefinition.Causality)
@@ -57,8 +59,9 @@ public class ConfiguredVariableManager
   {
     if (c.FmuVariableDefinition == null)
     {
-      // TODO return or throw
-      return;
+      throw new InvalidConfigurationException(
+        $"{nameof(c)} was not initialized correctly.",
+        new NullReferenceException($"{nameof(c.FmuVariableDefinition)} was null."));
     }
 
     c.SilKitService = publisher;
@@ -70,8 +73,9 @@ public class ConfiguredVariableManager
   {
     if (c.FmuVariableDefinition == null)
     {
-      // TODO return or throw
-      return;
+      throw new InvalidConfigurationException(
+        $"{nameof(c)} was not initialized correctly.",
+        new NullReferenceException($"{nameof(c.FmuVariableDefinition)} was null."));
     }
 
     c.SilKitService = subscriber;
@@ -101,8 +105,11 @@ public class ConfiguredVariableManager
     {
       if (configuredVariable.SilKitService == null || configuredVariable.FmuVariableDefinition == null)
       {
-        // TODO throw or warn
-        continue;
+        throw new InvalidConfigurationException(
+          $"{nameof(configuredVariable)} was not initialized correctly.",
+          new NullReferenceException(
+            $"{nameof(configuredVariable.SilKitService)} null? {(configuredVariable.SilKitService == null)}; " +
+            $"{nameof(configuredVariable.FmuVariableDefinition)} null? {(configuredVariable.SilKitService == null)}."));
       }
 
       if (initialKnownsOnly &&
@@ -169,8 +176,9 @@ public class ConfiguredVariableManager
       {
         if (configuredVariable.FmuVariableDefinition == null)
         {
-          // TODO return or throw
-          throw new Exception();
+          throw new InvalidConfigurationException(
+            $"{nameof(configuredVariable)} was not initialized correctly.",
+            new NullReferenceException($"{nameof(configuredVariable.FmuVariableDefinition)} was null."));
         }
 
         // Reverse type transformation and apply linear transformation

@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
+using Fmi.Exceptions;
 using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
@@ -565,17 +566,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
     else if (fmi2Status == 5)
     {
-      // doStep requires async handling -> wait 60s for doStep callback
-      // TODO make timeout configurable
-      if (waitForDoStepEvent.WaitOne(60000))
-      {
-        lastSuccessfulTime = currentCommunicationPoint + communicationStepSize;
-      }
-      else
-      {
-        // timeout logic
-        throw new TimeoutException("SimTask did not return in time...");
-      }
+      // doStep requires async handling
+      waitForDoStepEvent.WaitOne();
+      lastSuccessfulTime = currentCommunicationPoint + communicationStepSize;
     }
     else
     {
@@ -729,7 +722,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
       if (str == null)
       {
-        throw new BadImageFormatException("TODO");
+        throw new NativeCallException(
+          $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
       }
 
       result[i] = str;

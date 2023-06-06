@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
+using Fmi.Exceptions;
 using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
@@ -1307,7 +1308,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
       if (str == null)
       {
-        throw new BadImageFormatException("TODO");
+        throw new NativeCallException(
+          $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
       }
 
       result[i] = str;

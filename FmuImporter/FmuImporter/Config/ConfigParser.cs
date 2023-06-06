@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using FmuImporter.Exceptions;
+
 namespace FmuImporter.Config;
 
 public static class ConfigParser

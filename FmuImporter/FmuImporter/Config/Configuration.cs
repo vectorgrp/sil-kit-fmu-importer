@@ -2,6 +2,8 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Security.Cryptography;
+using FmuImporter.Exceptions;
+using SilKit.Services.Logger;
 
 namespace FmuImporter.Config;
 
@@ -27,7 +29,7 @@ public class Configuration : ConfigurationPublic
       return _resolvedParameters;
     }
   }
- 
+
   internal Dictionary<string, ConfiguredVariable> ResolvedVariables
   {
     get
@@ -40,6 +42,13 @@ public class Configuration : ConfigurationPublic
 
       return _resolvedVariables;
     }
+  }
+
+  private ILogger? SilKitLogger { get; set; }
+
+  public void SetSilKitLogger(ILogger? logger)
+  {
+    SilKitLogger = logger;
   }
 
   /// <summary>
@@ -116,6 +125,7 @@ public class Configuration : ConfigurationPublic
       }
 
       var config = ConfigParser.LoadConfiguration(fullPath);
+      config.SetSilKitLogger(SilKitLogger);
       configHashes.Add(hashValue);
       result.Add(config);
     }
@@ -127,12 +137,12 @@ public class Configuration : ConfigurationPublic
   {
     return ResolvedParameters;
   }
- 
+
   public Dictionary<string, ConfiguredVariable> GetVariables()
   {
     return ResolvedVariables;
   }
-  
+
   private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
   {
     if (AllConfigurations == null || AllConfigurations.Count == 0)
@@ -152,13 +162,14 @@ public class Configuration : ConfigurationPublic
         {
           if (parameter.VariableName == null)
           {
-            //TODO throw something ?
-            continue;
+            throw new InvalidConfigurationException("Parameters contained a variable without a variable name.");
           }
 
           if (parameterDictionary.ContainsKey(parameter.VariableName))
           {
-            // TODO print info to logger
+            SilKitLogger?.Log(
+              LogLevel.Info,
+              $"Parameter '{parameter.VariableName}' was defined in multiple configurations.");
             parameterDictionary[parameter.VariableName] = parameter;
           }
           else
@@ -171,7 +182,7 @@ public class Configuration : ConfigurationPublic
       currentConfigNode = currentConfigNode.Previous;
     } while (currentConfigNode != null);
   }
-  
+
   private void UpdateVariablesDictionary(ref Dictionary<string, ConfiguredVariable> variableDictionary)
   {
     if (AllConfigurations == null || AllConfigurations.Count == 0)
@@ -187,17 +198,18 @@ public class Configuration : ConfigurationPublic
       var config = currentConfigNode.Value;
       if (config.VariableMappings != null)
       {
-        foreach(var variableMapping in config.VariableMappings)
+        foreach (var variableMapping in config.VariableMappings)
         {
-          if (variableMapping.VariableName == null )
+          if (variableMapping.VariableName == null)
           {
-            //TODO throw something ?
-            continue;
+            throw new InvalidConfigurationException("VariableMapping contained a variable without a variable name.");
           }
 
           if (variableDictionary.ContainsKey(variableMapping.VariableName))
           {
-            //TODO print info to logger
+            SilKitLogger?.Log(
+              LogLevel.Info,
+              $"Variable '{variableMapping.VariableName}' was defined in multiple configurations.");
             variableDictionary[variableMapping.VariableName] = variableMapping;
           }
           else

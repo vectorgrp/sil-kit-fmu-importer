@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Text;
+using Fmi.Exceptions;
 
 namespace Fmi;
 
@@ -42,7 +43,7 @@ public class Helpers
           var success = float.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as float, which could not be parsed as such.");
           }
 
@@ -58,7 +59,7 @@ public class Helpers
           var success = double.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as double, which could not be parsed as such.");
           }
 
@@ -74,7 +75,7 @@ public class Helpers
           var success = sbyte.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as sbyte, which could not be parsed as such.");
           }
 
@@ -90,7 +91,7 @@ public class Helpers
           var success = Int16.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as Int16, which could not be parsed as such.");
           }
 
@@ -106,7 +107,7 @@ public class Helpers
           var success = Int32.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as Int32, which could not be parsed as such.");
           }
 
@@ -122,7 +123,7 @@ public class Helpers
           var success = Int64.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as Int64, which could not be parsed as such.");
           }
 
@@ -138,7 +139,7 @@ public class Helpers
           var success = byte.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as byte, which could not be parsed as such.");
           }
 
@@ -154,7 +155,7 @@ public class Helpers
           var success = UInt16.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as UInt16, which could not be parsed as such.");
           }
 
@@ -170,7 +171,7 @@ public class Helpers
           var success = UInt32.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as UInt32, which could not be parsed as such.");
           }
 
@@ -186,7 +187,7 @@ public class Helpers
           var success = UInt64.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as UInt64, which could not be parsed as such.");
           }
 
@@ -209,7 +210,7 @@ public class Helpers
             return BitConverter.GetBytes(true);
           }
 
-          throw new BadImageFormatException(
+          throw new DataConversionException(
             $"The string '{s}' was declared as bool, which could not be parsed as such");
         }
 
@@ -238,7 +239,7 @@ public class Helpers
           var success = Int32.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as Enum (32 bit), which could not be parsed as such.");
           }
 
@@ -254,7 +255,7 @@ public class Helpers
           var success = Int64.TryParse(s, out var result);
           if (!success)
           {
-            throw new BadImageFormatException(
+            throw new DataConversionException(
               $"The string '{s}' was declared as Enum (64 bit), which could not be parsed as such.");
           }
 

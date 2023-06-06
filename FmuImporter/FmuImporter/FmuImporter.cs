@@ -3,8 +3,10 @@
 
 using Fmi;
 using Fmi.Binding;
+using Fmi.Exceptions;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
+using FmuImporter.Exceptions;
 using FmuImporter.SilKit;
 using SilKit.Services.Logger;
 using SilKit.Services.PubSub;
@@ -54,8 +56,11 @@ public class FmuImporter
         _fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
         if (_fmuImporterConfig.Version == null || _fmuImporterConfig.Version == 0)
         {
-          throw new BadImageFormatException("The provided configuration file did not contain a valid 'Version' field.");
+          throw new InvalidConfigurationException(
+            "The provided configuration file did not contain a valid 'Version' field.");
         }
+
+        _fmuImporterConfig.SetSilKitLogger(SilKitManager.Logger);
 
         _fmuImporterConfig.MergeIncludes();
       }
@@ -117,8 +122,7 @@ public class FmuImporter
   {
     if (ConfiguredVariableManager == null)
     {
-      // TODO throw?
-      return;
+      throw new NullReferenceException($"{nameof(ConfiguredVariableManager)} was null.");
     }
 
     var configuredVariableDictionary =
@@ -134,14 +138,15 @@ public class FmuImporter
         if (configuredVariable.VariableName == null)
         {
           //TODO: this is redundant with Configuration.cs:UpdateVariablesDictionary:12
-          throw new BadImageFormatException($"The configured variable at index '{i}' does not have a variable name.");
+          throw new InvalidConfigurationException(
+            $"The configured variable at index '{i}' does not have a variable name.");
         }
 
         var success =
           ModelDescription.NameToValueReference.TryGetValue(configuredVariable.VariableName, out var refValue);
         if (!success)
         {
-          throw new BadImageFormatException(
+          throw new InvalidConfigurationException(
             $"The configured variable '{configuredVariable.VariableName}' cannot be found in the model description.");
         }
 
@@ -190,8 +195,7 @@ public class FmuImporter
 
         if (configuredVariable.VariableName == null)
         {
-          // TODO elaborate
-          throw new NullReferenceException();
+          throw new NullReferenceException($"{nameof(configuredVariable.VariableName)} was null.");
         }
 
         if (configuredVariable.FmuVariableDefinition.Causality == Variable.Causalities.Input)
@@ -273,7 +277,7 @@ public class FmuImporter
       case FmiVersions.Invalid:
       // fallthrough
       default:
-        throw new ArgumentException("fmu did not provide a supported FMI version.");
+        throw new ModelDescriptionException("FMU did not provide a supported FMI version.");
     }
   }
 
@@ -383,29 +387,31 @@ public class FmuImporter
     {
       foreach (var configuredParameter in _configuredParameters.Values)
       {
+        if (configuredParameter.VariableName == null)
+        {
+          throw new InvalidConfigurationException(
+            "A configured parameter did not contain a variable name.");
+        }
+
         if (configuredParameter.Value == null)
         {
-          throw new BadImageFormatException(
+          throw new InvalidConfigurationException(
             $"Configured parameter for '{configuredParameter.VariableName}' did not contain a value.");
         }
 
-        if (configuredParameter.VariableName == null)
-        {
-          throw new BadImageFormatException(
-            $"A configured parameter did not contain a variable name.");
-        }
-
-        var result = ModelDescription.NameToValueReference.TryGetValue(configuredParameter.VariableName, out var refValue);
+        var result = ModelDescription.NameToValueReference.TryGetValue(
+          configuredParameter.VariableName,
+          out var refValue);
         if (!result)
         {
-          throw new ArgumentException(
+          throw new InvalidConfigurationException(
             $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
         }
 
         result = ModelDescription.Variables.TryGetValue(refValue, out var v);
         if (!result || v == null)
         {
-          throw new ArgumentException(
+          throw new InvalidConfigurationException(
             $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
         }
 
@@ -503,8 +509,7 @@ public class FmuImporter
   {
     if (ConfiguredVariableManager == null)
     {
-      // TODO throw, return or fix this code in general
-      throw new Exception();
+      throw new NullReferenceException($"{nameof(ConfiguredVariableManager)} was null.");
     }
 
     lastSimStep = nowInNs;

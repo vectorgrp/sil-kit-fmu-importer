@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Data;
 using System.Text;
+using Fmi.Exceptions;
 
 namespace Fmi.FmiModel.Internal;
 
@@ -96,7 +96,7 @@ public class ModelDescription
     // Node init
     if (input.CoSimulation.Length < 1)
     {
-      throw new InvalidDataException("The model description does not provide a CoSimulation description.");
+      throw new ModelDescriptionException("The model description does not provide a CoSimulation description.");
     }
 
     CoSimulation = new CoSimulation(input.CoSimulation[0]);
@@ -132,7 +132,7 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat64.unit))
         {
-          throw new DataException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
         }
 
         var typeDef = new TypeDefinition()
@@ -146,7 +146,7 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat32.unit))
         {
-          throw new DataException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
         }
 
         var typeDef = new TypeDefinition
@@ -172,7 +172,7 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefReal.unit))
         {
-          throw new DataException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
         }
 
         var typeDef = new TypeDefinition
@@ -250,7 +250,7 @@ public class ModelDescription
       result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
       if (!result)
       {
-        throw new ArgumentException(
+        throw new ModelDescriptionException(
           "Failed to parse model description: multiple variables have the same name.");
       }
     }
@@ -275,7 +275,7 @@ public class ModelDescription
       var result = Variables.TryAdd(v.ValueReference, v);
       if (!result)
       {
-        throw new ArgumentException(
+        throw new ModelDescriptionException(
           "Failed to parse model description: multiple variables have the same valueReference.");
       }
     }

@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Text;
+using Fmi.Exceptions;
 using Fmi2;
 using Fmi3;
 
@@ -424,7 +425,7 @@ public class Variable
       }
       else
       {
-        throw new InvalidCastException("The dimension field did not contain the expected type.");
+        throw new DataConversionException("The dimension field did not contain the expected type.");
       }
     }
   }
@@ -446,7 +447,7 @@ public class Variable
 
         if (v.VariableType != VariableTypes.UInt64)
         {
-          throw new ArgumentException("The referenced dimension variable must be of type UInt64.");
+          throw new ModelDescriptionException("The referenced dimension variable must be of type UInt64.");
         }
 
         if (v.Causality == Causalities.StructuralParameter || v.Variability == Variabilities.Constant)
@@ -457,18 +458,18 @@ public class Variable
           }
           else
           {
-            throw new ArgumentNullException("The referenced variable did not have a start value.");
+            throw new ModelDescriptionException("The referenced variable did not have a start value.");
           }
         }
         else
         {
-          throw new ArgumentException(
+          throw new ModelDescriptionException(
             "The referenced dimension variable must either be a structuralParameter or a constant.");
         }
       }
       else
       {
-        throw new ArgumentException("The dimension contained neither a start value nor a value reference.");
+        throw new ModelDescriptionException("The dimension contained neither a start value nor a value reference.");
       }
     }
 

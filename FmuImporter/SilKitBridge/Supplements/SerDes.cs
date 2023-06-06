@@ -210,10 +210,10 @@ public class SerDes
 
     if (sourceType == typeof(IntPtr))
     {
-      throw new NotSupportedException("TODO Binaries cannot be converted like this!");
+      throw new NotSupportedException("Binaries cannot be converted with this method.");
     }
 
-    throw new NotSupportedException("Unknown data. TODO improve message; extend method");
+    throw new NotSupportedException($"Unknown data type ('{sourceType.Name}').");
   }
 
   public static List<byte> GetArrayHeader(int arrayLength)
