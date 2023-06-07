@@ -1,4 +1,4 @@
-name: Build the SIL Kit FMU Importer (.NET 6) [internal profile]
+name: Build the SIL Kit FMU Importer (.NET 6) [public profile]
 
 
 # Define the triggers for this workflow
@@ -12,7 +12,7 @@ on:
 jobs:
   build-windows:
   
-    runs-on: windows
+    runs-on: windows-latest
   
     steps:
   
@@ -24,7 +24,7 @@ jobs:
 
   # Get environment variable for docker image URI and provide it to next build step
   prep-linux:
-    runs-on: [Linux]
+    runs-on: [Ubuntu-20.04]
     outputs:
       image: ${{ steps.set_image.outputs.image }}
     environment: build-action
@@ -38,7 +38,7 @@ jobs:
   # Build the project, then remove the built artifacts
   build-linux:
 
-    runs-on: [Linux, Docker]
+    runs-on: [Ubuntu-20.04]
     needs: prep-linux
     container:
       image: ${{ needs.prep-linux.outputs.image }}

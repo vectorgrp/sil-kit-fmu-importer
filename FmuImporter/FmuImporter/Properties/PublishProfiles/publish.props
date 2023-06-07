@@ -27,9 +27,9 @@
         <Delete Files="$(PublishDir)/BuildAll.deps.json" />
         <Message Text="PublishDir = '$(PublishDir)" Importance="High" />
         <Message Text="Zipping to '$(PublishDir)/../../SilKitFmuImporter-$(Version).zip'..." Importance="High" />
-        <ZipDirectory SourceDirectory="$(PublishDir)/../"
+        <!--<ZipDirectory SourceDirectory="$(PublishDir)/../"
                       DestinationFile="$(PublishDir)/../../SilKitFmuImporter-$(Version)-$(RuntimeIdentifier).zip"
-                      Overwrite="True" />
+                      Overwrite="True" />-->
     </Target>
 
 </Project>
