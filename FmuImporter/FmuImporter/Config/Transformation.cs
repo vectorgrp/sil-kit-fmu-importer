@@ -3,9 +3,56 @@
 
 namespace FmuImporter.Config;
 
-public class Transformation
+public class Transformation : TransformationPublic
 {
-  public double? Offset { get; set; }
-  public double? Factor { get; set; }
-  public string? TransmissionType { get; set; }
+  
+  private double? _computedFactor;
+  
+  public double ComputedFactor
+  {
+    get
+    {
+      if (_computedFactor == null)
+      {
+        if (Factor == null)
+        {
+          _computedFactor = 1.0;
+        }
+        else if (ReverseTransform ?? false)
+        {
+          _computedFactor = 1.0 / Factor;
+        }
+        else
+        {
+          _computedFactor = Factor;
+        }
+      }
+      return (double)_computedFactor;
+    }
+  }
+
+  private double? _computedOffset;
+
+  public double ComputedOffset
+  {
+    get
+    {
+      if (_computedOffset == null)
+      {
+        if (Offset == null)
+        {
+          _computedOffset = 0.0;
+        }
+        else if (ReverseTransform ?? false)
+        {
+          _computedOffset = -Offset / Factor ?? 1.0;
+        }
+        else
+        {
+          _computedOffset = Offset;
+        }
+      }
+      return (double)_computedOffset;
+    }
+  }
 }

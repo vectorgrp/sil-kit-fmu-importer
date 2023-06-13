@@ -236,8 +236,8 @@ public class ConfiguredVariableManager
     // Apply factor and offset transform
     for (var i = 0; i < arraySize; i++)
     {
-      var factor = transformation.Factor ?? 1;
-      var offset = transformation.Offset ?? 0;
+      var factor = transformation.ComputedFactor;
+      var offset = transformation.ComputedOffset;
       Helpers.ApplyLinearTransformation(ref targetArray[i], factor, offset, mdVar.VariableType);
     }
 
@@ -253,8 +253,8 @@ public class ConfiguredVariableManager
       // Apply factor and offset transform
       for (var i = 0; i < variable.Values.Length; i++)
       {
-        var factor = configuredVariable.Transformation.Factor ?? 1;
-        var offset = configuredVariable.Transformation.Offset ?? 0;
+        var factor = configuredVariable.Transformation.ComputedFactor;
+        var offset = configuredVariable.Transformation.ComputedOffset;
         Helpers.ApplyLinearTransformation(ref variable.Values[i], factor, offset, variable.Type);
       }
 

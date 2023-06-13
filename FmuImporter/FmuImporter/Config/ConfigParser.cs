@@ -26,5 +26,19 @@ public static class ConfigParser
       throw new InvalidConfigurationException(
         $"The loaded configuration is missing a Version field. Path: {config.ConfigurationPath}");
     }
+
+    if( config.VariableMappings != null)
+    {
+      foreach( var Var in config.VariableMappings)
+      {
+        var transf = Var.Transformation;
+
+        if(transf != null && transf.Factor != null && transf.Factor == 0.0)
+        {
+          throw new InvalidConfigurationException(
+       $"The loaded transformation for {nameof(Var.VariableName)} has a factor of zero. Path: {config.ConfigurationPath}");
+        }
+      }
+    }
   }
 }
