@@ -15,13 +15,13 @@ public struct DataMessageEvent
 {
   internal DataMessageEvent(DataMessageEventInternal internalDataMessageEvent)
   {
-    timestampInNs = internalDataMessageEvent.timestampInNs;
-    data = new byte[(int)internalDataMessageEvent.data.size];
-    Marshal.Copy(internalDataMessageEvent.data.data, data, 0, data.Length);
+    TimestampInNS = internalDataMessageEvent.timestampInNs;
+    Data = new byte[(int)internalDataMessageEvent.data.size];
+    Marshal.Copy(internalDataMessageEvent.data.data, Data, 0, Data.Length);
   }
 
-  public UInt64 timestampInNs;
-  public byte[] data;
+  public UInt64 TimestampInNS;
+  public byte[] Data;
 }
 
 // Internal data types
@@ -32,16 +32,16 @@ internal struct DataMessageEventInternal
   {
     structHeader = GetStructHeader(ServiceId.Data, DatatypeId.DataMessageEvent);
     timestampInNs = 0;
-    data = new SilKit_ByteVector();
+    data = new ByteVector();
   }
 
-  internal SilKit_StructHeader structHeader;
+  internal StructHeader structHeader;
   public UInt64 timestampInNs;
-  public SilKit_ByteVector data;
+  public ByteVector data;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
-internal struct SilKit_ByteVector
+internal struct ByteVector
 {
   public IntPtr data;
   public IntPtr /*size_t*/ size;

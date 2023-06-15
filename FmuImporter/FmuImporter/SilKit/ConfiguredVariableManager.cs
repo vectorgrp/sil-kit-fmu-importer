@@ -3,6 +3,7 @@
 
 using Fmi;
 using Fmi.Binding;
+using Fmi.Binding.Helper;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using FmuImporter.Exceptions;

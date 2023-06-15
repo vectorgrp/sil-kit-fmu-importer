@@ -102,3 +102,6 @@ launchSettings.json
 
 # User specific part of publish profiles
 *.pubxml.user
+
+# Resharper user settings
+*.DotSettings.user

@@ -5,9 +5,8 @@ namespace FmuImporter.Config;
 
 public class Transformation : TransformationPublic
 {
-  
   private double? _computedFactor;
-  
+
   public double ComputedFactor
   {
     get
@@ -27,6 +26,7 @@ public class Transformation : TransformationPublic
           _computedFactor = Factor;
         }
       }
+
       return (double)_computedFactor;
     }
   }
@@ -52,6 +52,7 @@ public class Transformation : TransformationPublic
           _computedOffset = Offset;
         }
       }
+
       return (double)_computedOffset;
     }
   }

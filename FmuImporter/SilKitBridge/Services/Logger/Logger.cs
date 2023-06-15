@@ -16,29 +16,24 @@ public enum LogLevel : UInt32
   Off = 0xffffffff
 }
 
-public interface ILogger
-{
-  public void Log(LogLevel level, string message);
-}
-
 public class Logger : ILogger
 {
-  private static IntPtr loggerPtr = IntPtr.Zero;
+  private static IntPtr sLoggerPtr = IntPtr.Zero;
 
   internal IntPtr LoggerPtr
   {
     get
     {
-      return loggerPtr;
+      return sLoggerPtr;
     }
   }
 
   internal Logger(IntPtr participantPtr)
   {
-    if (loggerPtr == IntPtr.Zero)
+    if (sLoggerPtr == IntPtr.Zero)
     {
       Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)SilKit_Participant_GetLogger(out loggerPtr, participantPtr),
+        (Helpers.SilKit_ReturnCodes)SilKit_Participant_GetLogger(out sLoggerPtr, participantPtr),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
   }

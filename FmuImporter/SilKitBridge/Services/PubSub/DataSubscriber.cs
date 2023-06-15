@@ -5,29 +5,24 @@ using System.Runtime.InteropServices;
 
 namespace SilKit.Services.PubSub;
 
-public interface IDataSubscriber
-{
-  public void SetDataMessageHandler(DataMessageHandler dataMessageHandler);
-}
-
 public class DataSubscriber : IDataSubscriber
 {
-  private DataMessageHandler? _dataMessageHandler;
-  private readonly SilKit_DataMessageHandler_t dataMessageHandlerDelegate;
+  private PubSub.DataMessageHandler? _dataMessageHandler;
+  private readonly DataMessageHandler _dataMessageHandlerDelegate;
 
-  private readonly Participant participant;
-  private readonly IntPtr datahandlerContext;
-  private IntPtr dataSubscriberPtr;
+  private readonly Participant _participant;
+  private readonly IntPtr _datahandlerContext;
+  private IntPtr _dataSubscriberPtr;
 
   internal IntPtr DataSubscriberPtr
   {
     get
     {
-      return dataSubscriberPtr;
+      return _dataSubscriberPtr;
     }
     private set
     {
-      dataSubscriberPtr = value;
+      _dataSubscriberPtr = value;
     }
   }
 
@@ -36,28 +31,28 @@ public class DataSubscriber : IDataSubscriber
     string controllerName,
     PubSubSpec dataSpec,
     IntPtr dataHandlerContext,
-    DataMessageHandler dataMessageHandler)
+    PubSub.DataMessageHandler dataMessageHandler)
   {
-    dataMessageHandlerDelegate = DataMessageHandlerInternal;
+    _dataMessageHandlerDelegate = DataMessageHandlerInternal;
 
-    this.participant = participant;
-    datahandlerContext = dataHandlerContext;
+    _participant = participant;
+    _datahandlerContext = dataHandlerContext;
     _dataMessageHandler = dataMessageHandler;
-    var silKitDataSpec = dataSpec.toSilKitDataSpec();
+    var silKitDataSpec = dataSpec.ToSilKitDataSpec();
 
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_Create(
-        out dataSubscriberPtr,
-        participant.ParticipantPtr,
+        out _dataSubscriberPtr,
+        _participant.ParticipantPtr,
         controllerName,
         silKitDataSpec,
         dataHandlerContext,
-        dataMessageHandlerDelegate),
+        _dataMessageHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
 
-  public void SetDataMessageHandler(DataMessageHandler dataMessageHandler)
+  public void SetDataMessageHandler(PubSub.DataMessageHandler dataMessageHandler)
   {
     _dataMessageHandler = dataMessageHandler;
 
@@ -65,7 +60,7 @@ public class DataSubscriber : IDataSubscriber
       (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_SetDataMessageHandler(
         DataSubscriberPtr,
         IntPtr.Zero,
-        dataMessageHandlerDelegate),
+        _dataMessageHandlerDelegate),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -80,7 +75,7 @@ public class DataSubscriber : IDataSubscriber
       return;
     }
 
-    _dataMessageHandler?.Invoke(datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
+    _dataMessageHandler?.Invoke(_datahandlerContext, this, new DataMessageEvent(dataMessageEvent));
   }
 
   /*
@@ -93,9 +88,9 @@ public class DataSubscriber : IDataSubscriber
   private static extern int SilKit_DataSubscriber_SetDataMessageHandler(
     [In] IntPtr self,
     [In] IntPtr context,
-    [In] SilKit_DataMessageHandler_t dataHandler);
+    [In] DataMessageHandler dataHandler);
 
-  private delegate void SilKit_DataMessageHandler_t(
+  private delegate void DataMessageHandler(
     IntPtr context,
     IntPtr subscriber,
     ref DataMessageEventInternal dataMessageEvent);
@@ -117,5 +112,5 @@ public class DataSubscriber : IDataSubscriber
     [MarshalAs(UnmanagedType.LPStr)] string controllerName,
     [In] IntPtr dataSpec,
     IntPtr context,
-    SilKit_DataMessageHandler_t dataHandler);
+    DataMessageHandler dataHandler);
 }

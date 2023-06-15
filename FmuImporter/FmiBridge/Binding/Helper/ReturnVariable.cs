@@ -3,7 +3,7 @@
 
 using Fmi.FmiModel.Internal;
 
-namespace Fmi.Binding;
+namespace Fmi.Binding.Helper;
 
 public class ReturnVariable
 {

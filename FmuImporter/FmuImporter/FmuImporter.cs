@@ -88,11 +88,11 @@ public class FmuImporter
   {
   }
 
-  private bool mDisposedValue;
+  private bool _disposedValue;
 
   protected virtual void Dispose(bool disposing)
   {
-    if (!mDisposedValue)
+    if (!_disposedValue)
     {
       if (disposing)
       {
@@ -106,7 +106,7 @@ public class FmuImporter
       }
 
       ReleaseUnmanagedResources();
-      mDisposedValue = true;
+      _disposedValue = true;
     }
   }
 
@@ -128,30 +128,27 @@ public class FmuImporter
     var configuredVariableDictionary =
       new Dictionary<uint, Config.ConfiguredVariable>(ModelDescription.Variables.Values.Count);
 
-    var VariableMappings = _fmuImporterConfig.GetVariables();
+    var variableMappings = _fmuImporterConfig.GetVariables();
 
-    if (VariableMappings != null)
+    for (var i = 0; i < variableMappings.Count; i++)
     {
-      for (var i = 0; i < VariableMappings.Count; i++)
+      var configuredVariable = variableMappings.ElementAt(i).Value;
+      if (configuredVariable.VariableName == null)
       {
-        var configuredVariable = VariableMappings.ElementAt(i).Value;
-        if (configuredVariable.VariableName == null)
-        {
-          //TODO: this is redundant with Configuration.cs:UpdateVariablesDictionary:12
-          throw new InvalidConfigurationException(
-            $"The configured variable at index '{i}' does not have a variable name.");
-        }
-
-        var success =
-          ModelDescription.NameToValueReference.TryGetValue(configuredVariable.VariableName, out var refValue);
-        if (!success)
-        {
-          throw new InvalidConfigurationException(
-            $"The configured variable '{configuredVariable.VariableName}' cannot be found in the model description.");
-        }
-
-        configuredVariableDictionary.Add(refValue, configuredVariable);
+        //TODO: this is redundant with Configuration.cs:UpdateVariablesDictionary:12
+        throw new InvalidConfigurationException(
+          $"The configured variable at index '{i}' does not have a variable name.");
       }
+
+      var success =
+        ModelDescription.NameToValueReference.TryGetValue(configuredVariable.VariableName, out var refValue);
+      if (!success)
+      {
+        throw new InvalidConfigurationException(
+          $"The configured variable '{configuredVariable.VariableName}' cannot be found in the model description.");
+      }
+
+      configuredVariableDictionary.Add(refValue, configuredVariable);
     }
 
     foreach (var modelDescriptionVariable in ModelDescription.Variables.Values)
@@ -231,33 +228,33 @@ public class FmuImporter
 
     var valueRef = (uint)context;
 
-    if (dataMessageEvent.timestampInNs > nextSimStep)
+    if (dataMessageEvent.TimestampInNS > _nextSimStep)
     {
       throw new InvalidDataException(
         "The received message is further in the future than the next communication step!");
     }
 
-    if (dataMessageEvent.timestampInNs > lastSimStep)
+    if (dataMessageEvent.TimestampInNS > _lastSimStep)
     {
       // data must not be processed in next SimStep
       if (!FutureDataBuffer.ContainsKey(valueRef))
       {
-        FutureDataBuffer.TryAdd(valueRef, dataMessageEvent.data);
+        FutureDataBuffer.TryAdd(valueRef, dataMessageEvent.Data);
       }
       else
       {
-        FutureDataBuffer[valueRef] = dataMessageEvent.data;
+        FutureDataBuffer[valueRef] = dataMessageEvent.Data;
       }
     }
     else
     {
       if (!DataBuffer.ContainsKey(valueRef))
       {
-        DataBuffer.TryAdd(valueRef, dataMessageEvent.data);
+        DataBuffer.TryAdd(valueRef, dataMessageEvent.Data);
       }
       else
       {
-        DataBuffer[valueRef] = dataMessageEvent.data;
+        DataBuffer[valueRef] = dataMessageEvent.Data;
       }
     }
   }
@@ -344,7 +341,7 @@ public class FmuImporter
     fmi2Binding.ExitInitializationMode();
   }
 
-  private fmi3LogMessageCallback? _logger;
+  private Fmi3LogMessageCallback? _logger;
 
   private void PrepareFmi3Fmu(string fmuPath)
   {
@@ -502,8 +499,8 @@ public class FmuImporter
     SilKitManager.StartSimulation(SimulationStepReached, stepDuration);
   }
 
-  private ulong? lastSimStep;
-  private ulong nextSimStep;
+  private ulong? _lastSimStep;
+  private ulong _nextSimStep;
 
   private void SimulationStepReached(ulong nowInNs, ulong durationInNs)
   {
@@ -512,8 +509,8 @@ public class FmuImporter
       throw new NullReferenceException($"{nameof(ConfiguredVariableManager)} was null.");
     }
 
-    lastSimStep = nowInNs;
-    nextSimStep = nowInNs + durationInNs;
+    _lastSimStep = nowInNs;
+    _nextSimStep = nowInNs + durationInNs;
 
     if (nowInNs == 0)
     {

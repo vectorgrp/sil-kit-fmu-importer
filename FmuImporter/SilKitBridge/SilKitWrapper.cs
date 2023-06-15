@@ -260,15 +260,15 @@ internal static class SilKitVersion
   }
 
   [StructLayout(LayoutKind.Sequential, Pack = 8)]
-  internal unsafe struct SilKit_StructHeader
+  internal unsafe struct StructHeader
   {
     public ulong version; //!< Version encoded using SK_ID_MAKE
     public fixed ulong _reserved[3]; //!< For future expansions
   }
 
-  internal static SilKit_StructHeader GetStructHeader(ServiceId serviceName, DatatypeId datatypeName)
+  internal static StructHeader GetStructHeader(ServiceId serviceName, DatatypeId datatypeName)
   {
-    return new SilKit_StructHeader()
+    return new StructHeader()
     {
       version = GetVersion(serviceName, datatypeName)
     };

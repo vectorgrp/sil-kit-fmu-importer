@@ -10,7 +10,7 @@ namespace Fmi.FmiModel.Internal;
 
 public class Variable
 {
-  private readonly Fmi3.fmi3AbstractVariable originalVariable = null!;
+  private readonly Fmi3.fmi3AbstractVariable? _originalVariable;
 
   public enum Causalities
   {
@@ -52,17 +52,17 @@ public class Variable
 
   public object[]? Start { get; set; }
 
-  private ulong[]? dimensions;
+  private ulong[]? _dimensions;
 
   public ulong[]? Dimensions
   {
     get
     {
-      return dimensions;
+      return _dimensions;
     }
     set
     {
-      dimensions = value;
+      _dimensions = value;
       FlattenedArrayLength = 1;
       if (value == null || value.Length == 0)
       {
@@ -82,7 +82,7 @@ public class Variable
 
   public Variable(fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
   {
-    originalVariable = input;
+    _originalVariable = input;
 
     Name = input.name;
     ValueReference = input.valueReference;
@@ -408,10 +408,16 @@ public class Variable
 
   internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */, Variable> variables)
   {
-    var prop = originalVariable.GetType().GetProperty("Dimension");
+    if (_originalVariable == null)
+    {
+      throw new NullReferenceException(
+        $"Tried to access {nameof(_originalVariable)}, which was not initialized correctly.");
+    }
+
+    var prop = _originalVariable.GetType().GetProperty("Dimension");
     if (prop != null)
     {
-      var dimensions = prop.GetValue(originalVariable);
+      var dimensions = prop.GetValue(_originalVariable);
       if (dimensions == null)
       {
         // this variable is a scalar -> ArraySize = 1; skip array processing

@@ -14,7 +14,7 @@ public class SilKitManager : IDisposable
 {
   private readonly Participant _participant;
   private readonly ILifecycleService _lifecycleService;
-  private readonly LifecycleService.ITimeSyncService _timeSyncService;
+  private readonly ITimeSyncService _timeSyncService;
   public ILogger Logger { get; set; }
 
   public SilKitManager(string? configurationPath, string participantName)
@@ -94,11 +94,11 @@ public class SilKitManager : IDisposable
   {
   }
 
-  private bool mDisposedValue;
+  private bool _disposedValue;
 
   protected void Dispose(bool disposing)
   {
-    if (!mDisposedValue)
+    if (!_disposedValue)
     {
       if (disposing)
       {
@@ -107,7 +107,7 @@ public class SilKitManager : IDisposable
       }
 
       ReleaseUnmanagedResources();
-      mDisposedValue = true;
+      _disposedValue = true;
     }
   }
 

@@ -5,38 +5,33 @@ using System.Runtime.InteropServices;
 
 namespace SilKit.Services.PubSub;
 
-public interface IDataPublisher
-{
-  public void Publish(byte[] data);
-}
-
 public class DataPublisher : IDataPublisher
 {
-  private readonly Participant participant;
+  private readonly Participant _participant;
 
-  private IntPtr dataPublisherPtr;
+  private IntPtr _dataPublisherPtr;
 
   internal IntPtr DataPublisherPtr
   {
     get
     {
-      return dataPublisherPtr;
+      return _dataPublisherPtr;
     }
     private set
     {
-      dataPublisherPtr = value;
+      _dataPublisherPtr = value;
     }
   }
 
   internal DataPublisher(Participant participant, string controllerName, PubSubSpec dataSpec, byte history)
   {
-    this.participant = participant;
-    var silKitDataSpec = dataSpec.toSilKitDataSpec();
+    _participant = participant;
+    var silKitDataSpec = dataSpec.ToSilKitDataSpec();
 
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Create(
-        out dataPublisherPtr,
-        participant.ParticipantPtr,
+        out _dataPublisherPtr,
+        _participant.ParticipantPtr,
         controllerName,
         silKitDataSpec,
         history),
@@ -63,7 +58,7 @@ public class DataPublisher : IDataPublisher
   {
     var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
     var dataPtr = handle.AddrOfPinnedObject();
-    var byteVector = new SilKit_ByteVector
+    var byteVector = new ByteVector
     {
       data = dataPtr,
       size = (IntPtr)data.Length
@@ -80,5 +75,5 @@ public class DataPublisher : IDataPublisher
           const SilKit_ByteVector* data);
   */
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-  private static extern int SilKit_DataPublisher_Publish(IntPtr self, SilKit_ByteVector data);
+  private static extern int SilKit_DataPublisher_Publish(IntPtr self, ByteVector data);
 }

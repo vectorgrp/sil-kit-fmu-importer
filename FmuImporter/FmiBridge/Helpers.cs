@@ -17,16 +17,16 @@ public class Helpers
     Trace
   }
 
-  private static Action<LogSeverity, string>? _loggerAction;
+  private static Action<LogSeverity, string>? sLoggerAction;
 
   public static void SetLoggerCallback(Action<LogSeverity, string> callback)
   {
-    _loggerAction = callback;
+    sLoggerAction = callback;
   }
 
   public static void Log(LogSeverity severity, string message)
   {
-    _loggerAction?.Invoke(severity, message);
+    sLoggerAction?.Invoke(severity, message);
   }
 
   public static byte[] EncodeData(object data, VariableTypes type, ref List<int> binSizes)

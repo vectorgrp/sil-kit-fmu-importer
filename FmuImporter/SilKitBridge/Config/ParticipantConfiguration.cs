@@ -7,17 +7,17 @@ namespace SilKit.Config;
 
 public class ParticipantConfiguration : IDisposable
 {
-  private IntPtr configurationPtr;
+  private IntPtr _configurationPtr;
 
   internal IntPtr ParticipantConfigurationPtr
   {
     get
     {
-      return configurationPtr;
+      return _configurationPtr;
     }
     private set
     {
-      configurationPtr = value;
+      _configurationPtr = value;
     }
   }
 
@@ -25,7 +25,7 @@ public class ParticipantConfiguration : IDisposable
   {
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_FromString(
-        out configurationPtr,
+        out _configurationPtr,
         configurationString),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
@@ -45,11 +45,11 @@ public class ParticipantConfiguration : IDisposable
     ParticipantConfigurationPtr = IntPtr.Zero;
   }
 
-  private bool mDisposedValue;
+  private bool _disposedValue;
 
   protected void Dispose(bool disposing)
   {
-    if (!mDisposedValue)
+    if (!_disposedValue)
     {
       if (disposing)
       {
@@ -57,7 +57,7 @@ public class ParticipantConfiguration : IDisposable
       }
 
       ReleaseUnmanagedResources();
-      mDisposedValue = true;
+      _disposedValue = true;
     }
   }
 

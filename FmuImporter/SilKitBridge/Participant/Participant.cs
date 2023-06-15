@@ -11,20 +11,19 @@ namespace SilKit;
 
 public class Participant : IDisposable
 {
-  private static readonly object lockObject = new object();
   internal static ILogger? Logger { get; private set; }
 
-  private IntPtr participantPtr = IntPtr.Zero;
+  private IntPtr _participantPtr = IntPtr.Zero;
 
   internal IntPtr ParticipantPtr
   {
     get
     {
-      return participantPtr;
+      return _participantPtr;
     }
     private set
     {
-      participantPtr = value;
+      _participantPtr = value;
     }
   }
 
@@ -34,7 +33,7 @@ public class Participant : IDisposable
   {
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(
-        out participantPtr,
+        out _participantPtr,
         configuration.ParticipantConfigurationPtr,
         participantName,
         registryUri),
@@ -68,11 +67,11 @@ public class Participant : IDisposable
     ParticipantPtr = IntPtr.Zero;
   }
 
-  private bool mDisposedValue;
+  private bool _disposedValue;
 
   protected void Dispose(bool disposing)
   {
-    if (!mDisposedValue)
+    if (!_disposedValue)
     {
       if (disposing)
       {
@@ -80,7 +79,7 @@ public class Participant : IDisposable
       }
 
       ReleaseUnmanagedResources();
-      mDisposedValue = true;
+      _disposedValue = true;
     }
   }
 

@@ -55,38 +55,38 @@ public class PubSubSpec
       });
   }
 
-  internal IntPtr toSilKitDataSpec()
+  internal IntPtr ToSilKitDataSpec()
   {
-    var dataSpec = new SilKit_DataSpec
+    var dataSpec = new DataSpec
     {
       mediaType = MediaType,
       topic = Topic
     };
 
-    var labelList = new SilKit_LabelList
+    var labelList = new LabelList
     {
       numLabels = (IntPtr)Labels.Count
     };
 
-    var labels = new SilKit_Label[(int)labelList.numLabels];
-    var labelsPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_Label>() * (int)labelList.numLabels);
+    var labels = new Label[(int)labelList.numLabels];
+    var labelsPtr = Marshal.AllocHGlobal(Marshal.SizeOf<Label>() * (int)labelList.numLabels);
     for (var i = 0; i < (int)labelList.numLabels; i++)
     {
       var l = Labels[i];
-      labels[i] = new SilKit_Label()
+      labels[i] = new Label()
       {
         key = l.Key,
         value = l.Value,
         kind = (int)l.Kind
       };
 
-      Marshal.StructureToPtr(labels[i], labelsPtr + Marshal.SizeOf<SilKit_Label>() * i, false);
+      Marshal.StructureToPtr(labels[i], labelsPtr + Marshal.SizeOf<Label>() * i, false);
     }
 
     labelList.labels = labelsPtr;
     dataSpec.labelList = labelList;
 
-    var dataSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SilKit_DataSpec>());
+    var dataSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf<DataSpec>());
     Marshal.StructureToPtr(dataSpec, dataSpecPtr, false);
 
     return dataSpecPtr;
@@ -95,32 +95,32 @@ public class PubSubSpec
 
 // Internal
 [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
-internal struct SilKit_DataSpec
+internal struct DataSpec
 {
-  public SilKit_DataSpec()
+  public DataSpec()
   {
     structHeader =
       SilKitVersion.GetStructHeader(SilKitVersion.ServiceId.Data, SilKitVersion.DatatypeId.DataSpec);
     topic = string.Empty;
     mediaType = string.Empty;
-    labelList = new SilKit_LabelList();
+    labelList = new LabelList();
   }
 
-  internal SilKitVersion.SilKit_StructHeader structHeader;
+  internal SilKitVersion.StructHeader structHeader;
   [MarshalAs(UnmanagedType.LPStr)] internal string topic;
   [MarshalAs(UnmanagedType.LPStr)] internal string mediaType;
-  internal SilKit_LabelList labelList;
+  internal LabelList labelList;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
-internal struct SilKit_LabelList
+internal struct LabelList
 {
   internal IntPtr /* size_t */ numLabels;
   internal IntPtr labels;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
-internal struct SilKit_Label
+internal struct Label
 {
   [MarshalAs(UnmanagedType.LPStr)] internal string key;
   [MarshalAs(UnmanagedType.LPStr)] internal string value;

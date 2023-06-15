@@ -2,39 +2,25 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Runtime.InteropServices;
+using Fmi.Binding.Helper;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
-public interface IFmiBindingCommon : IDisposable
-{
-  public void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type);
-
-  public void SetValue(uint valueRef, byte[] data);
-  public void SetValue(uint valueRef, byte[] data, int[] binSizes);
-
-  public void DoStep(
-    double currentCommunicationPoint,
-    double communicationStepSize,
-    out double lastSuccessfulTime);
-
-  public void Terminate();
-
-  public FmiVersions GetFmiVersion();
-}
-
 internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 {
+  internal ModelDescription _modelDescription;
+
   public ModelDescription ModelDescription
   {
     get
     {
-      return modelDescription;
+      return _modelDescription;
     }
     private set
     {
-      modelDescription = value;
+      _modelDescription = value;
     }
   }
 
@@ -47,11 +33,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   {
     var extractedFolderPath = ModelLoader.ExtractFmu(fmuPath);
 
-    InitializeModelDescription(extractedFolderPath);
-    if (ModelDescription == null)
-    {
-      throw new NullReferenceException("Failed to initialize model description.");
-    }
+    _modelDescription = InitializeModelDescription(extractedFolderPath);
 
     FullFmuLibPath =
       $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
@@ -69,12 +51,11 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   {
   }
 
-  private bool mDisposedValue;
-  protected ModelDescription modelDescription = null!;
+  private bool _disposedValue;
 
   protected virtual void Dispose(bool disposing)
   {
-    if (!mDisposedValue)
+    if (!_disposedValue)
     {
       if (disposing)
       {
@@ -82,7 +63,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       }
 
       ReleaseUnmanagedResources();
-      mDisposedValue = true;
+      _disposedValue = true;
     }
   }
 
@@ -94,9 +75,9 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
 #endregion
 
-  private void InitializeModelDescription(string extractedFolderPath)
+  private ModelDescription InitializeModelDescription(string extractedFolderPath)
   {
-    ModelDescription = ModelLoader.LoadModelFromExtractedPath(extractedFolderPath);
+    return ModelLoader.LoadModelFromExtractedPath(extractedFolderPath);
   }
 
   private void InitializeModelBinding(string fullPathToLibrary)

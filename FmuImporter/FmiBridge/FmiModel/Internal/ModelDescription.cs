@@ -8,7 +8,7 @@ namespace Fmi.FmiModel.Internal;
 
 public class ModelDescription
 {
-  private Dictionary<uint, Variable> variables;
+  private Dictionary<uint, Variable> _variables;
 
   // Former attributes
   public string ModelName { get; set; }
@@ -26,11 +26,11 @@ public class ModelDescription
   {
     get
     {
-      return variables;
+      return _variables;
     }
     set
     {
-      variables = value;
+      _variables = value;
     }
   }
 
@@ -47,7 +47,7 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    variables = new Dictionary<uint, Variable>();
+    _variables = new Dictionary<uint, Variable>();
     NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
@@ -83,7 +83,7 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    variables = new Dictionary<uint, Variable>();
+    _variables = new Dictionary<uint, Variable>();
     NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
@@ -258,7 +258,7 @@ public class ModelDescription
     // iterate through all variables again and initialize array length
     foreach (var variable in Variables)
     {
-      variable.Value.InitializeArrayLength(ref variables);
+      variable.Value.InitializeArrayLength(ref _variables);
     }
   }
 
