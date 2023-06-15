@@ -52,12 +52,12 @@ Therefore, you must build them yourselves before you can run the tool.
   - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) has guides on how to get .NET 6 for your OS
   - May also be installed as part of a Visual Studio (v17.2 / 2022) installation
 - SIL Kit* (only needed to run the FMU Importer; not required for build step)
-  - Package can be downloaded from [GitHub](https://github.com/vectorgrp/sil-kit/releases)
+  - Package can be downloaded from [GitHub (SIL Kit)](https://github.com/vectorgrp/sil-kit/releases)
   - The FMU Importer was tested with SIL Kit 4.0.26 and prebuilt packages ship with this SIL Kit
 - FMU Importer Source Code
-  - Can be downloaded from GitHub* (not available yet)
+  - Can be downloaded from [GitHub (FMU Importer)](https://github.com/vectorgrp/sil-kit-fmu-importer)
 
-### **Build instructions**
+### **Build Instructions**
 
 The FMU Importer comes with preconfigured projects.
 The following sections provide instructions which projects you may build and what they do.
