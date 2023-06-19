@@ -74,7 +74,7 @@ public class Configuration : ConfigurationPublic
       return;
     }
 
-    var fullPath = GetFullPath(ConfigurationPath);
+    var fullPath = Path.GetFullPath(ConfigurationPath);
     if (!File.Exists(fullPath))
     {
       throw new FileNotFoundException($"The configuration file '{ConfigurationPath}' was not initialized properly.");
@@ -145,9 +145,14 @@ public class Configuration : ConfigurationPublic
 
   private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
   {
-    if (AllConfigurations == null || AllConfigurations.Count == 0)
+    if (AllConfigurations == null)
     {
       throw new NullReferenceException("AllConfigurations was not initialized.");
+    }
+
+    if (AllConfigurations.Count == 0)
+    {
+      return;
     }
 
     // Last cannot be null here -> omit nullable
@@ -185,9 +190,14 @@ public class Configuration : ConfigurationPublic
 
   private void UpdateVariablesDictionary(ref Dictionary<string, ConfiguredVariable> variableDictionary)
   {
-    if (AllConfigurations == null || AllConfigurations.Count == 0)
+    if (AllConfigurations == null)
     {
       throw new NullReferenceException("AllConfigurations was not initialized.");
+    }
+
+    if (AllConfigurations.Count == 0)
+    {
+      return;
     }
 
     // Last cannot be null here -> omit nullable
@@ -225,28 +235,38 @@ public class Configuration : ConfigurationPublic
 
   private string? GetFullPath(string path)
   {
-    if (!File.Exists(path))
-    {
-      return null;
-    }
-
     if (Path.IsPathFullyQualified(path))
     {
-      return path;
+      if (!File.Exists(path))
+      {
+        return path;
+      }
+      else
+      {
+        throw new FileNotFoundException($"The given file path '{path}' does not exist.");
+      }
     }
 
     if (ConfigurationPath == null)
     {
-      throw new InvalidOperationException("ConfigurationPath not set");
+      throw new InvalidConfigurationException("ConfigurationPath not initialized correctly.");
     }
 
-    var configDir = Path.GetDirectoryName(ConfigurationPath);
-    if (configDir == null)
+    var configPathDir = Path.GetDirectoryName(ConfigurationPath);
+    if (!Directory.Exists(configPathDir))
     {
-      throw new InvalidOperationException("Failed to retrieve directory from current config file path");
+      throw new DirectoryNotFoundException("Failed to extract directory from ConfigurationPath.");
     }
 
-    return Path.Combine(configDir, path);
+    var combinedPath = Path.Combine(configPathDir, path);
+
+    if (!File.Exists(combinedPath))
+    {
+      throw new InvalidConfigurationException(
+        $"Failed to resolve IncludeDirectory '{path}' in configuration file '{ConfigurationPath}'.");
+    }
+
+    return combinedPath;// Path.Combine(configDir, Path.GetFileName(path));
   }
 
   private string Sha512CheckSum(string path)

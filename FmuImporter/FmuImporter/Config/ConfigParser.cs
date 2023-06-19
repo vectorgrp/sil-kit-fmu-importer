@@ -12,8 +12,12 @@ public static class ConfigParser
     var deserializer = new YamlDotNet.Serialization.DeserializerBuilder()
       .Build();
 
-    var config = deserializer.Deserialize<Configuration>(File.ReadAllText(path));
-    config.ConfigurationPath = path;
+    var config = deserializer.Deserialize<Configuration?>(File.ReadAllText(path));
+    if (config == null)
+    {
+      throw new InvalidConfigurationException("Failed to deserialize the provided FMU configuration file");
+    }
+    config.ConfigurationPath = Path.GetFullPath(path);
     config.IgnoreUnmappedVariables = config.IgnoreUnmappedVariables ?? false;
     ValidateConfig(config);
     return config;
