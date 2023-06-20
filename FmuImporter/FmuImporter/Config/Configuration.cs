@@ -68,8 +68,9 @@ public class Configuration : ConfigurationPublic
   {
     var configHashes = new HashSet<string>();
     AllConfigurations = new LinkedList<Configuration>();
+    var currentNode = AllConfigurations.AddFirst(this);
 
-    if (Include == null || ConfigurationPath == null)
+    if (ConfigurationPath == null)
     {
       return;
     }
@@ -82,7 +83,6 @@ public class Configuration : ConfigurationPublic
 
     var hashValue = Sha512CheckSum(fullPath);
     configHashes.Add(hashValue);
-    var currentNode = AllConfigurations.AddFirst(this);
 
     do
     {
