@@ -37,13 +37,29 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   private IntPtr _component;
   private readonly GCHandle? _loggerHandlerGcHandle;
 
-#if OS_WINDOWS
-  private const string OsPath = "/binaries/x86_64-windows";
-#elif OS_LINUX
-  private const string OsPath = "/binaries/x86_64-linux";
-#elif OS_MAC
-  private const string OsPath = "/binaries/x86_64-darwin";
-#endif
+  private static string OsPath
+  {
+    get
+    {
+
+      if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+      {
+        return "/binaries/x86_64-windows";
+      }
+      else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+      {
+        return "/binaries/x86_64-linux";
+      }
+      else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+      {
+        return "/binaries/x86_64-darwin";
+      }
+      else
+      {
+        throw new NotSupportedException();
+      }
+    }
+  }
 
   public Fmi3Binding(string fmuPath) : base(fmuPath, OsPath)
   {

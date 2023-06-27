@@ -102,13 +102,29 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 {
   private IntPtr _component = IntPtr.Zero;
 
-#if OS_WINDOWS
-  private const string OsPath = "/binaries/win64";
-#elif OS_LINUX
-  private const string OsPath = "/binaries/linux64";
-#elif OS_MAC
-  private const string OsPath = "/binaries/darwin64";
-#endif
+  private static string OsPath
+  {
+    get
+    {
+
+      if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+      {
+        return "/binaries/x86_64-windows";
+      }
+      else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+      {
+        return "/binaries/x86_64-linux";
+      }
+      else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+      {
+        return "/binaries/x86_64-darwin";
+      }
+      else
+      {
+        throw new NotSupportedException();
+      }
+    }
+  }
 
   private static readonly AutoResetEvent WaitForDoStepEvent = new AutoResetEvent(false);
 

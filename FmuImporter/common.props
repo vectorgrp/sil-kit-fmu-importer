@@ -14,17 +14,6 @@
         <Configuration>$(ConfigurationOverride)</Configuration>
     </PropertyGroup>
 
-    <!-- Define OS constants-->
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <DefineConstants>OS_WINDOWS</DefineConstants>
-    </PropertyGroup>
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <DefineConstants>OS_LINUX</DefineConstants>
-    </PropertyGroup>
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <DefineConstants>OS_MAC</DefineConstants>
-    </PropertyGroup>
-
     <PropertyGroup>
         <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
         <GenerateAssemblyCopyrightInfo>True</GenerateAssemblyCopyrightInfo>
@@ -48,6 +37,7 @@
     <PropertyGroup>
         <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
         <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
+        <SilKitDirBase>$(MSBuildProjectDirectory)/../_silkit/</SilKitDirBase>
     </PropertyGroup>
 
     <PropertyGroup
@@ -90,4 +80,60 @@
     <PropertyGroup>
         <CommonImported>True</CommonImported>
     </PropertyGroup>
+
+    <Target Name="PrepareSilKitUbuntu" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/libSilKit.so')">
+        <PropertyGroup>
+            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.29/</SilKitUrl>
+            <SilKitUbuntuName>SilKit-4.0.29-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
+        </PropertyGroup>
+
+        <Message Text="Downloading SIL Kit (Ubuntu) archive from '$(SilKitUrl)'..." Importance="High" />
+        <DownloadFile
+            SourceUrl="$(SilKitUrl)$(SilKitUbuntuName).zip"
+            DestinationFolder="$(SilKitDirBase)">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+        <Message Text="Extracting SIL Kit (Ubuntu) library for later use..." Importance="High" />
+        <Unzip
+            SourceFiles="$(SilKitDirBase)$(SilKitUbuntuName).zip"
+            DestinationFolder="$(SilKitDirBase)/ubuntu"
+            OverwriteReadOnlyFiles="true"
+        />
+        <Move SourceFiles="$(SilKitDirBase)/ubuntu/$(SilKitUbuntuName)/SilKit/lib/libSilKit.so"
+              OverwriteReadOnlyFiles="true"
+              DestinationFiles="$(SilKitDirBase)/libSilKit.so" />
+        <Message Text="Cleaning up SIL Kit (Ubuntu) download artifacts..." Importance="High" />
+        <RemoveDir Directories="$(SilKitDirBase)/ubuntu" />
+        <Delete Files="$(SilKitDirBase)$(SilKitUbuntuName).zip" />
+    </Target>
+
+    <Target Name="PrepareSilKitWindows" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/SilKit.dll')">
+        <PropertyGroup>
+            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.29/</SilKitUrl>
+            <SilKitWinName>SilKit-4.0.29-Win-x86-VS2017</SilKitWinName>
+        </PropertyGroup>
+
+        <Message Text="Downloading SIL Kit (Windows) archive from '$(SilKitUrl)'..." Importance="High" />
+        <DownloadFile
+            SourceUrl="$(SilKitUrl)$(SilKitWinName).zip"
+            DestinationFolder="$(SilKitDirBase)">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+
+        <Message Text="Extracting SIL Kit (Windows) library for later use..." Importance="High" />
+        <Unzip
+            SourceFiles="$(SilKitDirBase)$(SilKitWinName).zip"
+            DestinationFolder="$(SilKitDirBase)/win"
+            OverwriteReadOnlyFiles="true"
+        />
+        <Move SourceFiles="$(SilKitDirBase)/win/$(SilKitWinName)/SilKit/bin/SilKit.dll"
+              OverwriteReadOnlyFiles="true"
+              DestinationFiles="$(SilKitDirBase)/SilKit.dll" />
+
+        <Message Text="Cleaning up SIL Kit (Windows) download artifacts..." Importance="High" />
+        <RemoveDir Directories="$(SilKitDirBase)/win" />
+        <Delete Files="$(SilKitDirBase)$(SilKitWinName).zip" />
+    </Target>
+
+    <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
 </Project>

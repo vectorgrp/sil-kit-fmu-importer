@@ -8,9 +8,7 @@
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="$(SetupPrinted) == ''">
         <Message Text="MSBuildProjectName = $(MSBuildProjectName)" Importance="high" />
-        <!--<Message Text="SolutionDir = $(SolutionDir)" Importance="high" />-->
         <Message Text="Configuration = $(Configuration)" Importance="high" />
-        <!--<Message Text="ConfigurationOverride = $(ConfigurationOverride)" Importance="high" />-->
         <Message Text="RuntimeIdentifier = $(RuntimeIdentifier)" Importance="high" />
         <Message Text="Standalone = $(Standalone)" Importance="high" />
         <PropertyGroup>
