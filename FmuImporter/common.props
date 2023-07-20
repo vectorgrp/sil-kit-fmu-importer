@@ -83,8 +83,8 @@
 
     <Target Name="PrepareSilKitUbuntu" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/libSilKit.so')">
         <PropertyGroup>
-            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.29/</SilKitUrl>
-            <SilKitUbuntuName>SilKit-4.0.29-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
+            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
+            <SilKitUbuntuName>SilKit-4.0.32-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
         </PropertyGroup>
 
         <Message Text="Downloading SIL Kit (Ubuntu) archive from '$(SilKitUrl)'..." Importance="High" />
@@ -109,8 +109,8 @@
 
     <Target Name="PrepareSilKitWindows" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/SilKit.dll')">
         <PropertyGroup>
-            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.29/</SilKitUrl>
-            <SilKitWinName>SilKit-4.0.29-Win-x86-VS2017</SilKitWinName>
+            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
+            <SilKitWinName>SilKit-4.0.32-Win-x86_64-VS2017</SilKitWinName>
         </PropertyGroup>
 
         <Message Text="Downloading SIL Kit (Windows) archive from '$(SilKitUrl)'..." Importance="High" />

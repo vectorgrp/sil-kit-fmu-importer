@@ -6,7 +6,20 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ---
 
-## [1.0.1] - unreleased
+## [1.0.2] - 2023-07-20
+
+### Changed
+
+* Updated SIL Kit libraries to 4.0.32 (QA release)
+
+### Fixed
+
+* Fixed crash on Windows during startup of the application
+  * The SIL Kit DLL file was x86, but should have been x86_64 - this lead to a crash of the application (BadFormatException)
+
+---
+
+## [1.0.1] - 2023-06-28
 
 ### Added
 
