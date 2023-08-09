@@ -81,7 +81,8 @@
         <CommonImported>True</CommonImported>
     </PropertyGroup>
 
-    <Target Name="PrepareSilKitUbuntu" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/libSilKit.so')">
+    <Target Name="PrepareSilKitUbuntu" BeforeTargets="BuildAll;Build"
+            Condition="!Exists('$(SilKitDirBase)/libSilKit.so')">
         <PropertyGroup>
             <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
             <SilKitUbuntuName>SilKit-4.0.32-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
@@ -97,8 +98,7 @@
         <Unzip
             SourceFiles="$(SilKitDirBase)$(SilKitUbuntuName).zip"
             DestinationFolder="$(SilKitDirBase)/ubuntu"
-            OverwriteReadOnlyFiles="true"
-        />
+            OverwriteReadOnlyFiles="true" />
         <Move SourceFiles="$(SilKitDirBase)/ubuntu/$(SilKitUbuntuName)/SilKit/lib/libSilKit.so"
               OverwriteReadOnlyFiles="true"
               DestinationFiles="$(SilKitDirBase)/libSilKit.so" />
@@ -107,7 +107,8 @@
         <Delete Files="$(SilKitDirBase)$(SilKitUbuntuName).zip" />
     </Target>
 
-    <Target Name="PrepareSilKitWindows" BeforeTargets="BuildAll;Build" Condition="!Exists('$(SilKitDirBase)/SilKit.dll')">
+    <Target Name="PrepareSilKitWindows" BeforeTargets="BuildAll;Build"
+            Condition="!Exists('$(SilKitDirBase)/SilKit.dll')">
         <PropertyGroup>
             <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
             <SilKitWinName>SilKit-4.0.32-Win-x86_64-VS2017</SilKitWinName>
@@ -124,8 +125,7 @@
         <Unzip
             SourceFiles="$(SilKitDirBase)$(SilKitWinName).zip"
             DestinationFolder="$(SilKitDirBase)/win"
-            OverwriteReadOnlyFiles="true"
-        />
+            OverwriteReadOnlyFiles="true" />
         <Move SourceFiles="$(SilKitDirBase)/win/$(SilKitWinName)/SilKit/bin/SilKit.dll"
               OverwriteReadOnlyFiles="true"
               DestinationFiles="$(SilKitDirBase)/SilKit.dll" />

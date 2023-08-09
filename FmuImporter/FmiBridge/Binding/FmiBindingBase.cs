@@ -134,6 +134,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     {
       throw new NotSupportedException();
     }
+
     if (ptr == IntPtr.Zero)
     {
       throw new FileLoadException(

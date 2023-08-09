@@ -241,10 +241,8 @@ public class Configuration : ConfigurationPublic
       {
         return path;
       }
-      else
-      {
-        throw new FileNotFoundException($"The given file path '{path}' does not exist.");
-      }
+
+      throw new FileNotFoundException($"The given file path '{path}' does not exist.");
     }
 
     if (ConfigurationPath == null)
@@ -266,7 +264,7 @@ public class Configuration : ConfigurationPublic
         $"Failed to resolve IncludeDirectory '{path}' in configuration file '{ConfigurationPath}'.");
     }
 
-    return combinedPath;// Path.Combine(configDir, Path.GetFileName(path));
+    return combinedPath; // Path.Combine(configDir, Path.GetFileName(path));
   }
 
   private string Sha512CheckSum(string path)

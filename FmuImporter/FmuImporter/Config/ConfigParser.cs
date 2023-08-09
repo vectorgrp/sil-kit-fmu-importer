@@ -17,6 +17,7 @@ public static class ConfigParser
     {
       throw new InvalidConfigurationException("Failed to deserialize the provided FMU configuration file");
     }
+
     config.ConfigurationPath = Path.GetFullPath(path);
     config.IgnoreUnmappedVariables = config.IgnoreUnmappedVariables ?? false;
     ValidateConfig(config);

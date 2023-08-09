@@ -106,23 +106,22 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   {
     get
     {
-
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
         return "/binaries/x86_64-windows";
       }
-      else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
+      if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
       {
         return "/binaries/x86_64-linux";
       }
-      else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+
+      if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
       {
         return "/binaries/x86_64-darwin";
       }
-      else
-      {
-        throw new NotSupportedException();
-      }
+
+      throw new NotSupportedException();
     }
   }
 
@@ -551,7 +550,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
     else
     {
-      throw new InvalidOperationException($"fmi2Terminate exited with exit code '{fmi2Status}'.");
+      throw new InvalidOperationException($"fmi2DoStep exited with exit code '{fmi2Status}'.");
     }
   }
 
