@@ -9,11 +9,25 @@ public class ModelStructure
 
   public ModelStructure(Fmi2.fmiModelDescriptionModelStructure fmiModelDescriptionModelStructure)
   {
-    InitialUnknowns = fmiModelDescriptionModelStructure.InitialUnknowns.Unknown.Select(u => u.index).ToHashSet();
+    if (fmiModelDescriptionModelStructure.InitialUnknowns == null)
+    {
+      InitialUnknowns = new HashSet<uint>();
+    }
+    else
+    {
+      InitialUnknowns = fmiModelDescriptionModelStructure.InitialUnknowns.Unknown.Select(u => u.index).ToHashSet();
+    }
   }
 
   public ModelStructure(Fmi3.fmiModelDescriptionModelStructure fmiModelDescriptionModelStructure)
   {
-    InitialUnknowns = fmiModelDescriptionModelStructure.InitialUnknown.Select(u => u.valueReference).ToHashSet();
+    if (fmiModelDescriptionModelStructure.InitialUnknown == null)
+    {
+      InitialUnknowns = new HashSet<uint>();
+    }
+    else
+    {
+      InitialUnknowns = fmiModelDescriptionModelStructure.InitialUnknown.Select(u => u.valueReference).ToHashSet();
+    }
   }
 }

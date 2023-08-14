@@ -108,17 +108,17 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     {
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        return "/binaries/x86_64-windows";
+        return "/binaries/win64";
       }
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
       {
-        return "/binaries/x86_64-linux";
+        return "/binaries/linux64";
       }
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
       {
-        return "/binaries/x86_64-darwin";
+        return "/binaries/darwin64";
       }
 
       throw new NotSupportedException();
