@@ -12,6 +12,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * Fixed crash on Ubuntu 22.04 (and up)
   * Ubuntu 22.04 and up does not ship with a libdl.so anymore. In this case, FMU Importer will now try to load libc.so instead.
+* Fixed a crash when trying to publish non-scalar data (e.g., strings) in Linux
 
 ---
 

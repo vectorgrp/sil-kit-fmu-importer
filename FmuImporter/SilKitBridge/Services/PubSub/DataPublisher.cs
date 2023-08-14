@@ -63,9 +63,14 @@ public class DataPublisher : IDataPublisher
       data = dataPtr,
       size = (IntPtr)data.Length
     };
+
+    var handle2 = GCHandle.Alloc(byteVector, GCHandleType.Pinned);
+    var byteVectorPtr = handle2.AddrOfPinnedObject();
+
     Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Publish(DataPublisherPtr, byteVector),
+      (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Publish(DataPublisherPtr, byteVectorPtr),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    handle2.Free();
     handle.Free();
   }
 
@@ -75,5 +80,5 @@ public class DataPublisher : IDataPublisher
           const SilKit_ByteVector* data);
   */
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-  private static extern int SilKit_DataPublisher_Publish(IntPtr self, ByteVector data);
+  private static extern int SilKit_DataPublisher_Publish(IntPtr self, IntPtr data);
 }
