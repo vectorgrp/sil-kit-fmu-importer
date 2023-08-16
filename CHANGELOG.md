@@ -6,7 +6,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ---
 
-## [1.0.3] - TBD
+## [1.0.3] - 2023-08-16
 
 ### Fixed
 
