@@ -399,6 +399,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     string[] categories
   );
 
+  private IntPtr _internalFunctionsPtr;
+
   public void Instantiate(
     string instanceName,
     string fmuGUID,
@@ -406,12 +408,18 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     bool visible,
     bool loggingOn)
   {
+    var resourcePath = new DirectoryInfo(ExtractedFolderPath + $"{Path.DirectorySeparatorChar}resources").FullName;
+    var resourceUri = new Uri(resourcePath).ToString();
+
+    _internalFunctionsPtr = Marshal.AllocHGlobal(Marshal.SizeOf<Fmi2BindingCallbackFunctions.Fmi2CallbackFunctions>());
+    Marshal.StructureToPtr(functions.InternalCallbackFunctions, _internalFunctionsPtr, false);
+
     _component = _fmi2Instantiate(
       instanceName,
       1 /* Co-Simulation */,
       fmuGUID,
-      $"file://{FullFmuLibPath}/resources",
-      functions.InternalCallbackFunctions,
+      resourceUri,
+      _internalFunctionsPtr,
       visible,
       loggingOn);
     if (_component == IntPtr.Zero)
@@ -438,7 +446,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     int fmuType,
     string fmuGUID,
     string fmuResourceLocation,
-    Fmi2BindingCallbackFunctions.Fmi2CallbackFunctions functions,
+    IntPtr functions,
     bool visible,
     bool loggingOn);
 

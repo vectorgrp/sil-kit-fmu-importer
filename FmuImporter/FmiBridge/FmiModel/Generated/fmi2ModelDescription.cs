@@ -558,7 +558,8 @@ public partial class fmi2VariableDependencyUnknown {
     }
     
     /// <remarks/>
-    [System.Xml.Serialization.XmlAttributeAttribute()]
+    //[System.Xml.Serialization.XmlAttributeAttribute()]
+    [System.Xml.Serialization.XmlIgnore()]
     public uint[] dependencies {
         get {
             return this.dependenciesField;

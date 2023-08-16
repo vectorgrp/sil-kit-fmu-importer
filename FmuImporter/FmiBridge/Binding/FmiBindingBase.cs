@@ -24,6 +24,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     }
   }
 
+  public string ExtractedFolderPath { get; }
   public string FullFmuLibPath { get; }
 
   private IntPtr DllPtr { set; get; }
@@ -31,12 +32,12 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   // ctor
   protected FmiBindingBase(string fmuPath, string osDependentPath)
   {
-    var extractedFolderPath = ModelLoader.ExtractFmu(fmuPath);
+    ExtractedFolderPath = ModelLoader.ExtractFmu(fmuPath);
 
-    _modelDescription = InitializeModelDescription(extractedFolderPath);
+    _modelDescription = InitializeModelDescription(ExtractedFolderPath);
 
     FullFmuLibPath =
-      $"{Path.GetFullPath(extractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
+      $"{Path.GetFullPath(ExtractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
     InitializeModelBinding(FullFmuLibPath);
   }
 
@@ -85,7 +86,6 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     DllPtr = LoadFmiLibrary(fullPathToLibrary);
   }
 
-
   private IntPtr LoadFmiLibrary(string libraryPath)
   {
     IntPtr res;
@@ -104,7 +104,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
     if (res == IntPtr.Zero)
     {
-      throw new FileLoadException("Failed to retrieve a pointer from the provided FMU library.");
+      throw new FileLoadException(
+        $"Failed to retrieve a pointer from the provided FMU library. Path was '{libraryPath}'.");
     }
 
     return res;

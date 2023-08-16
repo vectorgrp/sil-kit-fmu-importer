@@ -149,10 +149,13 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     bool loggingOn,
     Fmi3LogMessageCallback logger)
   {
+    var resourcePath = new DirectoryInfo(
+      ExtractedFolderPath + $"{Path.DirectorySeparatorChar}resources{Path.DirectorySeparatorChar}").FullName;
+
     _component = _fmi3InstantiateCoSimulation(
       instanceName,
       instantiationToken,
-      $"file://{FullFmuLibPath}/resources",
+      resourcePath,
       visible,
       loggingOn,
       false,

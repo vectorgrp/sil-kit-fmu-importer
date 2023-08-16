@@ -15,6 +15,9 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Fixed a crash when trying to publish non-scalar data (e.g., strings) in Linux
 * Fixed the path that the Importer uses to search for extracted FMI 2.0.x FMUs (used FMI 3.0.x path before), which led to a crash
 * Fixed a crash that occurred if a model description did not contain any initial unknowns
+* Fixed a crash when the dependencies field of an FMU's output variable is empty
+* Fixed a crash in case FMI 2.0.x FMUs tried to log
+* Fixed the resource location provided to the FMU (FMI 2.0.x and FMI 3.0.x)
 
 ---
 

@@ -278,6 +278,41 @@ public class FmuImporter
     }
   }
 
+  public void Fmi2Logger(
+    string instanceName,
+    Fmi2Statuses status,
+    string category,
+    string message)
+  {
+    var msg = $"Logger: Name={instanceName}; status={status}; category={category};\n  message={message}";
+    switch (status)
+    {
+      case Fmi2Statuses.OK:
+      case Fmi2Statuses.Pending:
+        LogCallback(LogLevel.Info, msg);
+        break;
+      case Fmi2Statuses.Discard:
+      case Fmi2Statuses.Warning:
+        LogCallback(LogLevel.Warn, msg);
+        break;
+      case Fmi2Statuses.Error:
+        LogCallback(LogLevel.Error, msg);
+        break;
+      case Fmi2Statuses.Fatal:
+        LogCallback(LogLevel.Critical, msg);
+        break;
+      default:
+        throw new ArgumentOutOfRangeException(nameof(status), status, null);
+    }
+  }
+
+  public void Fmi2StepFinished(Fmi2Statuses status)
+  {
+    ((IFmi2Binding)Binding).NotifyAsyncDoStepReturned(status);
+  }
+
+  private Fmi2BindingCallbackFunctions fmi2Functions;
+
   private void PrepareFmi2Fmu(string fmuPath)
   {
     // Get FMI Model binding
@@ -291,39 +326,13 @@ public class FmuImporter
     ConfiguredVariableManager = new ConfiguredVariableManager(Binding, ModelDescription);
 
     // Prepare FMU
-    var functions = new Fmi2BindingCallbackFunctions(
-      (name, status, category, message) =>
-      {
-        var msg = $"Logger: Name={name}; status={status}; category={category};\n  message={message}";
-        switch (status)
-        {
-          case Fmi2Statuses.OK:
-          case Fmi2Statuses.Pending:
-            LogCallback(LogLevel.Info, msg);
-            break;
-          case Fmi2Statuses.Discard:
-          case Fmi2Statuses.Warning:
-            LogCallback(LogLevel.Warn, msg);
-            break;
-          case Fmi2Statuses.Error:
-            LogCallback(LogLevel.Error, msg);
-            break;
-          case Fmi2Statuses.Fatal:
-            LogCallback(LogLevel.Critical, msg);
-            break;
-          default:
-            throw new ArgumentOutOfRangeException(nameof(status), status, null);
-        }
-      },
-      status =>
-      {
-        fmi2Binding.NotifyAsyncDoStepReturned(status);
-      });
+
+    fmi2Functions = new Fmi2BindingCallbackFunctions(Fmi2Logger, Fmi2StepFinished);
 
     fmi2Binding.Instantiate(
       ModelDescription.ModelName,
       ModelDescription.InstantiationToken,
-      functions,
+      fmi2Functions,
       true,
       true);
 

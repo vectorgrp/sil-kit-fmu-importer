@@ -14,7 +14,7 @@ public class ModelLoader
   {
     // check if the directory exists
     var targetFolderPath =
-      $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}";
+      $"{Path.GetDirectoryName(fmuPath)}{Path.DirectorySeparatorChar}{Path.GetFileNameWithoutExtension(fmuPath)}";
 
     // TODO switch to temporary directory as soon as everything works as intended
     //var dir = Directory.CreateTempSubdirectory(
@@ -118,6 +118,7 @@ public class ModelLoader
     var attr = node?.Attributes?.GetNamedItem("fmiVersion");
     var returnValue = attr?.Value;
 
+    stream.Close();
     stream.Dispose();
 
     switch (returnValue)
