@@ -69,7 +69,7 @@ Manually built binaries of the projects usually build into the folder `_build/cr
 
 To build the FMU Importer itself, open a terminal in the project's root directory (the one that contains FmuImporter.sln) and run the .NET build command
 
-- Windows: `dotnet build ./FmuImporter/FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r win-x64`
+- Windows: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r win-x64`
 
 - Linux: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64`
 
@@ -116,6 +116,7 @@ Available options are:
 |-f, --fmu-path \<fmu-path> (REQUIRED) | Set the path to the FMU file (.fmu). This is mandatory. |
 | -c, --sil-kit-config-file \<sil-kit-config-file> | Set the path to the SIL Kit configuration file. Defaults to an empty configuration. |
 | -p, --participant-name \<participant-name> | Set the name of the SIL Kit participant. Defaults to `sil-kit-fmu-importer`. |
+| -t, --use-stop-time | Use the FMUs stop time (if it is provided). Stop time is ignored by default. |
 | -?, -h, --help | Show help and usage information |
 
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
