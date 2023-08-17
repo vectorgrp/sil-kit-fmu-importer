@@ -143,8 +143,18 @@ public class Variable
       case Fmi3.fmi3Binary:
         VariableType = VariableTypes.Binary;
         break;
-      case fmi3Enumeration:
+      case fmi3Enumeration inputVar:
         VariableType = VariableTypes.EnumFmi3;
+        if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+        {
+          TypeDefinition = typeDefinitions[inputVar.declaredType];
+        }
+        else
+        {
+          throw new ModelDescriptionException(
+            $"The enumerator of variable '{Name}' is unknown.");
+        }
+
         break;
       default:
         throw new InvalidDataException("The FMI 3 datatype is unknown.");
@@ -259,8 +269,18 @@ public class Variable
       case fmi2ScalarVariableString:
         VariableType = VariableTypes.String;
         break;
-      case fmi2ScalarVariableEnumeration:
+      case fmi2ScalarVariableEnumeration inputVar:
         VariableType = VariableTypes.EnumFmi2;
+        if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+        {
+          TypeDefinition = typeDefinitions[inputVar.declaredType];
+        }
+        else
+        {
+          throw new ModelDescriptionException(
+            $"The enumerator of variable '{Name}' is unknown.");
+        }
+
         break;
       default:
         throw new InvalidDataException($"The variable '{input.name}' has an unknown variable type.");

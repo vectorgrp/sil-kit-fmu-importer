@@ -156,6 +156,22 @@ public class ModelDescription
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
+      else if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsEnumerationType typeDefEnum)
+      {
+        var typeDef = new TypeDefinition
+        {
+          Name = typeDefinitionBase.name,
+          EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Length]
+        };
+
+        for (var i = 0; i < typeDefEnum.Item.Length; i++)
+        {
+          var enumValue = typeDefEnum.Item[i];
+          typeDef.EnumerationValues[i] = new Tuple<string, long>(enumValue.name, enumValue.value);
+        }
+
+        TypeDefinitions.Add(typeDef.Name, typeDef);
+      }
     }
   }
 
@@ -180,6 +196,22 @@ public class ModelDescription
           Name = fmi2SimpleType.name,
           Unit = UnitDefinitions[typeDefReal.unit]
         };
+        TypeDefinitions.Add(typeDef.Name, typeDef);
+      }
+      else if (fmi2SimpleType.Item is Fmi2.fmi2SimpleTypeEnumeration typeDefEnum)
+      {
+        var typeDef = new TypeDefinition
+        {
+          Name = fmi2SimpleType.name,
+          EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Length]
+        };
+
+        for (var i = 0; i < typeDefEnum.Item.Length; i++)
+        {
+          var enumValue = typeDefEnum.Item[i];
+          typeDef.EnumerationValues[i] = new Tuple<string, long>(enumValue.name, enumValue.value);
+        }
+
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
     }

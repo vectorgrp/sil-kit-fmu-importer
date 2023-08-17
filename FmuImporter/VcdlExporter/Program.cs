@@ -62,6 +62,30 @@ internal class Program
     File.WriteAllText(outputFile, commonTextSb.ToString());
   }
 
+  private static string GenerateEnumerationsDefinitions(ModelDescription modelDescription)
+  {
+    var resultSb = new StringBuilder();
+    foreach (var typedefinition in modelDescription.TypeDefinitions)
+    {
+      if (typedefinition.Value.EnumerationValues != null)
+      {
+        var enumSb = new StringBuilder();
+        enumSb.AppendLine($"  enum {typedefinition.Key.Replace(' ', '_')} : int64");
+        enumSb.AppendLine("  {");
+        foreach (var val in typedefinition.Value.EnumerationValues)
+        {
+          enumSb.AppendLine($"    {val.Item1.Replace(' ', '_')} = {val.Item2},");
+        }
+
+        enumSb.AppendLine("  }\n");
+
+        resultSb.Append(enumSb.ToString());
+      }
+    }
+
+    return resultSb.ToString();
+  }
+
   private static void ParseFmi2(IFmi2Binding binding, StringBuilder interfaceSb, StringBuilder objectsSb)
   {
     var modelDescription = binding.GetModelDescription();
@@ -69,29 +93,35 @@ internal class Program
     var vcdlProviderVariables = new HashSet<FmiVariable>();
     var vcdlConsumerVariables = new HashSet<FmiVariable>();
 
+    interfaceSb.Append(GenerateEnumerationsDefinitions(modelDescription));
+
     foreach (var variable in modelDescription.Variables)
     {
-      // TODO remove this block once enumeration export is supported
-      if (variable.Value.VariableType is VariableTypes.EnumFmi2 or VariableTypes.EnumFmi3)
-      {
-        continue;
-      }
-
       var vValue = variable.Value;
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
       string typeString;
-      if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
+      // assume scalar
+      if (vValue.VariableType is VariableTypes.EnumFmi2)
       {
-        // assume scalar
-        typeString = GetVarTypeString(vValue.VariableType) + " ";
+        typeString = vValue.TypeDefinition!.Name;
       }
       else
       {
-        // assume array of scalar
-        typeString = $"list<{GetVarTypeString(vValue.VariableType)}> ";
+        if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
+        {
+          // assume scalar
+          typeString = GetVarTypeString(vValue.VariableType);
+        }
+        else
+        {
+          throw new NotSupportedException(
+            $"FMI 2.0.x does not support arrays. Check variable '{vValue.Name}'.");
+        }
       }
+
+      typeString += " ";
 
       var v = new FmiVariable()
       {
@@ -165,6 +195,8 @@ internal class Program
     var vcdlProviderVariables = new HashSet<FmiVariable>();
     var vcdlConsumerVariables = new HashSet<FmiVariable>();
 
+    interfaceSb.Append(GenerateEnumerationsDefinitions(modelDescription));
+
     foreach (var variable in modelDescription.Variables)
     {
       var vValue = variable.Value;
@@ -175,7 +207,16 @@ internal class Program
       if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
       {
         // assume scalar
-        typeString = GetVarTypeString(vValue.VariableType) + " ";
+        if (vValue.VariableType is VariableTypes.EnumFmi2)
+        {
+          typeString = vValue.TypeDefinition!.Name;
+        }
+        else
+        {
+          typeString = GetVarTypeString(vValue.VariableType);
+        }
+
+        typeString += " ";
       }
       else
       {
