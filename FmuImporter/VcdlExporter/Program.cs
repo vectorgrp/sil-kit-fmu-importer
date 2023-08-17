@@ -304,6 +304,10 @@ internal class Program
     typeName = typeName.Replace("byte", "uint8");
     typeName = typeName.Replace("intptr", "bytes");
     typeName = typeName.Replace("boolean", "bool");
+    typeName = typeName.Replace("binary", "bytes");
+    // FMI 2.0.x types
+    typeName = typeName.Replace("float32", "float");
+    typeName = typeName.Replace("float64", "double");
     return typeName;
   }
 }

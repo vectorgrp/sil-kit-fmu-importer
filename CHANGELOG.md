@@ -6,6 +6,16 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ---
 
+## [1.0.4] - TBD
+
+### Fixed
+
+* The vCDL Exporter now exports correct types for FMI 2.0.x and 3.0.x
+  * FMI 2.0.x: float32 -> float; float64 -> double
+  * FMI 3.0.x: binary -> bytes
+
+---
+
 ## [1.0.3] - 2023-08-16
 
 ### Fixed
