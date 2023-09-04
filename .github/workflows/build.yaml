@@ -3,22 +3,21 @@ name: Build the SIL Kit FMU Importer (.NET 6) [internal profile]
 
 # Define the triggers for this workflow
 on:
-  workflow_dispatch:
-  pull_request:
   push:
-    #branches:
-    #  - 'main'
 
 jobs:
   build-windows:
-  
+
     runs-on: windows
-  
+
     steps:
-  
     # Check out this Git repo
     - uses: actions/checkout@v3
-  
+
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
 
@@ -39,15 +38,27 @@ jobs:
   build-linux:
 
     runs-on: [Linux, Docker]
+
     needs: prep-linux
+
     container:
       image: ${{ needs.prep-linux.outputs.image }}
+
     steps:
     - run: ls -la
     - run: pwd
+    - run: rm -rfv ./FmuImporter/_obj
+    - run: rm -rfv ./FmuImporter/_build
     - run: "echo ImageURI=${{needs.prep-linux.outputs.image}}"
     # Check out this Git repo
     - uses: actions/checkout@v3
+
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
-    - run: rm -rfv * .??*
+
+    - if: always()
+      run: rm -rfv * .??*
