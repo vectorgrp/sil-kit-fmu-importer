@@ -69,10 +69,14 @@ public class SilKitManager : IDisposable
 
 #region simulation control
 
-  public void StartSimulation(SimulationStepHandler handler, ulong initialStepSizeInNs)
+  public void StartSimulation(SimulationStepHandler simulationStepHandler, ulong initialStepSizeInNs)
   {
-    _timeSyncService.SetSimulationStepHandler(handler, initialStepSizeInNs);
+    _timeSyncService.SetSimulationStepHandler(simulationStepHandler, initialStepSizeInNs);
     _lifecycleService.StartLifecycle();
+  }
+
+  public void WaitForLifecycleToComplete()
+  {
     _lifecycleService.WaitForLifecycleToComplete();
   }
 

@@ -19,5 +19,7 @@ public interface IFmiBindingCommon : IDisposable
 
   public void Terminate();
 
+  public void FreeInstance();
+
   public FmiVersions GetFmiVersion();
 }

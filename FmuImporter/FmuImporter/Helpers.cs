@@ -3,11 +3,37 @@
 
 using System.Text;
 using Fmi;
+using SilKit.Services.Logger;
 
 namespace FmuImporter;
 
 public static class Helpers
 {
+  /// <summary>
+  ///   Converts severity levels between the ones defined in the FMU bridge and the ones in SIL Kit
+  /// </summary>
+  /// <param name="logSeverity">The severity log level from FMI</param>
+  /// <returns>The severity log level in SIL Kit</returns>
+  /// <exception cref="ArgumentOutOfRangeException">An unknown severity level was provided</exception>
+  public static LogLevel FmiLogLevelToSilKitLogLevel(Fmi.Helpers.LogSeverity logSeverity)
+  {
+    switch (logSeverity)
+    {
+      case Fmi.Helpers.LogSeverity.Error:
+        return LogLevel.Error;
+      case Fmi.Helpers.LogSeverity.Warning:
+        return LogLevel.Warn;
+      case Fmi.Helpers.LogSeverity.Information:
+        return LogLevel.Info;
+      case Fmi.Helpers.LogSeverity.Debug:
+        return LogLevel.Debug;
+      case Fmi.Helpers.LogSeverity.Trace:
+        return LogLevel.Trace;
+      default:
+        throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null);
+    }
+  }
+
   /// <summary>
   ///   Converts SIL Kit time (measured in nanoseconds) to FMI time (measured in seconds)
   /// </summary>

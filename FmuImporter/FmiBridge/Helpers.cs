@@ -26,7 +26,14 @@ public class Helpers
 
   public static void Log(LogSeverity severity, string message)
   {
-    sLoggerAction?.Invoke(severity, message);
+    if (sLoggerAction != null)
+    {
+      sLoggerAction.Invoke(severity, message);
+    }
+    else
+    {
+      Console.WriteLine($"[{severity}]: {message}");
+    }
   }
 
   public static byte[] EncodeData(object data, VariableTypes type, ref List<int> binSizes)

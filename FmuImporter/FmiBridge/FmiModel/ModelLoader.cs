@@ -104,7 +104,7 @@ public class ModelLoader
       var zipEntry = zip.GetEntry("modelDescription.xml");
       if (zipEntry == null)
       {
-        throw new NullReferenceException("fmu does not have a model description.");
+        throw new NullReferenceException("FMU does not have a model description.");
       }
 
       stream = zipEntry.Open();

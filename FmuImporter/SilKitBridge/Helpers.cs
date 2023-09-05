@@ -21,9 +21,15 @@ internal static class Helpers
     SilKit_ReturnCode_WRONGSTATE = 8 // Returned on exception SilKit::StateError (CapiImpl.h)
   }
 
+  private static readonly HashSet<int> sOkCodes = new HashSet<int>
+  {
+    (int)SilKit_ReturnCodes.SilKit_ReturnCode_SUCCESS
+  };
+
   public static void ProcessReturnCode(SilKit_ReturnCodes statusCode, RuntimeMethodHandle? methodHandle)
   {
     var result = Common.Helpers.ProcessReturnCode(
+      sOkCodes,
       (int)statusCode,
       statusCode.ToString(),
       methodHandle);

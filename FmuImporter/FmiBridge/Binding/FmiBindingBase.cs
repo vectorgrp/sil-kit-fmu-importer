@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using Fmi.Binding.Helper;
+using Fmi.Exceptions;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 
@@ -10,6 +11,25 @@ namespace Fmi.Binding;
 
 internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 {
+  private static readonly HashSet<int> sOkCodes = new HashSet<int>
+  {
+    (int)FmiStatus.OK,
+    (int)FmiStatus.Warning,
+    (int)FmiStatus.Pending // asynchronous doStep (FMI 2 only)
+  };
+
+  internal enum States
+  {
+    Initial,
+    Instantiated,
+    InitializationMode,
+    StepMode,
+    Terminated,
+    Freed
+  }
+
+  internal States CurrentState { get; set; } = States.Initial;
+
   internal ModelDescription _modelDescription;
 
   public ModelDescription ModelDescription
@@ -158,5 +178,42 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   public abstract void Terminate();
 
+  public abstract void FreeInstance();
+
   public abstract FmiVersions GetFmiVersion();
+
+  public void ProcessReturnCode(int statusCode, RuntimeMethodHandle? methodHandle)
+  {
+    var result = Common.Helpers.ProcessReturnCode(
+      sOkCodes,
+      statusCode,
+      ((FmiStatus)statusCode).ToString(),
+      methodHandle);
+    if (result.Item1)
+    {
+      return;
+    }
+
+    if ((FmiStatus)statusCode is FmiStatus.Fatal)
+    {
+      // FMU is unrecoverable - consider it as freed
+      CurrentState = States.Freed;
+    }
+
+    if ((FmiStatus)statusCode is FmiStatus.Discard or FmiStatus.Error)
+    {
+      // attempt to terminate FMU gracefully
+      Terminate();
+    }
+
+    try
+    {
+      Helpers.Log(Helpers.LogSeverity.Error, result.Item2!.ToString());
+    }
+    finally
+    {
+      // Throwing ensures that the FMU Importer will exit
+      throw new NativeCallException(result.Item2?.ToString());
+    }
+  }
 }

@@ -8,11 +8,18 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ## [1.0.4] - TBD
 
+### Changed
+
+* If SIL Kit logger fails to log the log messages are now written to the console
+
 ### Fixed
 
 * The vCDL Exporter now exports correct types for FMI 2.0.x and 3.0.x
   * FMI 2.0.x: float32 -> float; float64 -> double
   * FMI 3.0.x: binary -> bytes
+* Improved exception handling - FMU Importer will now try to end SIL Kit and FMU properly if it is possible
+* Improved logger reliability
+* Fixed erroneous translation of FMI and SIL Kit log levels
 
 ---
 

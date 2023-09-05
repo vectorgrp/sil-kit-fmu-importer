@@ -37,5 +37,5 @@ public interface IFmi2Binding : IFmiBindingCommon
   public void SetString(uint[] valueReferences, string[] values);
 
   // Internal
-  public void NotifyAsyncDoStepReturned(Fmi2Statuses status);
+  public void NotifyAsyncDoStepReturned(FmiStatus status);
 }

@@ -11,18 +11,9 @@ namespace Fmi.Binding;
 
 public delegate void Fmi3LogMessageCallback(
   IntPtr instanceEnvironment,
-  Fmi3Statuses status,
+  FmiStatus status,
   string category,
   string message);
-
-public enum Fmi3Statuses
-{
-  OK,
-  Warning,
-  Discard,
-  Error,
-  Fatal
-}
 
 public static class Fmi3BindingFactory
 {
@@ -35,7 +26,6 @@ public static class Fmi3BindingFactory
 internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 {
   private IntPtr _component;
-  private readonly GCHandle? _loggerHandlerGcHandle;
 
   private static string OsPath
   {
@@ -62,8 +52,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public Fmi3Binding(string fmuPath) : base(fmuPath, OsPath)
   {
-    _loggerHandlerGcHandle = null;
-
     // Common functions
     SetDelegate(out _fmi3InstantiateCoSimulation);
     SetDelegate(out _fmi3FreeInstance);
@@ -111,8 +99,20 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   private void ReleaseUnmanagedResources()
   {
-    _fmi3FreeInstance(_component);
-    _loggerHandlerGcHandle?.Free();
+    if (CurrentState != States.Freed)
+    {
+      try
+      {
+        FreeInstance();
+      }
+      catch
+      {
+        Helpers.Log(
+          Helpers.LogSeverity.Debug,
+          $"FreeInstance in {GetType().FullName}.{System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "??"} " +
+          $"threw an exception, which was ignored, because the Importer is currently exiting.");
+      }
+    }
   }
 
   private bool _disposedValue;
@@ -142,6 +142,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
 #region Common & Co-Simulation Functions for FMI 3.0
 
+  private Fmi3LogMessageCallback? _logger;
+  private IntPtr _loggerPtr;
+
   public void InstantiateCoSimulation(
     string instanceName,
     string instantiationToken,
@@ -151,6 +154,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   {
     var resourcePath = new DirectoryInfo(
       ExtractedFolderPath + $"{Path.DirectorySeparatorChar}resources{Path.DirectorySeparatorChar}").FullName;
+
+    _logger = logger;
+
+    _loggerPtr = Marshal.GetFunctionPointerForDelegate(logger);
 
     _component = _fmi3InstantiateCoSimulation(
       instanceName,
@@ -163,12 +170,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       IntPtr.Zero,
       IntPtr.Zero,
       IntPtr.Zero,
-      logger,
+      _loggerPtr,
       IntPtr.Zero);
     if (_component == IntPtr.Zero)
     {
       throw new NullReferenceException("Failed to create an FMU instance.");
     }
+
+    CurrentState = States.Instantiated;
   }
 
   /*
@@ -200,7 +209,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr requiredIntermediateVariables,
     size_t nRequiredIntermediateVariables,
     IntPtr instanceEnvironment,
-    Fmi3LogMessageCallback logMessage,
+    IntPtr logMessage,
     IntPtr intermediateUpdate);
 
   /*
@@ -213,8 +222,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime)
   {
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3EnterInitializationMode(
+    ProcessReturnCode(
+      _fmi3EnterInitializationMode(
         _component,
         tolerance.HasValue,
         (tolerance.HasValue) ? tolerance.Value : double.NaN,
@@ -222,6 +231,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         stopTime.HasValue,
         (stopTime.HasValue) ? stopTime.Value : double.NaN),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = States.InitializationMode;
   }
 
   /*
@@ -246,9 +257,11 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void ExitInitializationMode()
   {
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3ExitInitializationMode(_component),
+    ProcessReturnCode(
+      _fmi3ExitInitializationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = States.StepMode;
   }
 
   /*
@@ -265,8 +278,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     int nCategories,
     string[]? categories)
   {
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetDebugLogging(_component, loggingOn, (IntPtr)nCategories, categories),
+    ProcessReturnCode(
+      _fmi3SetDebugLogging(_component, loggingOn, (IntPtr)nCategories, categories),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -725,8 +738,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     double communicationStepSize,
     out double lastSuccessfulTime)
   {
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3DoStep(
+    ProcessReturnCode(
+      _fmi3DoStep(
         _component,
         currentCommunicationPoint,
         communicationStepSize,
@@ -739,8 +752,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     if (terminateRequested)
     {
-      Fmi.Helpers.Log(Fmi.Helpers.LogSeverity.Information, "FMU requested simulation termination.");
-      _fmi3Terminate(_component);
+      Helpers.Log(Helpers.LogSeverity.Information, "FMU requested simulation termination.");
+      Terminate();
     }
   }
 
@@ -770,9 +783,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public override void Terminate()
   {
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3Terminate(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    if (CurrentState == States.Terminated)
+    {
+      // skip termination
+      return;
+    }
+
+    try
+    {
+      ProcessReturnCode(
+        _fmi3Terminate(_component),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    }
+    finally
+    {
+      CurrentState = States.Terminated;
+    }
   }
 
   /*
@@ -782,6 +808,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3TerminateTYPE(IntPtr instance);
+
+  public override void FreeInstance()
+  {
+    _fmi3FreeInstance(_component);
+    CurrentState = States.Freed;
+  }
 
 #endregion Common & Co-Simulation Functions for FMI 3.0
 
@@ -800,8 +832,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new float[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetFloat32(
+    ProcessReturnCode(
+      _fmi3GetFloat32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -843,8 +875,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new double[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetFloat64(
+    ProcessReturnCode(
+      _fmi3GetFloat64(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -885,8 +917,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new sbyte[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetInt8(
+    ProcessReturnCode(
+      _fmi3GetInt8(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -927,8 +959,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new byte[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetUInt8(
+    ProcessReturnCode(
+      _fmi3GetUInt8(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -969,8 +1001,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new short[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetInt16(
+    ProcessReturnCode(
+      _fmi3GetInt16(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1011,8 +1043,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new ushort[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetUInt16(
+    ProcessReturnCode(
+      _fmi3GetUInt16(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1053,8 +1085,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new int[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetInt32(
+    ProcessReturnCode(
+      _fmi3GetInt32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1095,8 +1127,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new uint[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetUInt32(
+    ProcessReturnCode(
+      _fmi3GetUInt32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1137,8 +1169,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new long[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetInt64(
+    ProcessReturnCode(
+      _fmi3GetInt64(
         _component,
         valueReferences,
         (IntPtr)valueReferences.Length,
@@ -1179,8 +1211,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new ulong[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetUInt64(
+    ProcessReturnCode(
+      _fmi3GetUInt64(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1221,8 +1253,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new bool[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetBoolean(
+    ProcessReturnCode(
+      _fmi3GetBoolean(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1263,8 +1295,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var resultRaw = new IntPtr[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetString(
+    ProcessReturnCode(
+      _fmi3GetString(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1319,8 +1351,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new fmi3Binary[(int)nValues];
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3GetBinary(
+    ProcessReturnCode(
+      _fmi3GetBinary(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1370,8 +1402,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetFloat32(
+    ProcessReturnCode(
+      _fmi3SetFloat32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1407,8 +1439,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetFloat64(
+    ProcessReturnCode(
+      _fmi3SetFloat64(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1444,8 +1476,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetInt8(
+    ProcessReturnCode(
+      _fmi3SetInt8(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1481,8 +1513,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetUInt8(
+    ProcessReturnCode(
+      _fmi3SetUInt8(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1518,8 +1550,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetInt16(
+    ProcessReturnCode(
+      _fmi3SetInt16(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1555,8 +1587,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetUInt16(
+    ProcessReturnCode(
+      _fmi3SetUInt16(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1592,8 +1624,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetInt32(
+    ProcessReturnCode(
+      _fmi3SetInt32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1629,8 +1661,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetUInt32(
+    ProcessReturnCode(
+      _fmi3SetUInt32(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1666,8 +1698,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetInt64(
+    ProcessReturnCode(
+      _fmi3SetInt64(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1703,8 +1735,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetUInt64(
+    ProcessReturnCode(
+      _fmi3SetUInt64(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1740,8 +1772,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetBoolean(
+    ProcessReturnCode(
+      _fmi3SetBoolean(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1783,8 +1815,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       valuePtrs[i] = Marshal.StringToHGlobalAnsi(values[i]);
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetString(
+    ProcessReturnCode(
+      _fmi3SetString(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
@@ -1820,8 +1852,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    Helpers.ProcessReturnCode(
-      (Fmi3Statuses)_fmi3SetBinary(
+    ProcessReturnCode(
+      _fmi3SetBinary(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,

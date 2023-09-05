@@ -40,9 +40,17 @@ public class Logger : ILogger
 
   public void Log(LogLevel level, string message)
   {
-    Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_Logger_Log(LoggerPtr, (UInt32)level, message),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    try
+    {
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)SilKit_Logger_Log(LoggerPtr, (UInt32)level, message),
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine("Logging via SIL Kit logger failed.");
+      Console.WriteLine(e);
+    }
   }
 
   /*

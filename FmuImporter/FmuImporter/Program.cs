@@ -56,17 +56,19 @@ internal class Program
       {
         if (!File.Exists(fmuPath))
         {
-          throw new FileNotFoundException("The provided FMU file path is invalid.");
+          throw new FileNotFoundException($"The provided FMU file path ({fmuPath}) is invalid.");
         }
 
         if (silKitConfigFile != null && !File.Exists(silKitConfigFile))
         {
-          throw new FileNotFoundException("The provided SIL Kit configuration file path is invalid.");
+          throw new FileNotFoundException(
+            $"The provided SIL Kit configuration file path ({silKitConfigFile}) is invalid.");
         }
 
         if (fmuImporterConfigFile != null && !File.Exists(fmuImporterConfigFile))
         {
-          throw new FileNotFoundException("The provided FMU Importer configuration file path is invalid.");
+          throw new FileNotFoundException(
+            $"The provided FMU Importer configuration file path ({fmuImporterConfigFile}) is invalid.");
         }
 
         var instance = new FmuImporter(
@@ -84,6 +86,22 @@ internal class Program
       fmuImporterConfigFileOption,
       participantNameOption,
       useStopTimeOption);
+
+    AppDomain.CurrentDomain.UnhandledException +=
+      (sender, e) =>
+      {
+        if (sender is FmuImporter fmuImporter)
+        {
+          try
+          {
+            fmuImporter.ExitFmuImporter();
+          }
+          catch (Exception ex)
+          {
+            Console.WriteLine(ex.ToString());
+          }
+        }
+      };
 
     await rootCommand.InvokeAsync(args);
   }

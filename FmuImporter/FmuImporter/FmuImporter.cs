@@ -15,6 +15,25 @@ namespace FmuImporter;
 
 public class FmuImporter
 {
+  private enum SilKitStatus
+  {
+    Uninitialized,
+    Initialized, // Connected & Logger available
+    LifecycleStarted,
+    Stopped,
+    ShutDown
+  }
+
+  private enum FmuSuperStates
+  {
+    Uninitialized,
+    Initialized,
+    Exited
+  }
+
+  private SilKitStatus CurrentSilKitStatus { get; set; } = SilKitStatus.Uninitialized;
+  private FmuSuperStates CurrentFmuSuperState { get; set; } = FmuSuperStates.Uninitialized;
+
   private ModelDescription ModelDescription { get; set; } = null!;
   private IFmiBindingCommon Binding { get; set; } = null!;
 
@@ -35,6 +54,11 @@ public class FmuImporter
     SilKitManager.Logger.Log(logLevel, message);
   }
 
+  private void InternalCallback(Fmi.Helpers.LogSeverity severity, string message)
+  {
+    LogCallback(Helpers.FmiLogLevelToSilKitLogLevel(severity), message);
+  }
+
   public FmuImporter(
     string fmuPath,
     string? silKitConfigurationPath,
@@ -43,6 +67,7 @@ public class FmuImporter
     bool useStopTime)
   {
     SilKitManager = new SilKitManager(silKitConfigurationPath, participantName);
+    CurrentSilKitStatus = SilKitStatus.Initialized;
 
     try
     {
@@ -72,9 +97,16 @@ public class FmuImporter
     }
 
     _useStopTime = useStopTime;
-
-    InitializeFMU(fmuPath);
-    PrepareConfiguredVariables();
+    try
+    {
+      InitializeFMU(fmuPath);
+      PrepareConfiguredVariables();
+    }
+    catch (Exception e)
+    {
+      SilKitManager.Logger.Log(LogLevel.Error, e.ToString());
+      ExitFmuImporter();
+    }
   }
 
 #region IDisposable
@@ -263,6 +295,9 @@ public class FmuImporter
   {
     _configuredParameters = _fmuImporterConfig.GetParameters();
     var fmiVersion = ModelLoader.FindFmiVersion(fmuPath);
+
+    Fmi.Helpers.SetLoggerCallback(InternalCallback);
+
     switch (fmiVersion)
     {
       case FmiVersions.Fmi2:
@@ -276,29 +311,31 @@ public class FmuImporter
       default:
         throw new ModelDescriptionException("FMU did not provide a supported FMI version.");
     }
+
+    CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
 
   public void Fmi2Logger(
     string instanceName,
-    Fmi2Statuses status,
+    FmiStatus status,
     string category,
     string message)
   {
     var msg = $"Logger: Name={instanceName}; status={status}; category={category};\n  message={message}";
     switch (status)
     {
-      case Fmi2Statuses.OK:
-      case Fmi2Statuses.Pending:
+      case FmiStatus.OK:
+      case FmiStatus.Pending:
         LogCallback(LogLevel.Info, msg);
         break;
-      case Fmi2Statuses.Discard:
-      case Fmi2Statuses.Warning:
+      case FmiStatus.Discard:
+      case FmiStatus.Warning:
         LogCallback(LogLevel.Warn, msg);
         break;
-      case Fmi2Statuses.Error:
+      case FmiStatus.Error:
         LogCallback(LogLevel.Error, msg);
         break;
-      case Fmi2Statuses.Fatal:
+      case FmiStatus.Fatal:
         LogCallback(LogLevel.Critical, msg);
         break;
       default:
@@ -306,7 +343,7 @@ public class FmuImporter
     }
   }
 
-  public void Fmi2StepFinished(Fmi2Statuses status)
+  public void Fmi2StepFinished(FmiStatus status)
   {
     ((IFmi2Binding)Binding).NotifyAsyncDoStepReturned(status);
   }
@@ -326,7 +363,6 @@ public class FmuImporter
     ConfiguredVariableManager = new ConfiguredVariableManager(Binding, ModelDescription);
 
     // Prepare FMU
-
     fmi2Functions = new Fmi2BindingCallbackFunctions(Fmi2Logger, Fmi2StepFinished);
 
     fmi2Binding.Instantiate(
@@ -384,6 +420,7 @@ public class FmuImporter
     ApplyParameterConfiguration();
 
     fmi3Binding.ExitInitializationMode();
+    CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
 
   private void ApplyParameterConfiguration()
@@ -456,24 +493,24 @@ public class FmuImporter
     }
   }
 
-  private void Logger(IntPtr instanceEnvironment, Fmi3Statuses status, string category, string message)
+  private void Logger(IntPtr instanceEnvironment, FmiStatus status, string category, string message)
   {
     var msg = $"Logger: FmuEnvironment={instanceEnvironment}; status={status}; category={category};" +
               $"\n  message={message}";
 
     switch (status)
     {
-      case Fmi3Statuses.OK:
+      case FmiStatus.OK:
         LogCallback(LogLevel.Info, msg);
         break;
-      case Fmi3Statuses.Warning:
-      case Fmi3Statuses.Discard:
+      case FmiStatus.Warning:
+      case FmiStatus.Discard:
         LogCallback(LogLevel.Warn, msg);
         break;
-      case Fmi3Statuses.Error:
+      case FmiStatus.Error:
         LogCallback(LogLevel.Error, msg);
         break;
-      case Fmi3Statuses.Fatal:
+      case FmiStatus.Fatal:
         LogCallback(LogLevel.Critical, msg);
         break;
       default:
@@ -505,7 +542,18 @@ public class FmuImporter
       }
     }
 
-    SilKitManager.StartSimulation(SimulationStepReached, stepDuration);
+    try
+    {
+      SilKitManager.StartSimulation(SimulationStepReached, stepDuration);
+      CurrentSilKitStatus = SilKitStatus.LifecycleStarted;
+
+      SilKitManager.WaitForLifecycleToComplete();
+      CurrentSilKitStatus = SilKitStatus.ShutDown;
+    }
+    finally
+    {
+      ExitFmuImporter();
+    }
   }
 
   private ulong? _lastSimStep;
@@ -540,10 +588,17 @@ public class FmuImporter
 
     // Calculate simulation step
     var fmiNow = Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
-    Binding.DoStep(
-      fmiNow,
-      Helpers.SilKitTimeToFmiTime(durationInNs),
-      out _);
+    try
+    {
+      Binding.DoStep(
+        fmiNow,
+        Helpers.SilKitTimeToFmiTime(durationInNs),
+        out _);
+    }
+    catch (Exception)
+    {
+      ExitFmuImporter();
+    }
 
     ConfiguredVariableManager.PublishOutputData(false);
 
@@ -553,7 +608,6 @@ public class FmuImporter
       {
         // stop the SIL Kit simulation
         SilKitManager.StopSimulation("FMU stopTime reached.");
-        Binding.Terminate();
         return;
       }
     }
@@ -565,5 +619,40 @@ public class FmuImporter
     }
 
     FutureDataBuffer.Clear();
+  }
+
+  public void ExitFmuImporter()
+  {
+    if (CurrentFmuSuperState == FmuSuperStates.Initialized)
+    {
+      Binding.Terminate();
+      CurrentFmuSuperState = FmuSuperStates.Exited;
+      // FreeInstance will be called by the dispose pattern
+    }
+
+    switch (CurrentSilKitStatus)
+    {
+      case SilKitStatus.Uninitialized:
+      case SilKitStatus.Initialized:
+        // NOP - SIL Kit did not start a lifecycle yet
+        break;
+      case SilKitStatus.LifecycleStarted:
+        try
+        {
+          SilKitManager.StopSimulation("FMU Importer is exiting.");
+        }
+        finally
+        {
+          CurrentSilKitStatus = SilKitStatus.Stopped;
+        }
+
+        break;
+      case SilKitStatus.Stopped:
+      case SilKitStatus.ShutDown:
+        // NOP - SIL Kit already stopped
+        break;
+      default:
+        throw new ArgumentOutOfRangeException();
+    }
   }
 }
