@@ -40,8 +40,7 @@ public class FmuImporter
   private SilKitManager SilKitManager { get; }
   private ConfiguredVariableManager? ConfiguredVariableManager { get; set; }
 
-  private Dictionary<uint, byte[]> DataBuffer { get; } = new Dictionary<uint, byte[]>();
-  private Dictionary<uint, byte[]> FutureDataBuffer { get; } = new Dictionary<uint, byte[]>();
+  private SortedList<ulong, Dictionary<uint, byte[]>> DataBuffer { get; }
 
   private readonly bool _useStopTime;
 
@@ -68,6 +67,7 @@ public class FmuImporter
   {
     SilKitManager = new SilKitManager(silKitConfigurationPath, participantName);
     CurrentSilKitStatus = SilKitStatus.Initialized;
+    DataBuffer = new SortedList<ulong, Dictionary<uint, byte[]>>();
 
     try
     {
@@ -260,34 +260,18 @@ public class FmuImporter
 
     var valueRef = (uint)context;
 
-    if (dataMessageEvent.TimestampInNS > _nextSimStep)
+    // data is processed in sim. step callback (SimulationStepReached)
+    if (DataBuffer.TryGetValue(dataMessageEvent.TimestampInNS, out var futureDict))
     {
-      throw new InvalidDataException(
-        "The received message is further in the future than the next communication step!");
-    }
-
-    if (dataMessageEvent.TimestampInNS > _lastSimStep)
-    {
-      // data must not be processed in next SimStep
-      if (!FutureDataBuffer.ContainsKey(valueRef))
-      {
-        FutureDataBuffer.TryAdd(valueRef, dataMessageEvent.Data);
-      }
-      else
-      {
-        FutureDataBuffer[valueRef] = dataMessageEvent.Data;
-      }
+      futureDict[valueRef] = dataMessageEvent.Data;
     }
     else
     {
-      if (!DataBuffer.ContainsKey(valueRef))
+      var dict = new Dictionary<uint, byte[]>
       {
-        DataBuffer.TryAdd(valueRef, dataMessageEvent.Data);
-      }
-      else
-      {
-        DataBuffer[valueRef] = dataMessageEvent.Data;
-      }
+        { valueRef, dataMessageEvent.Data }
+      };
+      DataBuffer.Add(dataMessageEvent.TimestampInNS, dict);
     }
   }
 
@@ -566,25 +550,26 @@ public class FmuImporter
       throw new NullReferenceException($"{nameof(ConfiguredVariableManager)} was null.");
     }
 
-    _lastSimStep = nowInNs;
-    _nextSimStep = nowInNs + durationInNs;
-
     if (nowInNs == 0)
     {
       // skip initialization - it was done already.
       // However, publish all initial output variable values
       ConfiguredVariableManager.PublishInitialData();
+      _lastSimStep = nowInNs;
       return;
     }
 
-    foreach (var dataBufferKvp in DataBuffer)
+    // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
+    var valueUpdates = PrepareUpdateAndTrimBuffer(_lastSimStep ?? nowInNs - durationInNs, DataBuffer);
+
+    // update FMU
+    foreach (var valueUpdate in valueUpdates)
     {
-      // apply reverse transformation is necessary
-      ConfiguredVariableManager.SetValue(dataBufferKvp.Key, dataBufferKvp.Value);
-      //Binding.SetValue(dataBufferKvp.Key, dataBufferKvp.Value);
+      ConfiguredVariableManager.SetValue(valueUpdate.Key, valueUpdate.Value);
     }
 
-    DataBuffer.Clear();
+    _lastSimStep = nowInNs;
+    _nextSimStep = nowInNs + durationInNs;
 
     // Calculate simulation step
     var fmiNow = Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
@@ -608,17 +593,42 @@ public class FmuImporter
       {
         // stop the SIL Kit simulation
         SilKitManager.StopSimulation("FMU stopTime reached.");
-        return;
+      }
+    }
+  }
+
+  private Dictionary<uint, byte[]> PrepareUpdateAndTrimBuffer(
+    ulong currentTime,
+    SortedList<ulong, Dictionary<uint, byte[]>> dataBuffer)
+  {
+    // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
+    var removeList = new List<ulong>();
+    var valueUpdates = new Dictionary<uint, byte[]>();
+    foreach (var timeDataPair in dataBuffer)
+    {
+      if (timeDataPair.Key <= currentTime)
+      {
+        foreach (var dataBufferKvp in timeDataPair.Value)
+        {
+          valueUpdates[dataBufferKvp.Key] = dataBufferKvp.Value;
+        }
+
+        removeList.Add(timeDataPair.Key);
+      }
+      else
+      {
+        // no need to iterate future events
+        break;
       }
     }
 
-    // now that the current time step was processed completely, move 'future' events to current events
-    foreach (var kvp in FutureDataBuffer)
+    // remove all processed entries from the buffer
+    foreach (var _ in removeList)
     {
-      DataBuffer.Add(kvp.Key, kvp.Value);
+      DataBuffer.RemoveAt(0);
     }
 
-    FutureDataBuffer.Clear();
+    return valueUpdates;
   }
 
   public void ExitFmuImporter()

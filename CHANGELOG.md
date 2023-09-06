@@ -20,6 +20,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Improved exception handling - FMU Importer will now try to end SIL Kit and FMU properly if it is possible
 * Improved logger reliability
 * Fixed erroneous translation of FMI and SIL Kit log levels
+* Received events that are at least two simulation steps in the future are now handled correctly
 
 ---
 
