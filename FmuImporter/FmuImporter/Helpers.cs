@@ -1,8 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Text;
 using Fmi;
+using FmuImporter.Config;
+using FmuImporter.Exceptions;
 using SilKit.Services.Logger;
 
 namespace FmuImporter;
@@ -56,37 +57,6 @@ public static class Helpers
 
   public const ulong DefaultSimStepDuration = 1000000 /* 1ms */;
 
-  public static VariableTypes StringToVariableType(string s)
-  {
-    switch (s.ToLowerInvariant())
-    {
-      case "uint8":
-        return VariableTypes.UInt8;
-      case "uint16":
-        return VariableTypes.UInt16;
-      case "uint32":
-        return VariableTypes.UInt32;
-      case "uint64":
-        return VariableTypes.UInt64;
-      case "int8":
-        return VariableTypes.Int8;
-      case "int16":
-        return VariableTypes.Int16;
-      case "int32":
-        return VariableTypes.Int32;
-      case "int64":
-        return VariableTypes.Int64;
-      case "float32":
-      case "float":
-        return VariableTypes.Float32;
-      case "float64":
-      case "double":
-        return VariableTypes.Float64;
-      default:
-        throw new NotSupportedException($"The transformDuringTransmissionType '{s}' does not exist.");
-    }
-  }
-
   public static Type VariableTypeToType(VariableTypes type)
   {
     switch (type)
@@ -116,7 +86,7 @@ public static class Helpers
       case VariableTypes.String:
         return typeof(string);
       case VariableTypes.Binary:
-        return typeof(IntPtr);
+        return typeof(byte[]);
       case VariableTypes.EnumFmi2:
         return typeof(Enum);
       case VariableTypes.EnumFmi3:
@@ -160,114 +130,61 @@ public static class Helpers
     }
   }
 
-  public static object FromByteArray(byte[] data, VariableTypes type, ref int currentScanIndex)
+  public static void ApplyLinearTransformationFmi(ref object deserializedData, ConfiguredVariable configuredVariable)
   {
-    switch (type)
+    if (configuredVariable.FmuVariableDefinition == null)
     {
-      case VariableTypes.Undefined:
-        break;
-      case VariableTypes.Float32:
-      {
-        var result = BitConverter.ToSingle(data, currentScanIndex);
-        currentScanIndex += sizeof(float);
-        return result;
-      }
-      case VariableTypes.Float64:
-      {
-        var result = BitConverter.ToDouble(data, currentScanIndex);
-        currentScanIndex += sizeof(double);
-        return result;
-      }
-      case VariableTypes.Int8:
-      {
-        var result = (sbyte)(data[currentScanIndex]);
-        currentScanIndex += sizeof(sbyte);
-        return result;
-      }
-      case VariableTypes.Int16:
-      {
-        var result = BitConverter.ToInt16(data, currentScanIndex);
-        currentScanIndex += sizeof(Int16);
-        return result;
-      }
-      case VariableTypes.Int32:
-      {
-        var result = BitConverter.ToInt32(data, currentScanIndex);
-        currentScanIndex += sizeof(Int32);
-        return result;
-      }
-      case VariableTypes.Int64:
-      {
-        var result = BitConverter.ToInt64(data, currentScanIndex);
-        currentScanIndex += sizeof(Int64);
-        return result;
-      }
-      case VariableTypes.UInt8:
-      {
-        currentScanIndex += sizeof(byte);
-        return data[currentScanIndex - sizeof(byte)];
-      }
-      case VariableTypes.UInt16:
-      {
-        var result = BitConverter.ToUInt16(data, currentScanIndex);
-        currentScanIndex += sizeof(UInt16);
-        return result;
-      }
-      case VariableTypes.UInt32:
-      {
-        var result = BitConverter.ToUInt32(data, currentScanIndex);
-        currentScanIndex += sizeof(UInt32);
-        return result;
-      }
-      case VariableTypes.UInt64:
-      {
-        var result = BitConverter.ToUInt64(data, currentScanIndex);
-        currentScanIndex += sizeof(UInt64);
-        return result;
-      }
-      case VariableTypes.Boolean:
-      {
-        var result = BitConverter.ToBoolean(data, currentScanIndex);
-        currentScanIndex += sizeof(bool);
-        return result;
-      }
-      case VariableTypes.String:
-      {
-        // NB this assumes a SIL Kit encoded string
-        // string = [character count (4 byte/Int32)][chars...]
-        var stringLength = BitConverter.ToInt32(data, currentScanIndex);
-        var result = Encoding.UTF8.GetString(data, currentScanIndex + 4, stringLength);
-        currentScanIndex += stringLength;
-        return result;
-      }
-      case VariableTypes.Binary:
-        // TODO
-        break;
-      case VariableTypes.EnumFmi2:
-      {
-        // Enums are received as 64 bit values
-        var result = BitConverter.ToInt64(data, currentScanIndex);
-        currentScanIndex += sizeof(Int64);
-        return result;
-      }
-      case VariableTypes.EnumFmi3:
-      {
-        var result = BitConverter.ToInt64(data, currentScanIndex);
-        currentScanIndex += sizeof(Int64);
-        return result;
-      }
-      default:
-        break;
+      throw new InvalidConfigurationException("configuredVariable.FmuVariableDefinition == null");
     }
 
-    throw new ArgumentOutOfRangeException(
-      nameof(type),
-      type,
-      $"Failed to convert byte array into requested type '{type}'");
+    if (configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float32 &&
+        configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float64)
+    {
+      return;
+    }
+
+    var unit = configuredVariable.FmuVariableDefinition.TypeDefinition?.Unit;
+    if (unit != null && (unit.Factor.HasValue || unit.Offset.HasValue))
+    {
+      ApplyLinearTransformation(
+        ref deserializedData,
+        unit.Factor,
+        unit.Offset,
+        configuredVariable.FmuVariableDefinition.VariableType);
+    }
   }
 
-  public static void ApplyLinearTransformation(ref object o, double factor, double offset, VariableTypes type)
+  public static void ApplyLinearTransformationImporterConfig(
+    ref object deserializedData,
+    ConfiguredVariable configuredVariable)
   {
+    if (configuredVariable.FmuVariableDefinition == null)
+    {
+      throw new InvalidConfigurationException("configuredVariable.FmuVariableDefinition == null");
+    }
+
+    var transformation = configuredVariable.Transformation;
+    if (transformation != null && (transformation.Factor.HasValue || transformation.Offset.HasValue))
+    {
+      ApplyLinearTransformation(
+        ref deserializedData,
+        transformation.ComputedFactor,
+        transformation.ComputedOffset,
+        configuredVariable.FmuVariableDefinition.VariableType);
+    }
+  }
+
+  private static void ApplyLinearTransformation(ref object o, double? factor, double? offset, VariableTypes type)
+  {
+    if (!factor.HasValue && !offset.HasValue)
+    {
+      // there is nothing to transform
+      return;
+    }
+
+    factor ??= 1D;
+    offset ??= 0D;
+
     switch (type)
     {
       case VariableTypes.Undefined:

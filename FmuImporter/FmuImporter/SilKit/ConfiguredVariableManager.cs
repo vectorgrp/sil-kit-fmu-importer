@@ -135,147 +135,121 @@ public class ConfiguredVariableManager
           var mdVar = ModelDescription.Variables[variable.ValueReference];
           for (var i = 0; i < variable.Values.Length; i++)
           {
-            var unit = mdVar.TypeDefinition?.Unit;
-            if (unit != null)
-            {
-              if (configuredVariableType == VariableTypes.Float32)
-              {
-                var value = (float)(variable.Values[i]);
-                // first reverse offset...
-                if (unit.Offset.HasValue)
-                {
-                  value = Convert.ToSingle(value - unit.Offset.Value);
-                }
-
-                // ...then reverse factor
-                if (unit.Factor.HasValue)
-                {
-                  value = Convert.ToSingle(value / unit.Factor.Value);
-                }
-
-                variable.Values[i] = value;
-              }
-            }
+            // Apply unit transformation
+            Helpers.ApplyLinearTransformationFmi(
+              ref variable.Values[i],
+              configuredVariable);
           }
         }
       }
 
-      foreach (var variable in result.ResultArray)
+      for (var i = 0; i < result.ResultArray.Length; i++)
       {
-        var byteArray = ApplyConfiguredTransformationAndEncode(variable, configuredVariable);
+        var variable = result.ResultArray[i];
+        Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], configuredVariable);
+
+        var byteArray = TransformToSilKitData(variable, configuredVariable);
         ((IDataPublisher)configuredVariable.SilKitService).Publish(byteArray);
       }
     }
   }
 
-  public void SetValue(uint refValue, byte[] data)
+  public void SetValue(uint refValue, byte[] silKitData)
   {
     var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
     if (success && configuredVariable != null)
     {
-      if (configuredVariable.Transformation != null)
+      var binSizes = new List<int>();
+      var fmuData = TransformSilKitToFmuData(silKitData, configuredVariable, ref binSizes);
+
+      if (binSizes.Count == 0)
       {
-        if (configuredVariable.FmuVariableDefinition == null)
-        {
-          throw new InvalidConfigurationException(
-            $"{nameof(configuredVariable)} was not initialized correctly.",
-            new NullReferenceException($"{nameof(configuredVariable.FmuVariableDefinition)} was null."));
-        }
-
-        // Reverse type transformation and apply linear transformation
-        data = TransformAndReencode(data, configuredVariable, ModelDescription.Variables[refValue]);
+        Binding.SetValue(refValue, fmuData);
       }
-
-      Binding.SetValue(refValue, data);
+      else
+      {
+        Binding.SetValue(refValue, fmuData, binSizes.ToArray());
+      }
     }
   }
 
-  private byte[] TransformAndReencode(byte[] inputData, ConfiguredVariable configuredVariable, Variable mdVar)
+  private byte[] TransformSilKitToFmuData(byte[] data, ConfiguredVariable configuredVariable, ref List<int> binSizes)
   {
-    var transformation = configuredVariable.Transformation;
-    if (transformation == null ||
-        (transformation.Factor == null &&
-         transformation.Offset == null &&
-         string.IsNullOrEmpty(transformation.TransmissionType)))
+    var isScalar = configuredVariable.FmuVariableDefinition!.IsScalar;
+
+    var deserializer = new Deserializer(data.ToList());
+    if (isScalar)
     {
-      // the transformation block has no (useful) information -> return original data
-      return inputData;
+      return ProcessDataEntity(ref deserializer, configuredVariable, ref binSizes);
     }
 
-    var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
-    var arraySize = 1; // scalar by default
-    if (!isScalar)
+    var byteArray = new List<byte>();
+    var arrayLength = deserializer.BeginArray();
+    for (var i = 0; i < arrayLength; i++)
     {
-      arraySize = BitConverter.ToInt32(inputData, 0);
-      inputData = inputData.Skip(4).ToArray();
+      var dataElement = ProcessDataEntity(ref deserializer, configuredVariable, ref binSizes);
+      byteArray.AddRange(dataElement);
     }
 
-    var targetArray = new object[arraySize];
-
-    if (string.IsNullOrEmpty(transformation.TransmissionType))
-    {
-      for (var i = 0; i < arraySize; i++)
-      {
-        // convert data to target type
-        var offset = 0;
-        targetArray[i] = Helpers.FromByteArray(inputData, mdVar.VariableType, ref offset);
-      }
-    }
-    else
-    {
-      // convert byte array to transform type
-      var offset = 0;
-      for (var i = 0; i < arraySize; i++)
-      {
-        var transformType = Helpers.StringToVariableType(transformation.TransmissionType.ToLowerInvariant());
-        var transmissionData = Helpers.FromByteArray(inputData, transformType, ref offset);
-        // re-encode data with variable type
-        targetArray[i] = Convert.ChangeType(transmissionData, Helpers.VariableTypeToType(mdVar.VariableType));
-      }
-    }
-
-    // Apply factor and offset transform
-    for (var i = 0; i < arraySize; i++)
-    {
-      var factor = transformation.ComputedFactor;
-      var offset = transformation.ComputedOffset;
-      Helpers.ApplyLinearTransformation(ref targetArray[i], factor, offset, mdVar.VariableType);
-    }
-
-    return SerDes.Serialize(targetArray, isScalar, Helpers.VariableTypeToType(mdVar.VariableType));
+    deserializer.EndArray();
+    return byteArray.ToArray();
   }
 
-  private byte[] ApplyConfiguredTransformationAndEncode(
+  private byte[] ProcessDataEntity(
+    ref Deserializer deserializer,
+    ConfiguredVariable configuredVariable,
+    ref List<int> binSizes)
+  {
+    var deserializedData = TransformReceivedDataType(deserializer, configuredVariable);
+    Helpers.ApplyLinearTransformationImporterConfig(ref deserializedData, configuredVariable);
+    Helpers.ApplyLinearTransformationFmi(ref deserializedData, configuredVariable);
+
+    return Fmi.Supplements.Serializer.Serialize(
+      deserializedData,
+      configuredVariable.FmuVariableDefinition!.VariableType,
+      ref binSizes);
+  }
+
+
+  private object TransformReceivedDataType(Deserializer deserializer, ConfiguredVariable configuredVariable)
+  {
+    var fmuType = Helpers.VariableTypeToType(configuredVariable.FmuVariableDefinition!.VariableType);
+
+    // apply type conversion if required
+    if (configuredVariable.Transformation?.TransmissionType != null)
+    {
+      var receivedType = Helpers.StringToType(configuredVariable.Transformation.TransmissionType);
+      var deserializedData = deserializer.Deserialize(receivedType);
+      // change data type to type expected by FMU
+      return Convert.ChangeType(deserializedData, fmuType);
+    }
+
+    return deserializer.Deserialize(fmuType);
+  }
+
+  private byte[] TransformToSilKitData(
     ReturnVariable.Variable variable,
     ConfiguredVariable configuredVariable)
   {
-    if (configuredVariable.Transformation != null)
+    Type transmissionType;
+    if (configuredVariable.Transformation != null &&
+        !string.IsNullOrEmpty(configuredVariable.Transformation.TransmissionType))
     {
-      // Apply factor and offset transform
-      for (var i = 0; i < variable.Values.Length; i++)
-      {
-        var factor = configuredVariable.Transformation.ComputedFactor;
-        var offset = configuredVariable.Transformation.ComputedOffset;
-        Helpers.ApplyLinearTransformation(ref variable.Values[i], factor, offset, variable.Type);
-      }
-
-      if (!string.IsNullOrEmpty(configuredVariable.Transformation.TransmissionType))
-      {
-        return SerDes.Serialize(
-          variable.Values,
-          variable.IsScalar,
-          Helpers.StringToType(configuredVariable.Transformation.TransmissionType),
-          null);
-      }
-
-      // encode
-      return SerDes.Serialize(variable.Values, variable.IsScalar, Helpers.VariableTypeToType(variable.Type), null);
+      transmissionType = Helpers.StringToType(configuredVariable.Transformation.TransmissionType);
+    }
+    else
+    {
+      transmissionType = Helpers.VariableTypeToType(variable.Type);
     }
 
-    return SerDes.Serialize(
+    var serializer = new Serializer();
+    SerDes.Serialize(
       variable.Values,
       variable.IsScalar,
-      Helpers.VariableTypeToType(variable.Type),
-      Array.ConvertAll(variable.ValueSizes, e => (Int32)e));
+      transmissionType,
+      Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
+      ref serializer);
+
+    return serializer.ReleaseBuffer().ToArray();
   }
 }

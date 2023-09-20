@@ -66,6 +66,7 @@ public class Variable
       FlattenedArrayLength = 1;
       if (value == null || value.Length == 0)
       {
+        IsScalar = true;
         return;
       }
 
@@ -73,12 +74,15 @@ public class Variable
       {
         FlattenedArrayLength *= dim;
       }
+
+      IsScalar = false;
     }
   }
 
   public TypeDefinition? TypeDefinition { get; set; }
 
   public ulong FlattenedArrayLength { get; private set; } = 1;
+  public bool IsScalar { get; set; } = true;
 
   public Variable(fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
   {

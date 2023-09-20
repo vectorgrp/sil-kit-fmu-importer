@@ -47,7 +47,7 @@ public class ReturnVariable
         ValueSizes = Array.Empty<IntPtr>(),
         Values = new object[arrayLength],
         Type = modelVar.VariableType,
-        IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
+        IsScalar = modelVar.IsScalar
       };
       for (ulong j = 0; j < arrayLength; j++)
       {
@@ -88,7 +88,7 @@ public class ReturnVariable
         // T ~ Array of Binaries -> IntPtr[]
         Values = new object[arrayLength],
         Type = modelVar.VariableType,
-        IsScalar = (modelVar.Dimensions == null || modelVar.Dimensions.Length == 0)
+        IsScalar = modelVar.IsScalar
       };
       for (ulong j = 0; j < arrayLength; j++)
       {

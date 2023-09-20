@@ -2,13 +2,17 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace SilKit.Supplements;
 
 public class SerDes
 {
-  public static byte[] Serialize(object[] objectArray, bool isScalar, Type sourceType, int[]? valueSizes)
+  public static void Serialize(
+    object[] objectArray,
+    bool isScalar,
+    Type sourceType,
+    int[]? valueSizes,
+    ref Serializer serializer)
   {
     if (isScalar && objectArray.Length > 1)
     {
@@ -17,9 +21,10 @@ public class SerDes
         "the encoded data was supposed to be scalar, but had more than one entry to encode.");
     }
 
-    if (sourceType != typeof(IntPtr))
+    if (sourceType != typeof(IntPtr) && sourceType != typeof(byte[]))
     {
-      return Serialize(objectArray, isScalar, sourceType);
+      Serialize(objectArray, isScalar, sourceType, ref serializer);
+      return;
     }
 
     if (valueSizes == null || valueSizes.Length != objectArray.Length)
@@ -28,14 +33,9 @@ public class SerDes
     }
 
     // Binaries and binary arrays are special as they need additional information regarding their size
-    List<byte> byteList;
     if (!isScalar)
     {
-      byteList = GetArrayHeader(objectArray.Length);
-    }
-    else
-    {
-      byteList = new List<byte>();
+      serializer.BeginArray(objectArray.Length);
     }
 
     for (var i = 0; i < objectArray.Length; i++)
@@ -45,41 +45,40 @@ public class SerDes
       var binData = new byte[rawDataLength];
       Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
 
-      // append length of following binary blob
-      byteList.AddRange(GetArrayHeader(binData.Length));
-      // add the data blob
-      byteList.AddRange(binData);
-    }
+      serializer.Serialize(binData);
 
-    return byteList.ToArray();
+      if (!isScalar)
+      {
+        serializer.EndArray();
+      }
+    }
   }
 
-
-  public static byte[] Serialize(object[] objectArray, bool isScalar, Type sourceType)
+  public static void Serialize(object[] objectArray, bool isScalar, Type sourceType, ref Serializer serializer)
   {
     if (!isScalar)
     {
-      var result = GetArrayHeader(objectArray.Length);
-      result.AddRange(Serialize(objectArray, sourceType));
-      return result.ToArray();
+      serializer.BeginArray(objectArray.Length);
     }
 
-    return Serialize(objectArray, sourceType);
+    Serialize(objectArray, sourceType, ref serializer);
+    if (!isScalar)
+    {
+      serializer.EndArray();
+    }
   }
 
-  private static byte[] Serialize(object[] objectArray, Type sourceType)
+  private static void Serialize(object[] objectArray, Type sourceType, ref Serializer serializer)
   {
-    var byteList = new List<byte>();
-
     if (sourceType == typeof(float))
     {
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToSingle);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(double))
@@ -87,48 +86,10 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToDouble);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
-    }
-
-    if (sourceType == typeof(byte))
-    {
-      return Array.ConvertAll(objectArray, Convert.ToByte);
-    }
-
-    if (sourceType == typeof(Int16))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt16);
-      for (var i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (sourceType == typeof(Int32))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt32);
-      for (var i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
-    }
-
-    if (sourceType == typeof(Int64) || sourceType == typeof(Enum))
-    {
-      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt64);
-      for (var i = 0; i < convertedArray.Length; i++)
-      {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
-      }
-
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(sbyte))
@@ -136,10 +97,54 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToSByte);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
+    }
+
+    if (sourceType == typeof(Int16))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt16);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(Int32))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt32);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(Int64) || sourceType == typeof(Enum))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt64);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(byte))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToByte);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
     }
 
     if (sourceType == typeof(UInt16))
@@ -147,10 +152,10 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt16);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(UInt32))
@@ -158,10 +163,10 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt32);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(UInt64))
@@ -169,10 +174,10 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt64);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(bool))
@@ -180,10 +185,10 @@ public class SerDes
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToBoolean);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        byteList.AddRange(BitConverter.GetBytes(convertedArray[i]));
+        serializer.Serialize(convertedArray[i]);
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(string))
@@ -198,14 +203,10 @@ public class SerDes
       for (var i = 0; i < convertedArray.Length; i++)
       {
         // TODO check if this conversion works as intended
-        var encodedString = Encoding.UTF8.GetBytes((string)(objectArray[i]));
-        var byteCount = encodedString.Length;
-        var res = new List<byte>(BitConverter.GetBytes(byteCount));
-        res.AddRange(encodedString);
-        byteList.AddRange(res);
+        serializer.Serialize(convertedArray[i] ?? "");
       }
 
-      return byteList.ToArray();
+      return;
     }
 
     if (sourceType == typeof(IntPtr))
@@ -214,21 +215,5 @@ public class SerDes
     }
 
     throw new NotSupportedException($"Unknown data type ('{sourceType.Name}').");
-  }
-
-  public static List<byte> GetArrayHeader(int arrayLength)
-  {
-    var byteArr = BitConverter.GetBytes(arrayLength);
-    ToLittleEndian(ref byteArr);
-
-    return byteArr.ToList();
-  }
-
-  private static void ToLittleEndian(ref byte[] bytes)
-  {
-    if (!BitConverter.IsLittleEndian)
-    {
-      Array.Reverse(bytes);
-    }
   }
 }

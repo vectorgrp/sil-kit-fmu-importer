@@ -303,8 +303,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   {
     switch (type)
     {
-      case VariableTypes.Undefined:
-        break;
       case VariableTypes.Float32:
       {
         result = GetFloat32(valueRefs);
@@ -370,8 +368,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         result = GetBinary(valueRefs);
         return;
       }
-      case VariableTypes.EnumFmi2:
-        break;
       case VariableTypes.EnumFmi3:
       {
         result = GetInt64(valueRefs);
@@ -393,19 +389,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   internal override void SetValue(Variable mdVar, byte[] data)
   {
     var type = mdVar.VariableType;
-    var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
+    var isScalar = mdVar.IsScalar;
 
-    var arraySize = 1;
-    if (!isScalar)
-    {
-      arraySize = BitConverter.ToInt32(data, 0);
-      data = data.Skip(4).ToArray();
-    }
+    var arraySize = isScalar ? 1 : (int)mdVar.FlattenedArrayLength;
 
     switch (type)
     {
-      case VariableTypes.Undefined:
-        break;
       case VariableTypes.Float32:
       {
         var values = new float[arraySize];
@@ -657,8 +646,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         throw new NotSupportedException("Must be called with binSizes argument!");
       }
-      case VariableTypes.EnumFmi2:
-        break;
       case VariableTypes.EnumFmi3:
       {
         var values = new long[arraySize];
@@ -688,7 +675,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var mdVar = ModelDescription.Variables[valueRef];
     var type = mdVar.VariableType;
 
-    var isScalar = !(mdVar.Dimensions != null && mdVar.Dimensions.Length > 0);
+    var isScalar = mdVar.IsScalar;
 
     var arraySize = 1;
     if (!isScalar)
@@ -1251,17 +1238,20 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
 
     var nValues = CalculateValueLength(ref valueReferences);
-    var result = new bool[(int)nValues];
+    // bools are not blittable -> retrieve them as IntPtr and convert result afterwards
+    var tmpResult = new IntPtr[(int)nValues];
 
     ProcessReturnCode(
       _fmi3GetBoolean(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
-        result,
+        tmpResult,
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
+
+    var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
   }
 
@@ -1282,7 +1272,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     fmi3ValueReference[] valueReferences,
     size_t nValueReferences,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
-    bool[] values,
+    IntPtr[] values,
     size_t nValues);
 
   public ReturnVariable GetString(fmi3ValueReference[] valueReferences)

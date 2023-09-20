@@ -21,6 +21,9 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Improved logger reliability
 * Fixed erroneous translation of FMI and SIL Kit log levels
 * Received events that are at least two simulation steps in the future are now handled correctly
+* Changed the serialization and deserialization mechanism for SIL Kit and FMI
+  * The new SIL Kit serializer & deserializer are based on the implementation used in SIL Kit
+  * This improves the reliability and understandability of the serialization
 
 ---
 

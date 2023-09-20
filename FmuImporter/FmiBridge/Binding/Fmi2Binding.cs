@@ -192,36 +192,18 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   {
     switch (type)
     {
-      case VariableTypes.Undefined:
-        break;
-      case VariableTypes.Float32:
-        break;
       case VariableTypes.Float64:
       {
         var vFmi = GetReal(valueRefs);
         result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
         return;
       }
-      case VariableTypes.Int8:
-        break;
-      case VariableTypes.Int16:
-        break;
       case VariableTypes.Int32:
       {
         var vFmi = GetInteger(valueRefs);
         result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
         return;
       }
-      case VariableTypes.Int64:
-        break;
-      case VariableTypes.UInt8:
-        break;
-      case VariableTypes.UInt16:
-        break;
-      case VariableTypes.UInt32:
-        break;
-      case VariableTypes.UInt64:
-        break;
       case VariableTypes.Boolean:
       {
         var vFmi = GetBoolean(valueRefs);
@@ -234,8 +216,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
         return;
       }
-      case VariableTypes.Binary:
-        break;
       case VariableTypes.EnumFmi2:
       {
         var vFmi = GetInteger(valueRefs);
@@ -244,8 +224,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         result = ReturnVariable.CreateReturnVariable(valueRefs, convertedVFmi, valueRefs.Length, ref _modelDescription);
         return;
       }
-      case VariableTypes.EnumFmi3:
-        break;
       default:
         break;
     }
@@ -253,7 +231,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     throw new ArgumentOutOfRangeException(
       nameof(type),
       type,
-      $"The provided type '{type}' is not supported in FMI 2.0");
+      $"The provided type '{type}' is not supported.");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -273,10 +251,6 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
     switch (type)
     {
-      case VariableTypes.Undefined:
-        break;
-      case VariableTypes.Float32:
-        break;
       case VariableTypes.Float64:
       {
         var value = BitConverter.ToDouble(data);
@@ -301,26 +275,12 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         SetReal(new[] { mdVar.ValueReference }, new[] { value });
         return;
       }
-      case VariableTypes.Int8:
-        break;
-      case VariableTypes.Int16:
-        break;
       case VariableTypes.Int32:
       {
         var value = BitConverter.ToInt32(data);
         SetInteger(new[] { mdVar.ValueReference }, new[] { value });
         return;
       }
-      case VariableTypes.Int64:
-        break;
-      case VariableTypes.UInt8:
-        break;
-      case VariableTypes.UInt16:
-        break;
-      case VariableTypes.UInt32:
-        break;
-      case VariableTypes.UInt64:
-        break;
       case VariableTypes.Boolean:
       {
         var value = BitConverter.ToBoolean(data);
@@ -335,23 +295,13 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         SetString(new[] { mdVar.ValueReference }, new[] { value });
         return;
       }
-      case VariableTypes.Binary:
-        break;
       case VariableTypes.EnumFmi2:
       {
-        var value = BitConverter.ToInt64(data);
-        if (value > Int32.MaxValue)
-        {
-          throw new InvalidOperationException(
-            $"Failed to set enumerator for variable '{mdVar.Name}'. " +
-            $"Reason: The value is too large (> Int32) and therefore cannot be handled by FMI 2.0 FMUs.");
-        }
+        var value = BitConverter.ToInt32(data);
 
-        SetInteger(new[] { mdVar.ValueReference }, new[] { (int)value });
+        SetInteger(new[] { mdVar.ValueReference }, new[] { value });
         return;
       }
-      case VariableTypes.EnumFmi3:
-        break;
       default:
         break;
     }
@@ -703,12 +653,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var result = new bool[valueReferences.Length];
+    // bools are not blittable -> retrieve them as IntPtr and convert result afterwards
+    var tmpResult = new IntPtr[valueReferences.Length];
 
     ProcessReturnCode(
-      _fmi2GetBoolean(_component, valueReferences, (IntPtr)valueReferences.Length, result),
+      _fmi2GetBoolean(_component, valueReferences, (IntPtr)valueReferences.Length, tmpResult),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
+    var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
     return result;
   }
 
@@ -724,7 +676,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     uint[] /*fmi2ValueReference[]*/ vr,
     IntPtr nvr,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-    bool[] value);
+    IntPtr[] value);
 
   public string[] GetString(uint[] valueReferences)
   {

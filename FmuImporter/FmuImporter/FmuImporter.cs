@@ -452,11 +452,11 @@ public class FmuImporter
             throw new NotSupportedException("FMI 2.0.x does not support arrays.");
           }
 
-          data = Fmi.Helpers.EncodeData(objectList, v.VariableType, ref binSizes);
+          data = Fmi.Supplements.Serializer.Serialize(objectList, v.VariableType, ref binSizes);
         }
         else
         {
-          data = Fmi.Helpers.EncodeData(configuredParameter.Value, v.VariableType, ref binSizes);
+          data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
         }
 
         if (v.VariableType != VariableTypes.Binary)
