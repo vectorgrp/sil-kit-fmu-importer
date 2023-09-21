@@ -116,7 +116,7 @@ public class ModelDescription
       InitVariableMap(input.ModelVariables);
     }
 
-    ModelStructure = new ModelStructure(input.ModelStructure);
+    ModelStructure = new ModelStructure(input.ModelStructure, input.ModelVariables!);
   }
 
   private void InitTypeDefMap(Fmi3.fmiModelDescriptionTypeDefinitions input)

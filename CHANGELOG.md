@@ -24,6 +24,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Changed the serialization and deserialization mechanism for SIL Kit and FMI
   * The new SIL Kit serializer & deserializer are based on the implementation used in SIL Kit
   * This improves the reliability and understandability of the serialization
+* The initial unknowns of FMI 2.0.x FMUs are now initialized correctly
 
 ---
 

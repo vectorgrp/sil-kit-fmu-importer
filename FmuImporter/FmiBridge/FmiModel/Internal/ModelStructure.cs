@@ -7,15 +7,20 @@ public class ModelStructure
 {
   public HashSet<uint> InitialUnknowns { get; set; }
 
-  public ModelStructure(Fmi2.fmiModelDescriptionModelStructure fmiModelDescriptionModelStructure)
+  public ModelStructure(
+    Fmi2.fmiModelDescriptionModelStructure fmiModelDescriptionModelStructure,
+    Fmi2.fmiModelDescriptionModelVariables fmiModelDescriptionModelVariables)
   {
-    if (fmiModelDescriptionModelStructure.InitialUnknowns == null)
+    InitialUnknowns = new HashSet<uint>();
+    if (fmiModelDescriptionModelStructure.InitialUnknowns != null)
     {
-      InitialUnknowns = new HashSet<uint>();
-    }
-    else
-    {
-      InitialUnknowns = fmiModelDescriptionModelStructure.InitialUnknowns.Unknown.Select(u => u.index).ToHashSet();
+      // convert to 0-based index
+      var initialUnknownIndices =
+        fmiModelDescriptionModelStructure.InitialUnknowns.Unknown.Select(u => u.index - 1).ToHashSet();
+      foreach (var initialUnknownIndex in initialUnknownIndices)
+      {
+        InitialUnknowns.Add(fmiModelDescriptionModelVariables.ScalarVariable[initialUnknownIndex].valueReference);
+      }
     }
   }
 
