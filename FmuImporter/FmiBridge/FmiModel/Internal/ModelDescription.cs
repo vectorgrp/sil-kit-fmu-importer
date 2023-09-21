@@ -278,6 +278,13 @@ public class ModelDescription
         throw new ModelDescriptionException(
           "Failed to parse model description: multiple variables have the same valueReference.");
       }
+
+      result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
+      if (!result)
+      {
+        throw new ModelDescriptionException(
+          "Failed to parse model description: multiple variables have the same name.");
+      }
     }
   }
 

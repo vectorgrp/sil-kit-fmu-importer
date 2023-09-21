@@ -27,6 +27,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * The initial unknowns of FMI 2.0.x FMUs are now initialized correctly
 * Fixed a possible infinite loop if the importer crashed before the FMU was initialized
 * The importer distributed output variable data even if the simulation step failed - this is not the case anymore
+* Fixed a crash if an FMI 2.0.x FMU's variable was reconfigured via the importer's configuration file
 
 ---
 
