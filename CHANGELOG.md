@@ -11,6 +11,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 ### Changed
 
 * If SIL Kit logger fails to log the log messages are now written to the console
+* The importer source now includes the SIL Kit libraries that are used (removes the necessity to download and cache them)
 
 ### Fixed
 

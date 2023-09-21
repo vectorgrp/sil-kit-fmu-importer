@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+
+<Project ToolsVersion="12.0" DefaultTargets="CheckSilKitVersion;PrepareSilKit" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Target Name="PrepareSilKit" AfterTargets="BuildAll;Build"
+            Condition="!Exists('$(SilKitWinLibPath)')">
+        <PropertyGroup>
+            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv$(SilKitVersion)/</SilKitUrl>
+            <SilKitWinName>SilKit-$(SilKitVersion)-Win-x86_64-VS2017</SilKitWinName>
+            <SilKitUbuntuName>SilKit-$(SilKitVersion)-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
+        </PropertyGroup>
+
+        <Message Text="Downloading SIL Kit (Windows) archive from '$(SilKitUrl)'..." Importance="High" />
+        <DownloadFile
+            SourceUrl="$(SilKitUrl)$(SilKitWinName).zip"
+            DestinationFolder="$(SilKitDirBase)">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+
+        <Message Text="Extracting SIL Kit (Windows) library for later use..." Importance="High" />
+        <Unzip
+            SourceFiles="$(SilKitDirBase)$(SilKitWinName).zip"
+            DestinationFolder="$(SilKitDirBase)/win"
+            OverwriteReadOnlyFiles="true" />
+        <Move SourceFiles="$(SilKitDirBase)/win/$(SilKitWinName)/SilKit/bin/SilKit.dll"
+              OverwriteReadOnlyFiles="true"
+              DestinationFiles="$(SilKitWinLibPath)" />
+
+        <Message Text="Cleaning up SIL Kit (Windows) download artifacts..." Importance="High" />
+        <RemoveDir Directories="$(SilKitDirBase)/win" />
+        <Delete Files="$(SilKitDirBase)$(SilKitWinName).zip" />
+
+        <Message Text="Downloading SIL Kit (Ubuntu) archive from '$(SilKitUrl)'..." Importance="High" />
+        <DownloadFile
+            SourceUrl="$(SilKitUrl)$(SilKitUbuntuName).zip"
+            DestinationFolder="$(SilKitDirBase)">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+        <Message Text="Extracting SIL Kit (Ubuntu) library for later use..." Importance="High" />
+        <Unzip
+            SourceFiles="$(SilKitDirBase)$(SilKitUbuntuName).zip"
+            DestinationFolder="$(SilKitDirBase)/ubuntu"
+            OverwriteReadOnlyFiles="true" />
+        <Move SourceFiles="$(SilKitDirBase)/ubuntu/$(SilKitUbuntuName)/SilKit/lib/libSilKit.so"
+              OverwriteReadOnlyFiles="true"
+              DestinationFiles="$(SilKitLinuxLibPath)" />
+        <Message Text="Cleaning up SIL Kit (Ubuntu) download artifacts..." Importance="High" />
+        <RemoveDir Directories="$(SilKitDirBase)/ubuntu" />
+        <Delete Files="$(SilKitDirBase)$(SilKitUbuntuName).zip" />
+    </Target>
+    <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
+
+</Project>

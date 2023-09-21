@@ -69,7 +69,6 @@ bld/
 [Bb]in/
 [Oo]bj/
 _obj/
-_silkit/
 
 # Visual Studio cache/options directory
 .vs/

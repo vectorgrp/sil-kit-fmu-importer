@@ -6,6 +6,7 @@
 
     <PropertyGroup>
         <Version>1.0.3</Version>
+        <SilKitVersion>4.0.32</SilKitVersion>
         <Copyright>Copyright (c) Vector Informatik GmbH. All rights reserved.</Copyright>
     </PropertyGroup>
 
@@ -37,7 +38,9 @@
     <PropertyGroup>
         <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
         <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
-        <SilKitDirBase>$(MSBuildProjectDirectory)/../_silkit/</SilKitDirBase>
+        <SilKitDirBase>$([System.IO.Path]::GetFullPath($(MSBuildProjectDirectory)/../_silkit/))</SilKitDirBase>
+        <SilKitWinLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit.dll"))</SilKitWinLibPath>
+        <SilKitLinuxLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "libSilKit.so"))</SilKitLinuxLibPath>
     </PropertyGroup>
 
     <PropertyGroup
@@ -81,59 +84,6 @@
         <CommonImported>True</CommonImported>
     </PropertyGroup>
 
-    <Target Name="PrepareSilKitUbuntu" BeforeTargets="BuildAll;Build"
-            Condition="!Exists('$(SilKitDirBase)/libSilKit.so')">
-        <PropertyGroup>
-            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
-            <SilKitUbuntuName>SilKit-4.0.32-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
-        </PropertyGroup>
-
-        <Message Text="Downloading SIL Kit (Ubuntu) archive from '$(SilKitUrl)'..." Importance="High" />
-        <DownloadFile
-            SourceUrl="$(SilKitUrl)$(SilKitUbuntuName).zip"
-            DestinationFolder="$(SilKitDirBase)">
-            <Output TaskParameter="DownloadedFile" ItemName="Content" />
-        </DownloadFile>
-        <Message Text="Extracting SIL Kit (Ubuntu) library for later use..." Importance="High" />
-        <Unzip
-            SourceFiles="$(SilKitDirBase)$(SilKitUbuntuName).zip"
-            DestinationFolder="$(SilKitDirBase)/ubuntu"
-            OverwriteReadOnlyFiles="true" />
-        <Move SourceFiles="$(SilKitDirBase)/ubuntu/$(SilKitUbuntuName)/SilKit/lib/libSilKit.so"
-              OverwriteReadOnlyFiles="true"
-              DestinationFiles="$(SilKitDirBase)/libSilKit.so" />
-        <Message Text="Cleaning up SIL Kit (Ubuntu) download artifacts..." Importance="High" />
-        <RemoveDir Directories="$(SilKitDirBase)/ubuntu" />
-        <Delete Files="$(SilKitDirBase)$(SilKitUbuntuName).zip" />
-    </Target>
-
-    <Target Name="PrepareSilKitWindows" BeforeTargets="BuildAll;Build"
-            Condition="!Exists('$(SilKitDirBase)/SilKit.dll')">
-        <PropertyGroup>
-            <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv4.0.32/</SilKitUrl>
-            <SilKitWinName>SilKit-4.0.32-Win-x86_64-VS2017</SilKitWinName>
-        </PropertyGroup>
-
-        <Message Text="Downloading SIL Kit (Windows) archive from '$(SilKitUrl)'..." Importance="High" />
-        <DownloadFile
-            SourceUrl="$(SilKitUrl)$(SilKitWinName).zip"
-            DestinationFolder="$(SilKitDirBase)">
-            <Output TaskParameter="DownloadedFile" ItemName="Content" />
-        </DownloadFile>
-
-        <Message Text="Extracting SIL Kit (Windows) library for later use..." Importance="High" />
-        <Unzip
-            SourceFiles="$(SilKitDirBase)$(SilKitWinName).zip"
-            DestinationFolder="$(SilKitDirBase)/win"
-            OverwriteReadOnlyFiles="true" />
-        <Move SourceFiles="$(SilKitDirBase)/win/$(SilKitWinName)/SilKit/bin/SilKit.dll"
-              OverwriteReadOnlyFiles="true"
-              DestinationFiles="$(SilKitDirBase)/SilKit.dll" />
-
-        <Message Text="Cleaning up SIL Kit (Windows) download artifacts..." Importance="High" />
-        <RemoveDir Directories="$(SilKitDirBase)/win" />
-        <Delete Files="$(SilKitDirBase)$(SilKitWinName).zip" />
-    </Target>
-
     <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
+
 </Project>
