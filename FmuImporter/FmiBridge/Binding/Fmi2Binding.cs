@@ -503,13 +503,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
     try
     {
+      CurrentState = States.Terminated;
       ProcessReturnCode(
         _fmi2Terminate(_component),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
-    finally
+    catch (Exception e)    
     {
-      CurrentState = States.Terminated;
+      Helpers.Log(Helpers.LogSeverity.Error, "Terminate encountered an error:" + e.ToString());
     }
   }
 

@@ -25,6 +25,8 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
   * The new SIL Kit serializer & deserializer are based on the implementation used in SIL Kit
   * This improves the reliability and understandability of the serialization
 * The initial unknowns of FMI 2.0.x FMUs are now initialized correctly
+* Fixed a possible infinite loop if the importer crashed before the FMU was initialized
+* The importer distributed output variable data even if the simulation step failed - this is not the case anymore
 
 ---
 

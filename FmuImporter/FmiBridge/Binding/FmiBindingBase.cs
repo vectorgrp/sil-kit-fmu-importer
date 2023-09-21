@@ -202,8 +202,16 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
     if ((FmiStatus)statusCode is FmiStatus.Discard or FmiStatus.Error)
     {
-      // attempt to terminate FMU gracefully
-      Terminate();
+      // Errors before the initialized state lead to the terminated state, otherwise Terminate() is called
+      if(CurrentState is States.Initial or States.Instantiated or States.InitializationMode)
+      {
+        CurrentState = States.Terminated;
+      }
+      else
+      {
+        // attempt to terminate FMU gracefully
+        Terminate();
+      }
     }
 
     try

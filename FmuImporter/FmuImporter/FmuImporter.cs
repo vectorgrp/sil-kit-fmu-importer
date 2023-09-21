@@ -537,6 +537,10 @@ public class FmuImporter
     finally
     {
       ExitFmuImporter();
+      if (CurrentSilKitStatus != SilKitStatus.ShutDown)
+      {
+        SilKitManager.WaitForLifecycleToComplete();
+      }
     }
   }
 
@@ -583,6 +587,7 @@ public class FmuImporter
     catch (Exception)
     {
       ExitFmuImporter();
+      return;
     }
 
     ConfiguredVariableManager.PublishOutputData(false);
