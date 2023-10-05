@@ -4,8 +4,8 @@
 using System.Text;
 using Fmi;
 using Fmi.Binding;
-using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
+using FmuImporter.Fmu;
 
 namespace VcdlExporter;
 
@@ -38,13 +38,15 @@ internal class Program
     {
       var inputFile = args[i];
 
-      switch (ModelLoader.FindFmiVersion(inputFile))
+      var fmuEntity = new FmuEntity(inputFile);
+
+      switch (fmuEntity.FmiVersion)
       {
         case FmiVersions.Fmi2:
-          ParseFmi2(Fmi2BindingFactory.CreateFmi2Binding(inputFile), interfaceSb, objectsSb);
+          ParseFmi2((IFmi2Binding)fmuEntity.Binding, interfaceSb, objectsSb);
           break;
         case FmiVersions.Fmi3:
-          ParseFmi3(Fmi3BindingFactory.CreateFmi3Binding(inputFile), interfaceSb, objectsSb);
+          ParseFmi3((IFmi3Binding)fmuEntity.Binding, interfaceSb, objectsSb);
           break;
         case FmiVersions.Invalid:
         default:

@@ -27,7 +27,7 @@ public class ReturnVariable
     uint[] valueReferences,
     T[] values,
     nint nValues,
-    ref ModelDescription modelDescription)
+    ModelDescription modelDescription)
     where T : notnull
   {
     var result = new ReturnVariable();
@@ -65,7 +65,7 @@ public class ReturnVariable
     uint[] valueReferences,
     T[] values,
     nint nValues,
-    ref ModelDescription modelDescription,
+    ModelDescription modelDescription,
     size_t[] nValueSizes)
     where T : notnull
   {

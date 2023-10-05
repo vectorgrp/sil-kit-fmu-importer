@@ -5,10 +5,14 @@ using Fmi.FmiModel.Internal;
 
 namespace FmuImporter.Config;
 
-public class ConfiguredVariable : ConfiguredVariablePublic
+public class ConfiguredVariable
 {
-  public Variable? FmuVariableDefinition { get; set; }
+  public ConfiguredVariable(VariableConfiguration importerVariableConfiguration, Variable fmuVariableDefinition)
+  {
+    ImporterVariableConfiguration = importerVariableConfiguration;
+    FmuVariableDefinition = fmuVariableDefinition;
+  }
 
-  // internal data
-  public object? SilKitService { get; set; }
+  public VariableConfiguration ImporterVariableConfiguration { get; set; }
+  public Variable FmuVariableDefinition { get; set; }
 }

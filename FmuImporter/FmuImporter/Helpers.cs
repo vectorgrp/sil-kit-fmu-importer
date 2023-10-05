@@ -3,7 +3,6 @@
 
 using Fmi;
 using FmuImporter.Config;
-using FmuImporter.Exceptions;
 using SilKit.Services.Logger;
 
 namespace FmuImporter;
@@ -16,19 +15,19 @@ public static class Helpers
   /// <param name="logSeverity">The severity log level from FMI</param>
   /// <returns>The severity log level in SIL Kit</returns>
   /// <exception cref="ArgumentOutOfRangeException">An unknown severity level was provided</exception>
-  public static LogLevel FmiLogLevelToSilKitLogLevel(Fmi.Helpers.LogSeverity logSeverity)
+  public static LogLevel FmiLogLevelToSilKitLogLevel(LogSeverity logSeverity)
   {
     switch (logSeverity)
     {
-      case Fmi.Helpers.LogSeverity.Error:
+      case LogSeverity.Error:
         return LogLevel.Error;
-      case Fmi.Helpers.LogSeverity.Warning:
+      case LogSeverity.Warning:
         return LogLevel.Warn;
-      case Fmi.Helpers.LogSeverity.Information:
+      case LogSeverity.Information:
         return LogLevel.Info;
-      case Fmi.Helpers.LogSeverity.Debug:
+      case LogSeverity.Debug:
         return LogLevel.Debug;
-      case Fmi.Helpers.LogSeverity.Trace:
+      case LogSeverity.Trace:
         return LogLevel.Trace;
       default:
         throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null);
@@ -132,11 +131,6 @@ public static class Helpers
 
   public static void ApplyLinearTransformationFmi(ref object deserializedData, ConfiguredVariable configuredVariable)
   {
-    if (configuredVariable.FmuVariableDefinition == null)
-    {
-      throw new InvalidConfigurationException("configuredVariable.FmuVariableDefinition == null");
-    }
-
     if (configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float32 &&
         configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float64)
     {
@@ -158,12 +152,7 @@ public static class Helpers
     ref object deserializedData,
     ConfiguredVariable configuredVariable)
   {
-    if (configuredVariable.FmuVariableDefinition == null)
-    {
-      throw new InvalidConfigurationException("configuredVariable.FmuVariableDefinition == null");
-    }
-
-    var transformation = configuredVariable.Transformation;
+    var transformation = configuredVariable.ImporterVariableConfiguration.Transformation;
     if (transformation != null && (transformation.Factor.HasValue || transformation.Offset.HasValue))
     {
       ApplyLinearTransformation(

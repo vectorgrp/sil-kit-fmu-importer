@@ -30,19 +30,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   internal States CurrentState { get; set; } = States.Initial;
 
-  internal ModelDescription _modelDescription;
-
-  public ModelDescription ModelDescription
-  {
-    get
-    {
-      return _modelDescription;
-    }
-    private set
-    {
-      _modelDescription = value;
-    }
-  }
+  public ModelDescription ModelDescription { get; }
 
   public string ExtractedFolderPath { get; }
   public string FullFmuLibPath { get; }
@@ -54,7 +42,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   {
     ExtractedFolderPath = ModelLoader.ExtractFmu(fmuPath);
 
-    _modelDescription = InitializeModelDescription(ExtractedFolderPath);
+    ModelDescription = InitializeModelDescription(ExtractedFolderPath);
 
     FullFmuLibPath =
       $"{Path.GetFullPath(ExtractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
@@ -203,7 +191,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     if ((FmiStatus)statusCode is FmiStatus.Discard or FmiStatus.Error)
     {
       // Errors before the initialized state lead to the terminated state, otherwise Terminate() is called
-      if(CurrentState is States.Initial or States.Instantiated or States.InitializationMode)
+      if (CurrentState is States.Initial or States.Instantiated or States.InitializationMode)
       {
         CurrentState = States.Terminated;
       }
@@ -216,12 +204,24 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
     try
     {
-      Helpers.Log(Helpers.LogSeverity.Error, result.Item2!.ToString());
+      Log(LogSeverity.Error, result.Item2!.ToString());
     }
     finally
     {
       // Throwing ensures that the FMU Importer will exit
       throw new NativeCallException(result.Item2?.ToString());
     }
+  }
+
+  protected void Log(LogSeverity severity, string message)
+  {
+    _loggerAction?.Invoke(LogSeverity.Error, message);
+  }
+
+  private Action<LogSeverity, string>? _loggerAction;
+
+  public void SetLoggerCallback(Action<LogSeverity, string> callback)
+  {
+    _loggerAction = callback;
   }
 }

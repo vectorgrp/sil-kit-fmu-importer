@@ -2,11 +2,14 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using Fmi.Binding.Helper;
+using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
 public interface IFmiBindingCommon : IDisposable
 {
+  public ModelDescription ModelDescription { get; }
+
   public void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type);
 
   public void SetValue(uint valueRef, byte[] data);
@@ -22,4 +25,6 @@ public interface IFmiBindingCommon : IDisposable
   public void FreeInstance();
 
   public FmiVersions GetFmiVersion();
+
+  public void SetLoggerCallback(Action<LogSeverity, string> callback);
 }

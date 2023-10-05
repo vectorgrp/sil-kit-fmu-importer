@@ -21,14 +21,6 @@ public delegate void Fmi3LogMessageCallback(
   string category,
   string message);
 
-public static class Fmi3BindingFactory
-{
-  public static IFmi3Binding CreateFmi3Binding(string fmuPath)
-  {
-    return new Fmi3Binding(fmuPath);
-  }
-}
-
 internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 {
   private IntPtr _component;
@@ -113,8 +105,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       }
       catch
       {
-        Helpers.Log(
-          Helpers.LogSeverity.Debug,
+        Log(
+          LogSeverity.Debug,
           $"FreeInstance in {GetType().FullName}.{System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "??"} " +
           $"threw an exception, which was ignored, because the Importer is currently exiting.");
       }
@@ -745,7 +737,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     if (terminateRequested)
     {
-      Helpers.Log(Helpers.LogSeverity.Information, "FMU requested simulation termination.");
+      Log(LogSeverity.Information, "FMU requested simulation termination.");
       Terminate();
     }
   }
@@ -835,7 +827,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -877,7 +869,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -919,7 +911,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -961,7 +953,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1003,7 +995,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1045,7 +1037,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1087,7 +1079,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1129,7 +1121,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1171,7 +1163,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1213,7 +1205,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1258,7 +1250,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
 
     var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1313,7 +1305,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       result[i] = str;
     }
 
-    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ref _modelDescription);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
@@ -1361,7 +1353,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       valueReferences,
       result,
       nValues,
-      ref _modelDescription,
+      ModelDescription,
       valueSizes);
   }
 

@@ -14,7 +14,7 @@ public class Configuration : ConfigurationPublic
   internal LinkedList<Configuration>? AllConfigurations { get; set; }
 
   private Dictionary<string, Parameter>? _resolvedParameters;
-  private Dictionary<string, ConfiguredVariable>? _resolvedVariables;
+  private Dictionary<string, VariableConfiguration>? _resolvedVariableConfigurations;
 
   internal Dictionary<string, Parameter> ResolvedParameters
   {
@@ -30,17 +30,17 @@ public class Configuration : ConfigurationPublic
     }
   }
 
-  internal Dictionary<string, ConfiguredVariable> ResolvedVariables
+  internal Dictionary<string, VariableConfiguration> ResolvedVariableConfigurations
   {
     get
     {
-      if (_resolvedVariables == null)
+      if (_resolvedVariableConfigurations == null)
       {
-        _resolvedVariables = new Dictionary<string, ConfiguredVariable>();
-        UpdateVariablesDictionary(ref _resolvedVariables);
+        _resolvedVariableConfigurations = new Dictionary<string, VariableConfiguration>();
+        UpdateVariablesDictionary(ref _resolvedVariableConfigurations);
       }
 
-      return _resolvedVariables;
+      return _resolvedVariableConfigurations;
     }
   }
 
@@ -138,9 +138,9 @@ public class Configuration : ConfigurationPublic
     return ResolvedParameters;
   }
 
-  public Dictionary<string, ConfiguredVariable> GetVariables()
+  public Dictionary<string, VariableConfiguration> GetVariables()
   {
-    return ResolvedVariables;
+    return ResolvedVariableConfigurations;
   }
 
   private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
@@ -165,11 +165,6 @@ public class Configuration : ConfigurationPublic
       {
         foreach (var parameter in config.Parameters)
         {
-          if (parameter.VariableName == null)
-          {
-            throw new InvalidConfigurationException("Parameters contained a variable without a variable name.");
-          }
-
           if (parameterDictionary.ContainsKey(parameter.VariableName))
           {
             SilKitLogger?.Log(
@@ -188,7 +183,7 @@ public class Configuration : ConfigurationPublic
     } while (currentConfigNode != null);
   }
 
-  private void UpdateVariablesDictionary(ref Dictionary<string, ConfiguredVariable> variableDictionary)
+  private void UpdateVariablesDictionary(ref Dictionary<string, VariableConfiguration> variableConfigurationDictionary)
   {
     if (AllConfigurations == null)
     {
@@ -208,23 +203,18 @@ public class Configuration : ConfigurationPublic
       var config = currentConfigNode.Value;
       if (config.VariableMappings != null)
       {
-        foreach (var variableMapping in config.VariableMappings)
+        foreach (var variableConfiguration in config.VariableMappings)
         {
-          if (variableMapping.VariableName == null)
-          {
-            throw new InvalidConfigurationException("VariableMapping contained a variable without a variable name.");
-          }
-
-          if (variableDictionary.ContainsKey(variableMapping.VariableName))
+          if (variableConfigurationDictionary.ContainsKey(variableConfiguration.VariableName))
           {
             SilKitLogger?.Log(
               LogLevel.Info,
-              $"Variable '{variableMapping.VariableName}' was defined in multiple configurations.");
-            variableDictionary[variableMapping.VariableName] = variableMapping;
+              $"Variable '{variableConfiguration.VariableName}' was defined in multiple configurations.");
+            variableConfigurationDictionary[variableConfiguration.VariableName] = variableConfiguration;
           }
           else
           {
-            variableDictionary.Add(variableMapping.VariableName, variableMapping);
+            variableConfigurationDictionary.Add(variableConfiguration.VariableName, variableConfiguration);
           }
         }
       }

@@ -50,7 +50,7 @@ public class DataPublisher : IDataPublisher
   private static extern int SilKit_DataPublisher_Create(
     [Out] out IntPtr outPublisher,
     [In] IntPtr participant,
-    [In] [MarshalAs(UnmanagedType.LPStr)] string controllerName,
+    [In, MarshalAs(UnmanagedType.LPStr)] string controllerName,
     [In] IntPtr dataSpec,
     [In] byte history);
 

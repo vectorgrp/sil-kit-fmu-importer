@@ -10,14 +10,14 @@ using SilKit.Supplements.VendorData;
 
 namespace FmuImporter.SilKit;
 
-public class SilKitManager : IDisposable
+public class SilKitEntity : IDisposable
 {
   private readonly Participant _participant;
   private readonly ILifecycleService _lifecycleService;
   private readonly ITimeSyncService _timeSyncService;
   public ILogger Logger { get; set; }
 
-  public SilKitManager(string? configurationPath, string participantName)
+  public SilKitEntity(string? configurationPath, string participantName)
   {
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
@@ -43,14 +43,14 @@ public class SilKitManager : IDisposable
 
 #region service creation
 
-  public IDataPublisher CreatePublisher(string serviceName, string topicName, byte historySize)
+  public IDataPublisher CreateDataPublisher(string serviceName, string topicName, byte historySize)
   {
     var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData);
 
     return _participant.CreateDataPublisher(serviceName, dataSpec, historySize);
   }
 
-  public IDataSubscriber CreateSubscriber(
+  public IDataSubscriber CreateDataSubscriber(
     string serviceName,
     string topicName,
     IntPtr context,
@@ -89,7 +89,7 @@ public class SilKitManager : IDisposable
 
 #region IDisposable
 
-  ~SilKitManager()
+  ~SilKitEntity()
   {
     Dispose(false);
   }

@@ -34,7 +34,6 @@ public struct Fmi2BindingCallbackFunctions
       freeMemory = Marshal.FreeHGlobal,
       stepFinished = (_, status) =>
       {
-        Helpers.Log(Helpers.LogSeverity.Debug, "Step finished with status = " + status);
         stepFinishedDelegate((FmiStatus)status);
       },
       componentEnvironment = IntPtr.Zero
@@ -83,14 +82,6 @@ public struct Fmi2BindingCallbackFunctions
     internal Fmi2CallbackFreeMemory freeMemory;
     internal Fmi2StepFinished stepFinished;
     internal IntPtr componentEnvironment;
-  }
-}
-
-public static class Fmi2BindingFactory
-{
-  public static IFmi2Binding CreateFmi2Binding(string fmuPath)
-  {
-    return new Fmi2Binding(fmuPath);
   }
 }
 
@@ -166,8 +157,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       }
       catch
       {
-        Helpers.Log(
-          Helpers.LogSeverity.Debug,
+        Log(
+          LogSeverity.Debug,
           $"FreeInstance in {GetType().FullName}.{System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "??"} " +
           $"threw an exception, which was ignored, because the Importer is currently exiting.");
       }
@@ -201,25 +192,25 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       case VariableTypes.Float64:
       {
         var vFmi = GetReal(valueRefs);
-        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ModelDescription);
         return;
       }
       case VariableTypes.Int32:
       {
         var vFmi = GetInteger(valueRefs);
-        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ModelDescription);
         return;
       }
       case VariableTypes.Boolean:
       {
         var vFmi = GetBoolean(valueRefs);
-        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ModelDescription);
         return;
       }
       case VariableTypes.String:
       {
         var vFmi = GetString(valueRefs);
-        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ref _modelDescription);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, vFmi, valueRefs.Length, ModelDescription);
         return;
       }
       case VariableTypes.EnumFmi2:
@@ -227,7 +218,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         var vFmi = GetInteger(valueRefs);
         // FMU Importer handles enums as Int64, not as Int32
         var convertedVFmi = Array.ConvertAll(vFmi, Convert.ToInt64);
-        result = ReturnVariable.CreateReturnVariable(valueRefs, convertedVFmi, valueRefs.Length, ref _modelDescription);
+        result = ReturnVariable.CreateReturnVariable(valueRefs, convertedVFmi, valueRefs.Length, ModelDescription);
         return;
       }
       default:
@@ -514,9 +505,9 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         _fmi2Terminate(_component),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
-    catch (Exception e)    
+    catch (Exception e)
     {
-      Helpers.Log(Helpers.LogSeverity.Error, "Terminate encountered an error:" + e.ToString());
+      Log(LogSeverity.Error, "Terminate encountered an error:" + e);
     }
   }
 
