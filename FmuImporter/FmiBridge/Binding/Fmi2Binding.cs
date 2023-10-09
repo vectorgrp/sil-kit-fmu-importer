@@ -1,6 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+// The commented out C Headers in this file belong to the source code of the FMI standard, which is licensed
+// under the BSD 2-Clause license (SPDX-License-Identifier: BSD-2-Clause)
+// Copyright (C) 2008-2011 MODELISAR consortium,
+//               2012-2022 Modelica Association Project "FMI"
+//               All rights reserved.
+
 using System.Runtime.InteropServices;
 using System.Text;
 using Fmi.Binding.Helper;

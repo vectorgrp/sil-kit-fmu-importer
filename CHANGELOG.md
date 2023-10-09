@@ -6,6 +6,18 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ---
 
+## [1.x.x] - TBD
+
+### Added
+
+* Added the license of the FMI standard source code to the third-party licenses
+
+### Changed
+
+* Renamed SIL Kit third party licenses from ThirdParty/sil-kit to ThirdParty/sil-kit-ThirdParty
+
+---
+
 ## [1.0.4] - 2023-09-26
 
 ### Changed
