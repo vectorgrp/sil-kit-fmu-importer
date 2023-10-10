@@ -15,4 +15,12 @@ public class ConfiguredVariable
 
   public VariableConfiguration ImporterVariableConfiguration { get; set; }
   public Variable FmuVariableDefinition { get; set; }
+
+  public string TopicName
+  {
+    get
+    {
+      return ImporterVariableConfiguration.TopicName ?? FmuVariableDefinition.Name;
+    }
+  }
 }

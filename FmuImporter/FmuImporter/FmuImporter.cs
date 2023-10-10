@@ -57,14 +57,7 @@ public class FmuImporter
       else
       {
         _fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
-        if (_fmuImporterConfig.Version == null || _fmuImporterConfig.Version == 0)
-        {
-          throw new InvalidConfigurationException(
-            "The provided configuration file did not contain a valid 'Version' field.");
-        }
-
         _fmuImporterConfig.SetSilKitLogger(SilKitEntity.Logger);
-
         _fmuImporterConfig.MergeIncludes();
       }
     }
@@ -173,7 +166,7 @@ public class FmuImporter
       {
         SilKitDataManager.CreateSubscriber(
           configuredVariable.FmuVariableDefinition.Name,
-          configuredVariable.ImporterVariableConfiguration.TopicName,
+          configuredVariable.TopicName,
           new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
       }
       else if (configuredVariable.FmuVariableDefinition.Causality
@@ -184,7 +177,7 @@ public class FmuImporter
       {
         SilKitDataManager.CreatePublisher(
           configuredVariable.FmuVariableDefinition.Name,
-          configuredVariable.ImporterVariableConfiguration.TopicName,
+          configuredVariable.TopicName,
           new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
           0);
       }

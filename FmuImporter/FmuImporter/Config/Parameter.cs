@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.ComponentModel.DataAnnotations;
+
 namespace FmuImporter.Config;
 
 public class Parameter
 {
-  public Parameter()
-  {
-    VariableName = string.Empty;
-    Value = new object();
-  }
+  [Required(ErrorMessage = "VariableName is a required parameter attribute.")]
+  public string VariableName { get; set; } = default!;
 
-  public string VariableName { get; set; }
-  public object Value { get; set; }
+  [Required(ErrorMessage = "Value is a required parameter attribute."),
+   StringLength(int.MaxValue, MinimumLength = 1, ErrorMessage = "A parameter value attribute must not be empty.")]
+  public object Value { get; set; } = default!;
 }

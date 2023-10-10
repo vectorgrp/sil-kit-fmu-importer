@@ -82,7 +82,7 @@ public class FmuDataManager
         if (!success)
         {
           // Only subscribe and publish unmapped variables if they are not ignored
-          if (importerConfiguration.IgnoreUnmappedVariables.GetValueOrDefault(false))
+          if (importerConfiguration.IgnoreUnmappedVariables)
           {
             continue;
           }

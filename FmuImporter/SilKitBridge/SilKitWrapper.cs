@@ -82,11 +82,11 @@ internal static class SilKitVersion
   {
     // CAN
 
-    CanFrame = 1,
-    CanFrameTransmitEvent = 2,
-    CanFrameEvent = 3,
-    CanStateChangeEvent = 4,
-    CanErrorStateChangeEvent = 5,
+    //CanFrame = 1,
+    //CanFrameTransmitEvent = 2,
+    //CanFrameEvent = 3,
+    //CanStateChangeEvent = 4,
+    //CanErrorStateChangeEvent = 5,
 
     // // CAN data type versions
     // #define SilKit_CanFrame_VERSION 1
@@ -104,11 +104,11 @@ internal static class SilKitVersion
 
     // Ethernet
 
-    EthernetFrameEvent = 1,
-    EthernetFrameTransmitEvent = 2,
-    EthernetStateChangeEvent = 3,
-    EthernetBitrateChangeEvent = 4,
-    EthernetFrame = 5,
+    //EthernetFrameEvent = 1,
+    //EthernetFrameTransmitEvent = 2,
+    //EthernetStateChangeEvent = 3,
+    //EthernetBitrateChangeEvent = 4,
+    //EthernetFrame = 5,
 
     // // Ethernet data type versions
     // #define SilKit_EthernetFrameEvent_VERSION 1
@@ -125,21 +125,21 @@ internal static class SilKitVersion
 
     // FlexRay
 
-    FlexrayFrameEvent = 1,
-    FlexrayFrameTransmitEvent = 2,
-    FlexraySymbolEvent = 3,
-    FlexraySymbolTransmitEvent = 5,
-    FlexrayCycleStartEvent = 6,
-    FlexrayPocStatusEvent = 7,
-    FlexrayWakeupEvent = 8,
-    FlexrayControllerConfig = 9,
-    FlexrayClusterParameters = 10,
-    FlexrayNodeParameters = 11,
-    FlexrayHostCommand = 12,
-    FlexrayHeader = 13,
-    FlexrayFrame = 14,
-    FlexrayTxBufferConfig = 15,
-    FlexrayTxBufferUpdate = 16,
+    //FlexrayFrameEvent = 1,
+    //FlexrayFrameTransmitEvent = 2,
+    //FlexraySymbolEvent = 3,
+    //FlexraySymbolTransmitEvent = 5,
+    //FlexrayCycleStartEvent = 6,
+    //FlexrayPocStatusEvent = 7,
+    //FlexrayWakeupEvent = 8,
+    //FlexrayControllerConfig = 9,
+    //FlexrayClusterParameters = 10,
+    //FlexrayNodeParameters = 11,
+    //FlexrayHostCommand = 12,
+    //FlexrayHeader = 13,
+    //FlexrayFrame = 14,
+    //FlexrayTxBufferConfig = 15,
+    //FlexrayTxBufferUpdate = 16,
 
     // // Flexray data type versions
     // #define SilKit_FlexrayFrameEvent_VERSION 1
