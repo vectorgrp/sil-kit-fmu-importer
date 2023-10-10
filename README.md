@@ -81,15 +81,16 @@ You can find a separate section below on how to use the importer.
 
 #### **vCDL Exporter**
 
-This tool allows you to export the model descriptions of FMUs as a vCDL file that can be imported into CANoe. To build it, open a terminal in the project's root directory (the one that contains FmuImporter.sln) and run the .NET build command
+This tool allows you to export the model descriptions of FMUs as a vCDL file that can be imported into CANoe. To build it, open a terminal in the VcdlExporter directory (the one that contains VcdlExporter.sln) and run the .NET build command
 
 - Windows: `dotnet build ./VcdlExporter/VcdlExporter.csproj -c Debug --no-self-contained -r win-x64`
 
 - Linux: `dotnet build ./VcdlExporter/VcdlExporter.csproj -c Debug --no-self-contained -r linux-x64`
 
+Alternatively, you can open the solution file in Visual Studio and build the vCDL Exporter from there.
+
 >Note: The vCDL exporter is currently a tool for internal debugging purposes and does not have any quality assurance.
 You may encounter crashes while using it.
-Also, the exporter may be removed from this project in an upcoming version.
 
 To export a vCDL you can run the following command from the folder where your vCDL Exporter binary resides:
 `VcdlExporter <Path/To/Exported/vCDL> [<Path/To/FMU>]*`

@@ -12,6 +12,10 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * The vCDL Exporter now also exports enumerators
 
+### Changed
+
+* Moved the vCDL Exporter to a separate solution
+
 ---
 
 ## [1.0.5] - 2023-10-09

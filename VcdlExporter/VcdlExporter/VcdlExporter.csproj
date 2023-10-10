@@ -1,0 +1,25 @@
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <FmuImporterSolutionDir>../../FmuImporter</FmuImporterSolutionDir>
+    </PropertyGroup>
+
+    <Import Project="$(FmuImporterSolutionDir)/build.props" />
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="..\..\FmuImporter\FmuImporter\Fmu\FmuEntity.cs" Link="FmuEntity.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="$(FmuImporterSolutionDir)/FmiBridge/FmiBridge.csproj" />
+    </ItemGroup>
+
+</Project>
