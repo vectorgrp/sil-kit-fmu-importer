@@ -1296,13 +1296,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     for (var i = 0; i < result.Length; i++)
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
-      if (str == null)
-      {
-        throw new NativeCallException(
-          $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
-      }
 
-      result[i] = str;
+      result[i] = str ?? throw new NativeCallException(
+                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
     }
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);

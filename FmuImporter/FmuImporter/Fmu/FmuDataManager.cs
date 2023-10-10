@@ -100,11 +100,6 @@ public class FmuDataManager
           }
         }
 
-        if (string.IsNullOrEmpty(variableConfiguration.TopicName))
-        {
-          variableConfiguration.TopicName = modelDescriptionVariable.Name;
-        }
-
         var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
         configuredVariableDictionary.Add(modelDescriptionVariable.ValueReference, configuredVariable);
 

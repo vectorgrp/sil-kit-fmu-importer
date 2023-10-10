@@ -16,11 +16,18 @@ public class ConfiguredVariable
   public VariableConfiguration ImporterVariableConfiguration { get; set; }
   public Variable FmuVariableDefinition { get; set; }
 
+  private string? _topicName;
+
   public string TopicName
   {
     get
     {
-      return ImporterVariableConfiguration.TopicName ?? FmuVariableDefinition.Name;
+      if (string.IsNullOrEmpty(_topicName))
+      {
+        _topicName = ImporterVariableConfiguration.TopicName ?? FmuVariableDefinition.Name;
+      }
+
+      return _topicName;
     }
   }
 }
