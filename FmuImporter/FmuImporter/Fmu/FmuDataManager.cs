@@ -101,6 +101,16 @@ public class FmuDataManager
         }
 
         var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
+        if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured)
+        {
+          var topic = configuredVariable.TopicName;
+          configuredVariable.StructuredPath = Fmi.Supplements.StructuredVariableParser.Parse(topic);
+        }
+        else
+        {
+          configuredVariable.StructuredPath = new List<string>() { configuredVariable.TopicName };
+        }
+
         configuredVariableDictionary.Add(modelDescriptionVariable.ValueReference, configuredVariable);
 
         relevantConfiguredVariables.Add(configuredVariable);

@@ -32,4 +32,6 @@ public class ConfiguredVariable
       return _topicName;
     }
   }
+
+  public List<string>? StructuredPath { get; set; }
 }

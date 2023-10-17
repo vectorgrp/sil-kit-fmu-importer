@@ -8,12 +8,19 @@ namespace Fmi.FmiModel.Internal;
 
 public class ModelDescription
 {
+  public enum VariableNamingConventions
+  {
+    Flat,
+    Structured
+  }
+
   // Former attributes
   public string ModelName { get; set; }
   public string Description { get; set; }
   public string InstantiationToken { get; set; }
   public string FmiVersion { get; set; }
   public string Version { get; set; }
+  public VariableNamingConventions VariableNamingConvention { get; set; }
 
 
   // Former nodes
@@ -50,6 +57,10 @@ public class ModelDescription
     InstantiationToken = input.instantiationToken.Normalize();
     FmiVersion = input.fmiVersion;
     Version = input.version;
+    VariableNamingConvention =
+      input.variableNamingConvention == Fmi3.fmiModelDescriptionVariableNamingConvention.structured
+        ? VariableNamingConventions.Structured
+        : VariableNamingConventions.Flat;
 
     // Node init
     CoSimulation = new CoSimulation(input.CoSimulation);
@@ -87,6 +98,10 @@ public class ModelDescription
     InstantiationToken = input.guid.Normalize();
     FmiVersion = input.fmiVersion;
     Version = input.version;
+    VariableNamingConvention =
+      input.variableNamingConvention == Fmi2.fmiModelDescriptionVariableNamingConvention.structured
+        ? VariableNamingConventions.Structured
+        : VariableNamingConventions.Flat;
 
     // Node init
     if (input.CoSimulation.Length < 1)
