@@ -101,7 +101,8 @@ public class FmuDataManager
         }
 
         var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
-        if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured)
+        if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
+            importerConfiguration.AlwaysUseStructuredNamingConvention)
         {
           var topic = configuredVariable.TopicName;
           configuredVariable.StructuredPath = Fmi.Supplements.StructuredVariableParser.Parse(topic);
@@ -121,6 +122,8 @@ public class FmuDataManager
             or Variable.Causalities.StructuralParameter
            )
         {
+          if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
+              importerConfiguration.AlwaysUseStructuredNamingConvention)
           AddConfiguredVariable(configuredVariable);
         }
         // ignore variables with other causalities, such as calculatedParameter or local

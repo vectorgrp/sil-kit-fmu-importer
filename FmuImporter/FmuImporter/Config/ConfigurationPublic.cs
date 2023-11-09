@@ -17,4 +17,6 @@ public class ConfigurationPublic
   public List<Parameter>? Parameters { get; set; }
   public List<VariableConfiguration>? VariableMappings { get; set; }
   public bool IgnoreUnmappedVariables { get; set; } = false;
+
+  public bool AlwaysUseStructuredNamingConvention { get; set; } = false;
 }
