@@ -227,7 +227,7 @@ public class Configuration : ConfigurationPublic
   {
     if (Path.IsPathFullyQualified(path))
     {
-      if (!File.Exists(path))
+      if (File.Exists(path))
       {
         return path;
       }
