@@ -24,7 +24,9 @@ public class ConfiguredVariable
     {
       if (string.IsNullOrEmpty(_topicName))
       {
-        _topicName = ImporterVariableConfiguration.TopicName ?? FmuVariableDefinition.Name;
+        _topicName = (string.IsNullOrEmpty(ImporterVariableConfiguration.TopicName))
+                       ? FmuVariableDefinition.Name
+                       : ImporterVariableConfiguration.TopicName;
       }
 
       return _topicName;
