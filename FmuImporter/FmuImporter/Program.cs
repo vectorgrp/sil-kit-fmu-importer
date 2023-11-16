@@ -3,6 +3,8 @@
 
 using System.CommandLine;
 using System.Globalization;
+using FmuImporter.SilKit;
+using SilKit.Services.Orchestration;
 
 namespace FmuImporter;
 
@@ -25,34 +27,70 @@ internal class Program
 
     var silKitConfigFileOption = new Option<string?>(
       "--sil-kit-config-file",
-      description: "Set the path to the SIL Kit configuration file. Defaults to an empty configuration.",
-      getDefaultValue: () => null);
+      description: "Set the path to the SIL Kit configuration file.");
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
     var fmuImporterConfigFileOption = new Option<string?>(
       "--fmu-importer-config-file",
-      description: "Set the path to the FMU Importer configuration file. Defaults to an empty configuration.",
-      getDefaultValue: () => null);
+      description: "Set the path to the FMU Importer configuration file.");
     fmuImporterConfigFileOption.AddAlias("-c");
     rootCommand.AddOption(fmuImporterConfigFileOption);
 
     var participantNameOption = new Option<string>(
       "--participant-name",
-      description: "Set the name of the SIL Kit participant. Defaults to 'sil-kit-fmu-importer'.",
+      description: "Set the name of the SIL Kit participant.",
       getDefaultValue: () => "sil-kit-fmu-importer");
     participantNameOption.AddAlias("-p");
     rootCommand.AddOption(participantNameOption);
 
     var useStopTimeOption = new Option<bool>(
       "--use-stop-time",
-      description: "Use the FMUs stop time (if it is provided). Stop time is ignored by default.",
+      description: "Use the FMUs stop time (if it is provided).",
       getDefaultValue: () => false);
     useStopTimeOption.AddAlias("-t");
     rootCommand.AddOption(useStopTimeOption);
 
+    var lifecycleModeOption = new Option<string>(
+        "--operation-mode",
+        description:
+        "Choose the lifecycle mode.",
+        getDefaultValue: () => "coordinated")
+      .FromAmong(
+        "coordinated",
+        "autonomous");
+    rootCommand.AddOption(lifecycleModeOption);
+
+    var timeSyncModeOption = new Option<string>(
+        "--time-sync-mode",
+        description:
+        "Choose the time synchronization mode.",
+        getDefaultValue: () => "synchronized")
+      .FromAmong(
+        "synchronized",
+        "unsynchronized");
+    rootCommand.AddOption(timeSyncModeOption);
+
+    var useWallClockAlignmentOption = new Option<string>(
+        "--pacing-mode",
+        description:
+        "Choose the pacing of the simulation.",
+        getDefaultValue: () => "as-fast-as-possible")
+      .FromAmong(
+        "as-fast-as-possible",
+        "wall-clock");
+    rootCommand.AddOption(useWallClockAlignmentOption);
+
     rootCommand.SetHandler(
-      (fmuPath, silKitConfigFile, fmuImporterConfigFile, participantName, useStopTime) =>
+      (
+        fmuPath,
+        silKitConfigFile,
+        fmuImporterConfigFile,
+        participantName,
+        useStopTime,
+        lifecycleMode,
+        timeSyncMode,
+        pacingMode) =>
       {
         if (!File.Exists(fmuPath))
         {
@@ -71,12 +109,48 @@ internal class Program
             $"The provided FMU Importer configuration file path ({fmuImporterConfigFile}) is invalid.");
         }
 
+        var parseSucceeded = Enum.TryParse(
+          lifecycleMode,
+          true,
+          out LifecycleService.LifecycleConfiguration.Modes parsedLifecycleMode);
+        if (!parseSucceeded)
+        {
+          throw new ArgumentException(
+            $"The provided lifecycle mode '{lifecycleMode}' is invalid. " +
+            $"Available options are 'autonomous' and 'coordinated'.");
+        }
+
+        parseSucceeded = Enum.TryParse(
+          timeSyncMode,
+          true,
+          out TimeSyncModes parsedTimeSyncMode);
+        if (!parseSucceeded)
+        {
+          throw new ArgumentException(
+            $"The provided time synchronization mode '{timeSyncMode}' is invalid. " +
+            $"Available options are 'synchronized' and 'unsynchronized'.");
+        }
+
+        parseSucceeded = Enum.TryParse(
+          pacingMode.Replace("-", string.Empty),
+          true,
+          out PacingModes parsedPacingMode);
+        if (!parseSucceeded)
+        {
+          throw new ArgumentException(
+            $"The provided pacing mode '{pacingMode} is invalid. " +
+            $"Available options are 'as-fast-as-possible' and 'wall-clock'.");
+        }
+
         var instance = new FmuImporter(
           fmuPath,
           silKitConfigFile,
           fmuImporterConfigFile,
           participantName,
-          useStopTime);
+          useStopTime,
+          parsedLifecycleMode,
+          parsedTimeSyncMode,
+          parsedPacingMode);
 
         instance.StartSimulation();
         instance.Dispose();
@@ -85,7 +159,10 @@ internal class Program
       silKitConfigFileOption,
       fmuImporterConfigFileOption,
       participantNameOption,
-      useStopTimeOption);
+      useStopTimeOption,
+      lifecycleModeOption,
+      timeSyncModeOption,
+      useWallClockAlignmentOption);
 
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>

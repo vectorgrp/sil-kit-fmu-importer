@@ -6,6 +6,8 @@ namespace SilKit.Services.Orchestration;
 // LifecycleService
 public delegate void CommunicationReadyHandler();
 
+public delegate void StartingHandler();
+
 public delegate void StopHandler();
 
 public delegate void ShutdownHandler();

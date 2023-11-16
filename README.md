@@ -114,17 +114,63 @@ Available options are:
 
 | Option | Description |
 | ------ | ----------- |
-|-f, --fmu-path \<fmu-path> (REQUIRED) | Set the path to the FMU file (.fmu). This is mandatory. |
-| -c, --sil-kit-config-file \<sil-kit-config-file> | Set the path to the SIL Kit configuration file. Defaults to an empty configuration. |
-| -p, --participant-name \<participant-name> | Set the name of the SIL Kit participant. Defaults to `sil-kit-fmu-importer`. |
-| -t, --use-stop-time | Use the FMUs stop time (if it is provided). Stop time is ignored by default. |
+| -f, --fmu-path \<fmu-path> (REQUIRED) | Set the path to the FMU file (.fmu). **This is mandatory.** |
+| -s, --sil-kit-config-file \<sil-kit-config-file> | Set the path to the SIL Kit configuration file. |
+| -c, --fmu-importer-config-file \<fmu-importer-config-file>  | Set the path to the FMU Importer configuration file. |
+| -p, --participant-name \<participant-name> | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
+| -t, --use-stop-time | Use the FMUs stop time (if it is provided). [default: False] |
+| --operation-mode \<autonomous \| coordinated>  | Choose the lifecycle mode. [default: coordinated] |
+  --time-sync-mode \<synchronized \| unsynchronized> | Choose the time synchronization mode. [default: synchronized] |
+| --pacing-mode \<as-fast-as-possible \| wall-clock> | Choose the pacing of the simulation. [default: as-fast-as-possible] |
+| --version | Show version information |
 | -?, -h, --help | Show help and usage information |
 
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
-If none was provided or if the configuration file did not specify a registry URI, the default URI `silkit://localhost:8500` will be assumed.
+If no configuration was provided or if it did not specify a registry URI, the default URI `silkit://localhost:8500` will be used.
 
->The FMU Importer starts a SIL Kit participant that uses a coordinated lifecycle and virtual time synchronization.
+
+## **Lifecycle and Time Synchronization Modes**
+
+The FMU Importer offers several options that affect its mode of operation (operation mode, time synchronization mode, wall clock alignment).
+These options only affect the interaction of the FMU Importer's SIL Kit component with other SIL Kit participants, but they do not affect how the FMU Importer interacts with the FMU.
+The following gives a brief summary of how the different options affect the FMU Importer's behavior.
+For details how the operation mode and time synchronization mode affect SIL Kit, refer to the [SIL Kit Documentation](https://vectorgrp.github.io/sil-kit-docs/).
+
+### **Operation Mode**
+The startup behavior of the FMU Importer is affected by the operation mode.
+By default, this is set to be `coordinated`, which means that the FMU Importer will first wait until all required participants have joined the SIL Kit simulation and then coordinate the lifecycle state with them. As a result, all participants will start the actual simulation at the same time.
+Further, if any of the required participants stops the simulation, all other participants will stop as well.
+
+Alternatively, the operation mode can be set to `autonomous`.
+In that case, the Importer will ignore other participants and directly start its lifecycle and proceed to the start of the simulation.
+Further, an autonomous participant can only be stopped by other SIL Kit participants (except if the simulation is aborted).
+Currently, an autonomous FMU Importer can only be stopped by either reaching the stop time of the FMU (needs the --use-stop-time option) or by manually terminating the application.
+
+>By default, the FMU Importer starts a SIL Kit participant that uses a coordinated lifecycle.
 This means that you need to start a `sil-kit-system-controller` (part of SIL Kit) that comprises the FMU Importer's participant name as well as all other required participants.
+
+### **Time Synchronization Mode**
+
+The time synchronization mode affects the simulation progression itself.
+By default, the FMU Importer's simulation time will be `synchronized` with other SIL Kit participants through SIL Kit's `virtual time synchronization`.
+An active virtual time synchronization ensures that all data from previous points in virtual time were received before processing the next simulation step.
+
+By running the FMU Importer without virtual time synchronization (`unsynchronized`), it will handle its own simulation steps as fast as possible. 
+Please note that it is not possible to artificially wait for external events with specific time stamps, as these are not available to the importer in unsynchronized mode.
+
+>When joining an already running simulation with virtual time synchronization, the FMU Importer will use the initial virtual time as offset and act as if the simulation was just started.
+
+### **Pacing Mode**
+
+The simulation step handling of the FMU Importer is coupled to the simulation step handler of its SIL Kit component.
+SIL Kit always executes its simulation steps as fast as possible (with virtual time synchronization this means that all other participants finished their past simulation steps).
+By default, the FMU Importer executes the simulation steps as soon as the SIL Kit component signals that a simulation step may be performed (`as fast as possible`).
+However, it may be desirable to artificially delay the execution of the simulation steps to align them with the system's wall clock (and therefore slow down the simulation time to the real time).
+The FMU Importer can set the pace of the simulation steps to align with the `wall clock`.
+In this case, the simulation steps will be artificially slowed down, e.g., a one second simulation step would also take approximately one second in real time.
+It is important that the FMU Importer is not designed as a real-time application and cannot guarantee that the simulation steps will always have a perfect alignment with the real time, but it will stay as close as possible in the long run.
+>Please note that the wall clock pacing assumes that the overall simulation can be executed faster than real time. 
+If this is not the case, the FMU Importer will behave in wall clock pacing mode as it would in the as fast as possible pacing mode.
 
 ## **Data and Time Synchronization between SIL Kit and FMUs**
 

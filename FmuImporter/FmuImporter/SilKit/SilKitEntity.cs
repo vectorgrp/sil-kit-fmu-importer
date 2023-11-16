@@ -10,15 +10,37 @@ using SilKit.Supplements.VendorData;
 
 namespace FmuImporter.SilKit;
 
+public enum TimeSyncModes
+{
+  Synchronized,
+  Unsynchronized
+}
+
+public enum PacingModes
+{
+  AsFastAsPossible,
+  WallClock
+}
+
 public class SilKitEntity : IDisposable
 {
   private readonly Participant _participant;
   private readonly ILifecycleService _lifecycleService;
   private readonly ITimeSyncService _timeSyncService;
+  public TimeSyncModes TimeSyncMode { get; }
   public ILogger Logger { get; set; }
+  public PacingModes PacingMode { get; }
 
-  public SilKitEntity(string? configurationPath, string participantName)
+  public SilKitEntity(
+    string? configurationPath,
+    string participantName,
+    LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
+    TimeSyncModes timeSyncMode,
+    PacingModes pacingMode)
   {
+    TimeSyncMode = timeSyncMode;
+    PacingMode = pacingMode;
+
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
     if (string.IsNullOrEmpty(configurationPath))
@@ -30,11 +52,23 @@ public class SilKitEntity : IDisposable
       config = wrapper.GetConfigurationFromFile(configurationPath);
     }
 
-    var lc = new LifecycleService.LifecycleConfiguration(LifecycleService.LifecycleConfiguration.Modes.Coordinated);
+    var lc = new LifecycleService.LifecycleConfiguration(lifecycleMode);
 
     _participant = wrapper.CreateParticipant(config, participantName);
     _lifecycleService = _participant.CreateLifecycleService(lc);
-    _timeSyncService = _lifecycleService.CreateTimeSyncService();
+    switch (timeSyncMode)
+    {
+      case TimeSyncModes.Synchronized:
+        _timeSyncService = _lifecycleService.CreateTimeSyncService();
+        break;
+      case TimeSyncModes.Unsynchronized:
+        _timeSyncService = new RealTimeService();
+        break;
+      default:
+        throw new ArgumentOutOfRangeException(nameof(timeSyncMode), timeSyncMode, "Invalid time synchronization mode.");
+    }
+
+    _lifecycleService.SetStartingHandler(OnSimulationStarting);
 
     // get logger
     Logger = _participant.GetLogger();
@@ -83,6 +117,16 @@ public class SilKitEntity : IDisposable
   public void StopSimulation(string reason)
   {
     _lifecycleService.Stop(reason);
+    if (TimeSyncMode == TimeSyncModes.Unsynchronized)
+    {
+      ((RealTimeService)_timeSyncService).Stop();
+    }
+  }
+
+  private void OnSimulationStarting()
+  {
+    // only occurs if virtual time synchronization is inactive
+    ((RealTimeService)_timeSyncService).Start();
   }
 
 #endregion simulation control

@@ -12,6 +12,7 @@ public interface ILifecycleService
   public ITimeSyncService CreateTimeSyncService();
 
   public void SetCommunicationReadyHandler(CommunicationReadyHandler communicationReadyHandler);
+  public void SetStartingHandler(StartingHandler startingHandler);
   public void SetStopHandler(StopHandler stopHandler);
   public void SetShutdownHandler(ShutdownHandler shutdownHandler);
 }

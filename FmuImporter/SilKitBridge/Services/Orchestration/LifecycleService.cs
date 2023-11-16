@@ -61,8 +61,6 @@ public class LifecycleService : ILifecycleService
       }
     }
 
-    private readonly SimulationStepHandler _simStepHandlerDelegate;
-
 #region ctor & dtor
 
     internal TimeSyncService(LifecycleService lifecycleService)
@@ -95,6 +93,8 @@ public class LifecycleService : ILifecycleService
 #endregion ctor & dtor
 
 #region callback handling
+
+    private readonly SimulationStepHandler _simStepHandlerDelegate;
 
     private Orchestration.SimulationStepHandler? _simulationStepHandler;
 
@@ -164,6 +164,7 @@ public class LifecycleService : ILifecycleService
   }
 
   private readonly CommunicationReadyHandler _communicationReadyHandlerDelegate;
+  private readonly StartingHandler _startingHandlerDelegate;
   private readonly StopHandler _stopHandlerDelegate;
   private readonly ShutdownHandler _shutdownHandlerDelegate;
 
@@ -172,6 +173,7 @@ public class LifecycleService : ILifecycleService
   internal LifecycleService(Participant participant, LifecycleConfiguration lc)
   {
     _communicationReadyHandlerDelegate = CommunicationReadyHandlerInternal;
+    _startingHandlerDelegate = StartingHandlerInternal;
     _stopHandlerDelegate = StopHandlerInternal;
     _shutdownHandlerDelegate = ShutdownHandlerInternal;
 
@@ -313,6 +315,45 @@ public class LifecycleService : ILifecycleService
   private delegate void CommunicationReadyHandler(
     IntPtr context,
     IntPtr lifecycleService);
+
+  private Orchestration.StartingHandler? _startingHandler;
+
+  public void SetStartingHandler(Orchestration.StartingHandler startingHandler)
+  {
+    _startingHandler = startingHandler;
+    Helpers.ProcessReturnCode(
+      (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetStartingHandler(
+        LifecycleServicePtr,
+        out _,
+        _startingHandlerDelegate),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+  }
+
+  private void StartingHandlerInternal(IntPtr context, IntPtr lifecycleService)
+  {
+    // double check if this is the correct lifecycle service
+    if (lifecycleService != LifecycleServicePtr)
+    {
+      return;
+    }
+
+    _startingHandler?.Invoke();
+  }
+
+  private delegate void StartingHandler(
+    IntPtr context,
+    IntPtr lifecycleService);
+
+  /*
+      SilKit_LifecycleService_SetStartingHandler(
+          SilKit_LifecycleService* lifecycleService, void* context, SilKit_LifecycleService_StartingHandler_t handler);
+  */
+  [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+  private static extern int SilKit_LifecycleService_SetStartingHandler(
+    [In] IntPtr lifecycleService,
+    [Out] out IntPtr context,
+    StartingHandler handler
+  );
 
   private Orchestration.StopHandler? _stopHandler;
 

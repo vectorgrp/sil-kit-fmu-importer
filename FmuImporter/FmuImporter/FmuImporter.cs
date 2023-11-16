@@ -1,12 +1,14 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Diagnostics;
 using Fmi;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Exceptions;
 using FmuImporter.Fmu;
 using FmuImporter.SilKit;
 using SilKit.Services.Logger;
+using SilKit.Services.Orchestration;
 
 namespace FmuImporter;
 
@@ -41,9 +43,17 @@ public class FmuImporter
     string? silKitConfigurationPath,
     string? fmuImporterConfigFilePath,
     string participantName,
-    bool useStopTime)
+    bool useStopTime,
+    LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
+    TimeSyncModes timeSyncMode,
+    PacingModes pacingMode)
   {
-    SilKitEntity = new SilKitEntity(silKitConfigurationPath, participantName);
+    SilKitEntity = new SilKitEntity(
+      silKitConfigurationPath,
+      participantName,
+      lifecycleMode,
+      timeSyncMode,
+      pacingMode);
     SilKitDataManager = new SilKitDataManager(SilKitEntity);
     CurrentSilKitStatus = SilKitStatus.Initialized;
 
@@ -218,7 +228,10 @@ public class FmuImporter
     }
   }
 
+  private ulong? _initialSimTime;
   private ulong? _lastSimStep;
+  private Stopwatch? _stopWatch;
+  private long _nextSimTime;
 
   private void SimulationStepReached(ulong nowInNs, ulong durationInNs)
   {
@@ -227,21 +240,66 @@ public class FmuImporter
       throw new NullReferenceException($"{nameof(FmuDataManager)} was null.");
     }
 
-    if (nowInNs == 0)
+    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Exited)
     {
+      ExitFmuImporter();
+      return;
+    }
+
+    // wall-clock alignment init
+    if (SilKitEntity.PacingMode == PacingModes.WallClock)
+    {
+      long elapsedTime;
+      if (_stopWatch == null)
+      {
+        _stopWatch = new Stopwatch();
+        _stopWatch.Start();
+        elapsedTime = 0;
+      }
+      else
+      {
+        elapsedTime = _stopWatch.ElapsedMilliseconds;
+      }
+
+      // in ms
+      var deltaToNextSimStep = _nextSimTime - (elapsedTime * 1_000_000);
+      // TODO improve timer performance to decrease threshold (ms is a lot)
+      if (deltaToNextSimStep > 2 * 1_000_000 /* 2 ms in ns */)
+      {
+        new ManualResetEvent(false).WaitOne((int)(deltaToNextSimStep / 1_000_000));
+      }
+
+      if (IsSimulationStopped())
+      {
+        return;
+      }
+
+      _nextSimTime += (long)durationInNs;
+    }
+
+    if (_initialSimTime == null)
+    {
+      _lastSimStep = nowInNs;
+      _initialSimTime = nowInNs;
       // skip initialization - it was done already.
       // However, publish all initial output variable values
       var initialData = FmuDataManager.GetInitialData();
       SilKitDataManager.PublishAll(initialData);
-      _lastSimStep = nowInNs;
       return;
     }
 
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
-    var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep ?? nowInNs - durationInNs);
+    var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value);
     FmuDataManager.SetData(receivedSilKitData);
 
     _lastSimStep = nowInNs;
+
+
+    if (_initialSimTime > 0)
+    {
+      // apply offset to initial time in hop-on scenario
+      nowInNs -= _initialSimTime.Value;
+    }
 
     // Calculate simulation step
     var fmiNow = Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
@@ -267,8 +325,17 @@ public class FmuImporter
       {
         // stop the SIL Kit simulation
         SilKitEntity.StopSimulation("FMU stopTime reached.");
+        _stopWatch?.Stop();
+        _stopWatch = null;
       }
     }
+  }
+
+  private bool IsSimulationStopped()
+  {
+    return FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Exited ||
+           CurrentSilKitStatus == SilKitStatus.Stopped ||
+           CurrentSilKitStatus == SilKitStatus.ShutDown;
   }
 
   public void ExitFmuImporter()

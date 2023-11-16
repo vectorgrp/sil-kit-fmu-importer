@@ -15,6 +15,10 @@ public class SilKitDataManager : IDisposable
     _silKitEntity = silKitEntity;
 
     DataBuffer = new SortedList<ulong, Dictionary<uint, byte[]>>();
+    if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized)
+    {
+      DataBuffer.Add(0, new Dictionary<uint, byte[]>());
+    }
 
     ValueRefToPublisher = new Dictionary<uint, IDataPublisher>();
     ValueRefToSubscriber = new Dictionary<uint, IDataSubscriber>();
@@ -76,6 +80,7 @@ public class SilKitDataManager : IDisposable
     // Use a last-is-best approach for storage
 
     var valueRef = (uint)context;
+    var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : dataMessageEvent.TimestampInNS;
 
     // data is processed in sim. step callback (SimulationStepReached)
     if (DataBuffer.TryGetValue(dataMessageEvent.TimestampInNS, out var futureDict))
@@ -105,7 +110,7 @@ public class SilKitDataManager : IDisposable
     var valueUpdates = new Dictionary<uint, byte[]>();
     foreach (var timeDataPair in DataBuffer)
     {
-      if (timeDataPair.Key <= currentTime)
+      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
       {
         foreach (var dataBufferKvp in timeDataPair.Value)
         {
