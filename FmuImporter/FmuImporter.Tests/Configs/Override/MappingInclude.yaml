@@ -1,0 +1,28 @@
+# Included by MappingRoot.yaml
+Version: 1
+
+VariableMappings:
+  - VariableName: TopicOverride
+    TopicName: "IncludeTopic"
+
+  - VariableName: OffsetOverride
+    Transformation:
+      Offset: 42.0
+      Factor: 2 # non-neutral element
+
+  - VariableName: FactorOverride
+    Transformation:
+      Offset: 2 # non-neutral element
+      Factor: 42.0
+
+  - VariableName: TypeOverride
+    Transformation:
+      TransmissionType: Float64
+
+  - VariableName: ReverseTransformToTrueOverride
+    Transformation:
+      ReverseTransform: False
+
+  - VariableName: ReverseTransformToFalseOverride
+    Transformation:
+      ReverseTransform: True

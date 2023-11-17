@@ -1,0 +1,6 @@
+Version: 1
+
+Parameters:
+  - VariableName: ValidInt32
+    Value: 7
+    Topic: RandomField

@@ -1,0 +1,8 @@
+# Included by ParameterRoot.yaml
+Version: 1
+
+Parameters:
+  - VariableName: Global
+    Value: 42.0
+  - VariableName: OnlyInclude
+    Value: 7.0

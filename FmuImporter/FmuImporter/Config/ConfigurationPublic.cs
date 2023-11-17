@@ -9,7 +9,7 @@ public class ConfigurationPublic
 {
   private const int MaxConfigVersion = 1;
 
-  [Required, Range(1, MaxConfigVersion)]
+  [Required(ErrorMessage = "Version is a required attribute."), Range(1, MaxConfigVersion)]
   public int Version { get; set; } = default!;
 
   public UInt64? StepSize { get; set; }

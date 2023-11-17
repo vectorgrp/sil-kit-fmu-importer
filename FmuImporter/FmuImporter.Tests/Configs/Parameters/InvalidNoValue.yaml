@@ -1,0 +1,4 @@
+Version: 1
+
+Parameters:
+  - VariableName: ValidInt32

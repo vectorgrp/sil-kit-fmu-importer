@@ -22,6 +22,12 @@ jobs:
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
 
+    - name: Build Tests
+      run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
+
+    - name: Run Tests
+      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+
   # Get environment variable for docker image URI and provide it to next build step
   prep-linux:
     runs-on: [Ubuntu-20.04]
@@ -59,3 +65,9 @@ jobs:
 
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+
+    - name: Build Tests
+      run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
+
+    - name: Run Tests
+      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll

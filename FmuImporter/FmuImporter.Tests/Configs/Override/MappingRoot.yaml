@@ -1,0 +1,28 @@
+Version: 1
+
+Include:
+  - MappingInclude.yaml
+
+VariableMappings:
+  - VariableName: TopicOverride
+    TopicName: "LocalTopic"
+
+  - VariableName: OffsetOverride
+    Transformation:
+      Offset: 7.0
+
+  - VariableName: FactorOverride
+    Transformation:
+      Factor: 7.0
+
+  - VariableName: TypeOverride
+    Transformation:
+      TransmissionType: Float32
+
+  - VariableName: ReverseTransformToTrueOverride
+    Transformation:
+      ReverseTransform: True
+
+  - VariableName: ReverseTransformToFalseOverride
+    Transformation:
+      ReverseTransform: False

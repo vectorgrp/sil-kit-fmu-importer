@@ -18,7 +18,6 @@
     <PropertyGroup>
         <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
         <GenerateAssemblyCopyrightInfo>True</GenerateAssemblyCopyrightInfo>
-        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
 
         <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

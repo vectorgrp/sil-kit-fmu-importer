@@ -1,0 +1,5 @@
+Version: 1
+
+VariableMappings:
+  - VariableName: ValidInt32
+  - VariableName: ValidFloat64

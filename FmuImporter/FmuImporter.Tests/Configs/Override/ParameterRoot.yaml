@@ -1,0 +1,10 @@
+Version: 1
+
+Include:
+  - ParameterInclude.yaml
+
+Parameters:
+  - VariableName: OnlyLocal
+    Value: 7.0
+  - VariableName: Global
+    Value: 7.0

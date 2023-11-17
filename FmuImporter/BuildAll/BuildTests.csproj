@@ -1,0 +1,26 @@
+﻿<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildXPlatform">
+    <Import Project="../common.props" Condition="$(CommonImported) == ''" />
+
+    <Target Name="BuildXPlatform" BeforeTargets="Build">
+        <PropertyGroup>
+            <BuildPath>$(MSBuildThisFileDirectory)/../</BuildPath>
+            <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release -p:Version=$(Version) -v:m </DefaultProperties>
+            <StandaloneBuild>-p:Standalone=True </StandaloneBuild>
+            <CrossPlatformBuild>-p:Standalone=False</CrossPlatformBuild>
+            <EnvVar>MSBuildSDKsPath=; MSBuildExtensionsPath=</EnvVar>
+        </PropertyGroup>
+        <PropertyGroup>
+            <PublishPath>$(MSBuildProjectDirectory)/../_publish/</PublishPath>
+            <CrossPlatformTargetFolderName>SilKitFmuImporter-$(Version)-xPlatform-x64</CrossPlatformTargetFolderName>
+        </PropertyGroup>
+
+        <!-- cross-platform x64 -->
+        <Exec
+            Command="dotnet build $(BuildPath)FmuImporter.Tests/FmuImporter.Tests.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild)"
+            EnvironmentVariables="$(EnvVar)" />
+    </Target>
+    
+</Project>

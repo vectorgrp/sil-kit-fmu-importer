@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		downloadSilKit.props = downloadSilKit.props
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuImporter.Tests", "FmuImporter.Tests\FmuImporter.Tests.csproj", "{E4186225-8D6A-4F20-BBB5-B5E1B974F909}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -34,6 +36,10 @@ Global
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Debug|x64.Build.0 = Debug|x64
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|x64.ActiveCfg = Release|x64
 		{DBA3A75A-95AD-4BA9-B4D8-EF27ED6940CE}.Release|x64.Build.0 = Release|x64
+		{E4186225-8D6A-4F20-BBB5-B5E1B974F909}.Debug|x64.ActiveCfg = Debug|x64
+		{E4186225-8D6A-4F20-BBB5-B5E1B974F909}.Debug|x64.Build.0 = Debug|x64
+		{E4186225-8D6A-4F20-BBB5-B5E1B974F909}.Release|x64.ActiveCfg = Release|x64
+		{E4186225-8D6A-4F20-BBB5-B5E1B974F909}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

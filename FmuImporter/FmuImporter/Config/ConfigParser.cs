@@ -26,14 +26,49 @@ public static class ConfigParser
       Func<IParser, Type, object?> nestedObjectDeserializer,
       out object? value)
     {
-      var success = _nodeDeserializer.Deserialize(reader, expectedType, nestedObjectDeserializer, out value);
-      if (success)
+      try
       {
-        var context = new ValidationContext(value!, null, null);
-        Validator.ValidateObject(value!, context);
-      }
+        var success = _nodeDeserializer.Deserialize(reader, expectedType, nestedObjectDeserializer, out value);
+        if (success)
+        {
+          try
+          {
+            var context = new ValidationContext(value!, null, null);
+            Validator.ValidateObject(value!, context, true);
+          }
+          catch (ValidationException e)
+          {
+            ;
+            //success = false;
+            throw new InvalidConfigurationException($"The configuration is invalid: {e.Message}", e);
+          }
+          catch (Exception)
+          {
+            throw;
+          }
+        }
 
-      return success;
+        return success;
+      }
+      catch (InvalidConfigurationException)
+      {
+        throw;
+      }
+      catch (YamlException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw new InvalidConfigurationException($"{e.InnerException.Message}", e);
+        }
+        else
+        {
+          throw new InvalidConfigurationException($"The configuration is invalid. Parser reported: {e.Message}", e);
+        }
+      }
+      catch (Exception e)
+      {
+        throw new InvalidConfigurationException($"The configuration is invalid: {e.Message}", e);
+      }
     }
   }
 
@@ -55,9 +90,34 @@ public static class ConfigParser
         throw new InvalidConfigurationException("Failed to deserialize the provided FMU configuration file");
       }
     }
-    catch (ValidationException e)
+    catch (Exception e)
     {
-      throw new InvalidConfigurationException("The configuration is invalid.", e);
+      var currentException = e;
+      var continueDescending = currentException.InnerException != null && currentException is not InvalidConfigurationException;
+
+      while (continueDescending)
+      {
+        if (currentException is YamlException yamlException)
+        {
+          if (currentException.InnerException != null && currentException.InnerException is YamlException or InvalidConfigurationException)
+          {
+            currentException = currentException.InnerException;
+            continue;
+          }
+
+          currentException = new InvalidConfigurationException(
+            $"Invalid configuration. Issue detected between {yamlException.Start} and {yamlException.End}.",
+            yamlException);
+        }
+        else
+        {
+          currentException = new InvalidConfigurationException(
+            $"Invalid configuration. {currentException.Message}", currentException);
+        }
+        continueDescending = false;
+      }
+
+      throw currentException;
     }
 
     config.ConfigurationPath = Path.GetFullPath(path);

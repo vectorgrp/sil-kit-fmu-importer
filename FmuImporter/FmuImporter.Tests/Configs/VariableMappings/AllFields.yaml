@@ -1,0 +1,10 @@
+Version: 1
+
+VariableMappings:
+  - VariableName: ValidInt32
+    Transformation:
+      Offset: 1.0
+      Factor: 2.0
+      TransmissionType: Int32
+      ReverseTransform: True
+    TopicName: RenamedValidInt32

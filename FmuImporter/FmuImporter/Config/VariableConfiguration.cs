@@ -9,8 +9,6 @@ public class VariableConfiguration
 {
   public VariableConfiguration()
   {
-    VariableName = string.Empty;
-    TopicName = string.Empty;
   }
 
   public VariableConfiguration(string variableName, string topicName)
@@ -20,7 +18,7 @@ public class VariableConfiguration
   }
 
   [Required]
-  public string VariableName { get; set; }
+  public string VariableName { get; set; } = default!;
 
   public string? TopicName { get; set; }
   public Transformation? Transformation { get; set; }

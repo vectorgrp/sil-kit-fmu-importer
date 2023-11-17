@@ -1,0 +1,6 @@
+# Included by ParameterRoot.yaml
+Version: 1
+
+Parameters:
+  - VariableName: Global
+    Value: "This is a string!"
