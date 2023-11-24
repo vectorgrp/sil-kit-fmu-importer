@@ -508,6 +508,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     catch (Exception e)
     {
       Log(LogSeverity.Error, "Terminate encountered an error:" + e);
+      Environment.ExitCode = e.HResult;
     }
   }
 
@@ -694,7 +695,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
 
-      result[i] = str ?? throw new NativeCallException(
+      result[i] = str ??
+                  throw new NativeCallException(
                     $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
     }
 

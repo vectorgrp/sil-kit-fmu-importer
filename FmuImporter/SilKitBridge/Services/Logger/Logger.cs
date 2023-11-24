@@ -50,6 +50,7 @@ public class Logger : ILogger
     {
       Console.WriteLine("Logging via SIL Kit logger failed.");
       Console.WriteLine(e);
+      Environment.ExitCode = e.HResult;
     }
   }
 

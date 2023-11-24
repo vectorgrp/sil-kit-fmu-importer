@@ -19,6 +19,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 ### Changed
 
 * Moved the vCDL Exporter to a separate solution
+* The FMU Importer now sets exit codes != 0 if any component (e.g., the FMU) reported an issue
 
 ---
 

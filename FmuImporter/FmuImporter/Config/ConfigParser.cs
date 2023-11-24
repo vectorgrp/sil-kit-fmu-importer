@@ -38,8 +38,6 @@ public static class ConfigParser
           }
           catch (ValidationException e)
           {
-            ;
-            //success = false;
             throw new InvalidConfigurationException($"The configuration is invalid: {e.Message}", e);
           }
           catch (Exception)
@@ -93,13 +91,15 @@ public static class ConfigParser
     catch (Exception e)
     {
       var currentException = e;
-      var continueDescending = currentException.InnerException != null && currentException is not InvalidConfigurationException;
+      var continueDescending = currentException.InnerException != null &&
+                               currentException is not InvalidConfigurationException;
 
       while (continueDescending)
       {
         if (currentException is YamlException yamlException)
         {
-          if (currentException.InnerException != null && currentException.InnerException is YamlException or InvalidConfigurationException)
+          if (currentException.InnerException != null &&
+              currentException.InnerException is YamlException or InvalidConfigurationException)
           {
             currentException = currentException.InnerException;
             continue;
@@ -112,8 +112,10 @@ public static class ConfigParser
         else
         {
           currentException = new InvalidConfigurationException(
-            $"Invalid configuration. {currentException.Message}", currentException);
+            $"Invalid configuration. {currentException.Message}",
+            currentException);
         }
+
         continueDescending = false;
       }
 

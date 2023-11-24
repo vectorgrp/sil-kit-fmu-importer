@@ -27,13 +27,13 @@ internal class Program
 
     var silKitConfigFileOption = new Option<string?>(
       "--sil-kit-config-file",
-      description: "Set the path to the SIL Kit configuration file.");
+      "Set the path to the SIL Kit configuration file.");
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
     var fmuImporterConfigFileOption = new Option<string?>(
       "--fmu-importer-config-file",
-      description: "Set the path to the FMU Importer configuration file.");
+      "Set the path to the FMU Importer configuration file.");
     fmuImporterConfigFileOption.AddAlias("-c");
     rootCommand.AddOption(fmuImporterConfigFileOption);
 
@@ -163,22 +163,6 @@ internal class Program
       lifecycleModeOption,
       timeSyncModeOption,
       useWallClockAlignmentOption);
-
-    AppDomain.CurrentDomain.UnhandledException +=
-      (sender, e) =>
-      {
-        if (sender is FmuImporter fmuImporter)
-        {
-          try
-          {
-            fmuImporter.ExitFmuImporter();
-          }
-          catch (Exception ex)
-          {
-            Console.WriteLine(ex.ToString());
-          }
-        }
-      };
 
     await rootCommand.InvokeAsync(args);
   }

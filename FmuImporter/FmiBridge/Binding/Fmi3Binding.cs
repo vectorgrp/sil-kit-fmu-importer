@@ -826,7 +826,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
@@ -1248,7 +1247,6 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         nValues),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-
     var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1297,7 +1295,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
 
-      result[i] = str ?? throw new NativeCallException(
+      result[i] = str ??
+                  throw new NativeCallException(
                     $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
     }
 

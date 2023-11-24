@@ -48,6 +48,12 @@ public class FmuImporter
     TimeSyncModes timeSyncMode,
     PacingModes pacingMode)
   {
+    AppDomain.CurrentDomain.UnhandledException +=
+      (sender, e) =>
+      {
+        Environment.ExitCode = ((Exception)e.ExceptionObject).HResult;
+      };
+
     SilKitEntity = new SilKitEntity(
       silKitConfigurationPath,
       participantName,
@@ -94,6 +100,7 @@ public class FmuImporter
     catch (Exception e)
     {
       SilKitEntity.Logger.Log(LogLevel.Error, e.ToString());
+      Environment.ExitCode = e.HResult;
       ExitFmuImporter();
     }
   }
@@ -218,6 +225,10 @@ public class FmuImporter
       SilKitEntity.WaitForLifecycleToComplete();
       CurrentSilKitStatus = SilKitStatus.ShutDown;
     }
+    catch (Exception e)
+    {
+      Environment.ExitCode = e.HResult;
+    }
     finally
     {
       ExitFmuImporter();
@@ -294,7 +305,6 @@ public class FmuImporter
 
     _lastSimStep = nowInNs;
 
-
     if (_initialSimTime > 0)
     {
       // apply offset to initial time in hop-on scenario
@@ -309,9 +319,10 @@ public class FmuImporter
         fmiNow,
         Helpers.SilKitTimeToFmiTime(durationInNs));
     }
-    catch (Exception)
+    catch (Exception e)
     {
       ExitFmuImporter();
+      Environment.ExitCode = e.HResult;
       return;
     }
 
