@@ -3,12 +3,17 @@ name: Repo sync
 on:
   push:
     branches:
-      - 'main'
+      - 'main'  
+  workflow_run:
+    workflows: ["Build the SIL Kit FMU Importer (.NET 6) (internal profile)"]
+    types: [completed]
+
 jobs:
   sync_main_branch:
     name: Sync branch to remote public GitHub
     runs-on: Linux
     environment: repo-sync-action/public-github
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v3
         with:

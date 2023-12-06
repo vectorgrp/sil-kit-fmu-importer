@@ -1,4 +1,4 @@
-name: Build the SIL Kit FMU Importer (.NET 6) [internal profile]
+name: Build the SIL Kit FMU Importer (.NET 6) (internal profile)
 
 
 # Define the triggers for this workflow
