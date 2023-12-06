@@ -16,12 +16,6 @@ public enum TimeSyncModes
   Unsynchronized
 }
 
-public enum PacingModes
-{
-  AsFastAsPossible,
-  WallClock
-}
-
 public class SilKitEntity : IDisposable
 {
   private readonly Participant _participant;
@@ -29,17 +23,14 @@ public class SilKitEntity : IDisposable
   private readonly ITimeSyncService _timeSyncService;
   public TimeSyncModes TimeSyncMode { get; }
   public ILogger Logger { get; set; }
-  public PacingModes PacingMode { get; }
 
   public SilKitEntity(
     string? configurationPath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
-    TimeSyncModes timeSyncMode,
-    PacingModes pacingMode)
+    TimeSyncModes timeSyncMode)
   {
     TimeSyncMode = timeSyncMode;
-    PacingMode = pacingMode;
 
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;

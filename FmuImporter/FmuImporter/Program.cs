@@ -60,27 +60,18 @@ internal class Program
       .FromAmong(
         "coordinated",
         "autonomous");
+    lifecycleModeOption.IsHidden = true;
     rootCommand.AddOption(lifecycleModeOption);
 
     var timeSyncModeOption = new Option<string>(
         "--time-sync-mode",
         description:
-        "Choose the time synchronization mode.",
+        "Choose the time synchronization mode (see documentation).",
         getDefaultValue: () => "synchronized")
       .FromAmong(
         "synchronized",
         "unsynchronized");
     rootCommand.AddOption(timeSyncModeOption);
-
-    var useWallClockAlignmentOption = new Option<string>(
-        "--pacing-mode",
-        description:
-        "Choose the pacing of the simulation.",
-        getDefaultValue: () => "as-fast-as-possible")
-      .FromAmong(
-        "as-fast-as-possible",
-        "wall-clock");
-    rootCommand.AddOption(useWallClockAlignmentOption);
 
     rootCommand.SetHandler(
       (
@@ -90,8 +81,7 @@ internal class Program
         participantName,
         useStopTime,
         lifecycleMode,
-        timeSyncMode,
-        pacingMode) =>
+        timeSyncMode) =>
       {
         if (!File.Exists(fmuPath))
         {
@@ -132,25 +122,13 @@ internal class Program
             $"Available options are 'synchronized' and 'unsynchronized'.");
         }
 
-        parseSucceeded = Enum.TryParse(
-          pacingMode.Replace("-", string.Empty),
-          true,
-          out PacingModes parsedPacingMode);
-        if (!parseSucceeded)
-        {
-          throw new ArgumentException(
-            $"The provided pacing mode '{pacingMode} is invalid. " +
-            $"Available options are 'as-fast-as-possible' and 'wall-clock'.");
-        }
-
         var instance = new FmuImporter(
           fmuPath,
           silKitConfigFile,
           fmuImporterConfigFile,
           participantName,
           parsedLifecycleMode,
-          parsedTimeSyncMode,
-          parsedPacingMode);
+          parsedTimeSyncMode);
 
         instance.StartSimulation();
         instance.Dispose();
@@ -161,8 +139,7 @@ internal class Program
       participantNameOption,
       useStopTimeOption,
       lifecycleModeOption,
-      timeSyncModeOption,
-      useWallClockAlignmentOption);
+      timeSyncModeOption);
 
     await rootCommand.InvokeAsync(args);
   }

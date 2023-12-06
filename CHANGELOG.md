@@ -11,10 +11,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 ### Added
 
 * The vCDL Exporter now also exports enumerators
-* Extended support without virtual time synchronization
-  * Added CLI option ``--operation-mode`` that allows to choose if the FMU Importer should synchronize its lifecycle with other SIL Kit participants (``coordinated``) or act independently (``autonomous``). Defaults to ``coordinated``. See SIL Kit documentation for details about these modes.
-  * Added CLI option ``--time-sync-mode`` that allows to choose if virtual time synchronization should be used (``synchronized``) or not (``unsynchronized``). Defaults to ``synchronized``.
-  * Added CLI option ``--pacing-mode`` that allows to choose if the simulation steps should be handled as ``fast as possible`` or if the pace of the simulation steps should try to align with the ``wall clock`` (e.g., a one second simulation step would also take approximately one second in real time). Defaults to ``as fast as possible``.
+* Added a CLI option ``--time-sync-mode`` that allows to choose if virtual time synchronization should be used (``synchronized``) or not (``unsynchronized``), which tries to align the simulation time with the system's wall clock (e.g., a one second simulation step would also take approximately one second in real time). Defaults to ``synchronized``.
 
 ### Changed
 

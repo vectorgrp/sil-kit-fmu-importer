@@ -41,8 +41,7 @@ public class FmuImporter
     string? fmuImporterConfigFilePath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
-    TimeSyncModes timeSyncMode,
-    PacingModes pacingMode)
+    TimeSyncModes timeSyncMode)
   {
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>
@@ -54,8 +53,7 @@ public class FmuImporter
       silKitConfigurationPath,
       participantName,
       lifecycleMode,
-      timeSyncMode,
-      pacingMode);
+      timeSyncMode);
     SilKitDataManager = new SilKitDataManager(SilKitEntity);
     CurrentSilKitStatus = SilKitStatus.Initialized;
 
@@ -253,7 +251,7 @@ public class FmuImporter
     }
 
     // wall-clock alignment init
-    if (SilKitEntity.PacingMode == PacingModes.WallClock)
+    if (SilKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized)
     {
       long elapsedTime;
       if (_stopWatch == null)
