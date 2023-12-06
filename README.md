@@ -118,7 +118,6 @@ Available options are:
 | -s, --sil-kit-config-file \<sil-kit-config-file> | Set the path to the SIL Kit configuration file. |
 | -c, --fmu-importer-config-file \<fmu-importer-config-file>  | Set the path to the FMU Importer configuration file. |
 | -p, --participant-name \<participant-name> | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
-| -t, --use-stop-time | Use the FMUs stop time (if it is provided). [default: False] |
 | --operation-mode \<autonomous \| coordinated>  | Choose the lifecycle mode. [default: coordinated] |
   --time-sync-mode \<synchronized \| unsynchronized> | Choose the time synchronization mode. [default: synchronized] |
 | --pacing-mode \<as-fast-as-possible \| wall-clock> | Choose the pacing of the simulation. [default: as-fast-as-possible] |
@@ -144,7 +143,7 @@ Further, if any of the required participants stops the simulation, all other par
 Alternatively, the operation mode can be set to `autonomous`.
 In that case, the Importer will ignore other participants and directly start its lifecycle and proceed to the start of the simulation.
 Further, an autonomous participant can only be stopped by other SIL Kit participants (except if the simulation is aborted).
-Currently, an autonomous FMU Importer can only be stopped by either reaching the stop time of the FMU (needs the --use-stop-time option) or by manually terminating the application.
+Currently, an autonomous FMU Importer can only be stopped by either reaching the stop time of the FMU (if any) or by manually terminating the application.
 
 >By default, the FMU Importer starts a SIL Kit participant that uses a coordinated lifecycle.
 This means that you need to start a `sil-kit-system-controller` (part of SIL Kit) that comprises the FMU Importer's participant name as well as all other required participants.

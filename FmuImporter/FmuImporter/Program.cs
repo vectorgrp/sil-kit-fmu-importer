@@ -44,11 +44,12 @@ internal class Program
     participantNameOption.AddAlias("-p");
     rootCommand.AddOption(participantNameOption);
 
+    // This method is deprecated as of version 1.1.0 (see changelog)
     var useStopTimeOption = new Option<bool>(
       "--use-stop-time",
-      description: "Use the FMUs stop time (if it is provided).",
-      getDefaultValue: () => false);
+      () => true);
     useStopTimeOption.AddAlias("-t");
+    useStopTimeOption.IsHidden = true;
     rootCommand.AddOption(useStopTimeOption);
 
     var lifecycleModeOption = new Option<string>(
@@ -147,7 +148,6 @@ internal class Program
           silKitConfigFile,
           fmuImporterConfigFile,
           participantName,
-          useStopTime,
           parsedLifecycleMode,
           parsedTimeSyncMode,
           parsedPacingMode);

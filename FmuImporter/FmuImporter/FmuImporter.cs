@@ -30,9 +30,6 @@ public class FmuImporter
   private FmuEntity FmuEntity { get; }
   private FmuDataManager? FmuDataManager { get; set; }
 
-
-  private readonly bool _useStopTime;
-
   private readonly Config.Configuration _fmuImporterConfig;
 
   private readonly Dictionary<string, Config.Parameter>? _configuredParameters;
@@ -43,7 +40,6 @@ public class FmuImporter
     string? silKitConfigurationPath,
     string? fmuImporterConfigFilePath,
     string participantName,
-    bool useStopTime,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
     TimeSyncModes timeSyncMode,
     PacingModes pacingMode)
@@ -83,7 +79,6 @@ public class FmuImporter
       throw;
     }
 
-    _useStopTime = useStopTime;
     FmuEntity = new FmuEntity(fmuPath);
     try
     {
@@ -330,7 +325,7 @@ public class FmuImporter
     SilKitDataManager.PublishAll(currentOutputData);
 
     var stopTime = FmuEntity.GetStopTime();
-    if (_useStopTime && stopTime.HasValue)
+    if (stopTime.HasValue)
     {
       if (Helpers.SilKitTimeToFmiTime(nowInNs) >= stopTime)
       {
