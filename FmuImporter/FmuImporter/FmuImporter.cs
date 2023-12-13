@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Fmi;
 using Fmi.FmiModel.Internal;
+using FmuImporter.Config;
 using FmuImporter.Exceptions;
 using FmuImporter.Fmu;
 using FmuImporter.SilKit;
@@ -30,9 +31,10 @@ public class FmuImporter
   private FmuEntity FmuEntity { get; }
   private FmuDataManager? FmuDataManager { get; set; }
 
-  private readonly Config.Configuration _fmuImporterConfig;
+  private readonly Configuration _fmuImporterConfig;
 
-  private readonly Dictionary<string, Config.Parameter>? _configuredParameters;
+  private readonly Dictionary<string, Parameter>? _configuredParameters;
+  private readonly Dictionary<string, Parameter>? _configuredStructuralParameters;
 
 
   public FmuImporter(
@@ -61,12 +63,12 @@ public class FmuImporter
     {
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
       {
-        _fmuImporterConfig = new Config.Configuration();
+        _fmuImporterConfig = new Configuration();
         _fmuImporterConfig.MergeIncludes();
       }
       else
       {
-        _fmuImporterConfig = Config.ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
+        _fmuImporterConfig = ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
         _fmuImporterConfig.SetSilKitLogger(SilKitEntity.Logger);
         _fmuImporterConfig.MergeIncludes();
       }
@@ -78,11 +80,28 @@ public class FmuImporter
     }
 
     FmuEntity = new FmuEntity(fmuPath);
+
     try
     {
-      // Initialize FMU
       _configuredParameters = _fmuImporterConfig.GetParameters();
-      FmuEntity.PrepareFmu(ApplyParameterConfiguration);
+      _configuredStructuralParameters = new Dictionary<string, Parameter>();
+
+      var myStructParams = FmuEntity.ModelDescription.Variables
+                                    .Where(kvp => kvp.Value.Causality == Variable.Causalities.StructuralParameter)
+                                    .Select(v => v.Value.Name);
+      foreach (var myStructParam in myStructParams)
+      {
+        var success = _configuredParameters.Remove(myStructParam, out var param);
+        if (!success)
+        {
+          continue;
+        }
+
+        _configuredStructuralParameters.Add(myStructParam, param!);
+      }
+
+      // Initialize FMU
+      FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
       FmuEntity.OnFmuLog += FmuEntity_OnFmuLog;
 
       // Initialize FmuDataManager
@@ -105,58 +124,76 @@ public class FmuImporter
 
   private void ApplyParameterConfiguration()
   {
+    Dictionary<string, Parameter>.ValueCollection usedConfiguredParameters;
+
     // initialize all configured parameters
-    if (_configuredParameters != null)
+    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Instantiated &&
+        _configuredStructuralParameters != null)
     {
-      foreach (var configuredParameter in _configuredParameters.Values)
+      usedConfiguredParameters = _configuredStructuralParameters.Values;
+    }
+    else if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initializing && _configuredParameters != null)
+    {
+      usedConfiguredParameters = _configuredParameters.Values;
+    }
+    else
+    {
+      throw new Exception();
+    }
+
+    if (usedConfiguredParameters.Count == 0)
+    {
+      return;
+    }
+
+    foreach (var configuredParameter in usedConfiguredParameters)
+    {
+      var result = FmuEntity.ModelDescription.NameToValueReference.TryGetValue(
+        configuredParameter.VariableName,
+        out var refValue);
+      if (!result)
       {
-        var result = FmuEntity.ModelDescription.NameToValueReference.TryGetValue(
-          configuredParameter.VariableName,
-          out var refValue);
-        if (!result)
+        throw new InvalidConfigurationException(
+          $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
+      }
+
+      result = FmuEntity.ModelDescription.Variables.TryGetValue(refValue, out var v);
+      if (!result || v == null)
+      {
+        throw new InvalidConfigurationException(
+          $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
+      }
+
+      byte[] data;
+      var binSizes = new List<int>();
+      if (configuredParameter.Value is List<object> objectList)
+      {
+        // the parameter is an array
+        if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new InvalidConfigurationException(
-            $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
+          throw new NotSupportedException("FMI 2.0.x does not support arrays.");
         }
 
-        result = FmuEntity.ModelDescription.Variables.TryGetValue(refValue, out var v);
-        if (!result || v == null)
+        data = Fmi.Supplements.Serializer.Serialize(objectList, v.VariableType, ref binSizes);
+      }
+      else
+      {
+        data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
+      }
+
+      if (v.VariableType != VariableTypes.Binary)
+      {
+        FmuEntity.Binding.SetValue(refValue, data);
+      }
+      else
+      {
+        // binary type
+        if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new InvalidConfigurationException(
-            $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
+          throw new NotSupportedException("FMI 2.0.x does not support the binary data type.");
         }
 
-        byte[] data;
-        var binSizes = new List<int>();
-        if (configuredParameter.Value is List<object> objectList)
-        {
-          // the parameter is an array
-          if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
-          {
-            throw new NotSupportedException("FMI 2.0.x does not support arrays.");
-          }
-
-          data = Fmi.Supplements.Serializer.Serialize(objectList, v.VariableType, ref binSizes);
-        }
-        else
-        {
-          data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
-        }
-
-        if (v.VariableType != VariableTypes.Binary)
-        {
-          FmuEntity.Binding.SetValue(refValue, data);
-        }
-        else
-        {
-          // binary type
-          if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
-          {
-            throw new NotSupportedException("FMI 2.0.x does not support the binary data type.");
-          }
-
-          FmuEntity.Binding.SetValue(refValue, data, binSizes.ToArray());
-        }
+        FmuEntity.Binding.SetValue(refValue, data, binSizes.ToArray());
       }
     }
   }

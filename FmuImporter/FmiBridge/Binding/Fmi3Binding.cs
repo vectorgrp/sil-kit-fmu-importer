@@ -53,6 +53,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     // Common functions
     SetDelegate(out _fmi3InstantiateCoSimulation);
     SetDelegate(out _fmi3FreeInstance);
+    SetDelegate(out _fmi3EnterConfigurationMode);
+    SetDelegate(out _fmi3ExitConfigurationMode);
     SetDelegate(out _fmi3EnterInitializationMode);
     SetDelegate(out _fmi3ExitInitializationMode);
     SetDelegate(out _fmi3DoStep);
@@ -217,6 +219,40 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate void fmi3FreeInstanceTYPE(IntPtr instance);
+
+  public void EnterConfigurationMode()
+  {
+    ProcessReturnCode(
+      _fmi3EnterConfigurationMode(_component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = States.ConfigurationMode;
+  }
+
+  /*
+    typedef fmi3Status fmi3EnterConfigurationModeTYPE(fmi3Instance instance);
+   */
+  private readonly fmi3EnterConfigurationModeTYPE _fmi3EnterConfigurationMode;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3EnterConfigurationModeTYPE(IntPtr instance);
+
+  public void ExitConfigurationMode()
+  {
+    ProcessReturnCode(
+      _fmi3ExitConfigurationMode(_component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = States.Instantiated;
+  }
+
+  /*
+    typedef fmi3Status fmi3ExitConfigurationModeTYPE(fmi3Instance instance);
+   */
+  private readonly fmi3ExitConfigurationModeTYPE _fmi3ExitConfigurationMode;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3ExitConfigurationModeTYPE(IntPtr instance);
 
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime)
   {

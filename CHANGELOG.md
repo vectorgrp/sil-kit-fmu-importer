@@ -21,6 +21,11 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
   * The ``--use-stop-time`` / ``-t`` CLI options are kept for backwards compatibility, but they will not have any effect.
   * The options are not shown by the CLI help command and they are not mentioned in the documentation anymore.
 
+### Fixed
+
+* Fixed crash when reconfiguring structural parameters
+  * Reconfigured structural parameters are now set in configuration mode
+
 ---
 
 ## [1.0.5] - 2023-10-09

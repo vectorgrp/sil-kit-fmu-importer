@@ -13,6 +13,8 @@ public class FmuEntity : IDisposable
   public enum FmuSuperStates
   {
     Uninitialized,
+    Instantiated,
+    Initializing,
     Initialized,
     Exited
   }
@@ -27,12 +29,8 @@ public class FmuEntity : IDisposable
 
   public event FmiLog? OnFmuLog;
 
-  private readonly string _fmuPath;
-
   public FmuEntity(string fmuPath)
   {
-    _fmuPath = fmuPath;
-
     FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
 
     Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath);
@@ -53,15 +51,15 @@ public class FmuEntity : IDisposable
 
   private Fmi2BindingCallbackFunctions _fmi2Functions;
 
-  public void PrepareFmu(Action fmuInitializationAction)
+  public void PrepareFmu(Action fmuConfigurationAction, Action fmuInitializationAction)
   {
     switch (FmiVersion)
     {
       case FmiVersions.Fmi2:
-        PrepareFmi2Fmu(_fmuPath, fmuInitializationAction);
+        PrepareFmi2Fmu(fmuInitializationAction);
         break;
       case FmiVersions.Fmi3:
-        PrepareFmi3Fmu(_fmuPath, fmuInitializationAction);
+        PrepareFmi3Fmu(fmuConfigurationAction, fmuInitializationAction);
         break;
       default:
         throw new ArgumentOutOfRangeException("The provided FMI version is unknown.");
@@ -70,7 +68,7 @@ public class FmuEntity : IDisposable
     CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
 
-  private void PrepareFmi2Fmu(string fmuPath, Action fmuInitializationAction)
+  private void PrepareFmi2Fmu(Action fmuInitializationAction)
   {
     var fmi2Binding = (IFmi2Binding)Binding;
 
@@ -98,7 +96,7 @@ public class FmuEntity : IDisposable
     fmi2Binding.ExitInitializationMode();
   }
 
-  private void PrepareFmi3Fmu(string fmuPath, Action fmuInitializationAction)
+  private void PrepareFmi3Fmu(Action fmuConfigurationAction, Action fmuInitializationAction)
   {
     var fmi3Binding = (IFmi3Binding)Binding;
     // Get FMI Model binding
@@ -110,12 +108,29 @@ public class FmuEntity : IDisposable
       true,
       Fmi3Logger);
 
+    // Enter configuration mode
+    CurrentFmuSuperState = FmuSuperStates.Instantiated;
+
+    if (ModelDescription.Variables.Values.Any(v => v.Causality == Variable.Causalities.StructuralParameter))
+    {
+      fmi3Binding.EnterConfigurationMode();
+
+      fmuConfigurationAction();
+
+      // Exit configuration mode
+      fmi3Binding.ExitConfigurationMode();
+    }
+
+    // TODO evaluate array length here
+
     fmi3Binding.SetDebugLogging(true, 0, null);
 
     fmi3Binding.EnterInitializationMode(
       ModelDescription.DefaultExperiment.Tolerance,
       ModelDescription.DefaultExperiment.StartTime,
       ModelDescription.DefaultExperiment.StopTime);
+
+    CurrentFmuSuperState = FmuSuperStates.Initializing;
 
     fmuInitializationAction();
 

@@ -22,6 +22,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   {
     Initial,
     Instantiated,
+    ConfigurationMode,
     InitializationMode,
     StepMode,
     Terminated,

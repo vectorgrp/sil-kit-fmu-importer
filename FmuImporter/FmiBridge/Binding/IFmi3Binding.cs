@@ -18,6 +18,8 @@ public interface IFmi3Binding : IFmiBindingCommon
     bool loggingOn,
     Fmi3LogMessageCallback logger);
 
+  public void EnterConfigurationMode();
+  public void ExitConfigurationMode();
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime);
   public void ExitInitializationMode();
 
