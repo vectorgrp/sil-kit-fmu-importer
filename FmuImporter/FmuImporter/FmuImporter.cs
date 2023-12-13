@@ -100,9 +100,11 @@ public class FmuImporter
         _configuredStructuralParameters.Add(myStructParam, param!);
       }
 
+      // Register logger callback
+      FmuEntity.OnFmuLog += FmuEntity_OnFmuLog;
+
       // Initialize FMU
       FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
-      FmuEntity.OnFmuLog += FmuEntity_OnFmuLog;
 
       // Initialize FmuDataManager
       FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription);

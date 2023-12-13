@@ -25,6 +25,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * Fixed crash when reconfiguring structural parameters
   * Reconfigured structural parameters are now set in configuration mode
+* Fixed missing log messages during FMU initialization
 
 ---
 
