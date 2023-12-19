@@ -330,7 +330,6 @@ public class Serializer
   public static byte[] Serialize(List<object> list, VariableTypes type, ref List<int> binSizes)
   {
     var result = new List<byte>();
-    result.AddRange(BitConverter.GetBytes(list.Count));
     foreach (var entry in list)
     {
       result.AddRange(Serialize(entry, type, ref binSizes));

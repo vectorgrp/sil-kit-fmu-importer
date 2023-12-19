@@ -27,6 +27,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
   * Reconfigured structural parameters are now set in configuration mode
 * Fixed missing log messages during FMU initialization
 * Fixed incorrect array length for variables with dimensions that reference reconfigured structural parameters
+* Fixed crash if array-typed parameters were overridden using YAML block style (only flow style worked)
 
 ---
 
