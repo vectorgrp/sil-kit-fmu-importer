@@ -48,36 +48,11 @@ public class Variable
   public Variabilities Variability { get; set; }
   public InitialValues InitialValue { get; set; }
 
-  public VariableTypes VariableType { get; private set; }
+  public VariableTypes VariableType { get; }
 
   public object[]? Start { get; set; }
 
-  private ulong[]? _dimensions;
-
-  public ulong[]? Dimensions
-  {
-    get
-    {
-      return _dimensions;
-    }
-    set
-    {
-      _dimensions = value;
-      FlattenedArrayLength = 1;
-      if (value == null || value.Length == 0)
-      {
-        IsScalar = true;
-        return;
-      }
-
-      foreach (var dim in value)
-      {
-        FlattenedArrayLength *= dim;
-      }
-
-      IsScalar = false;
-    }
-  }
+  public ulong[]? Dimensions { get; set; }
 
   public TypeDefinition? TypeDefinition { get; set; }
 
@@ -94,7 +69,7 @@ public class Variable
 
     switch (input)
     {
-      case Fmi3.fmi3Float32 inputVar:
+      case fmi3Float32 inputVar:
         VariableType = VariableTypes.Float32;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
@@ -102,7 +77,7 @@ public class Variable
         }
 
         break;
-      case Fmi3.fmi3Float64 inputVar:
+      case fmi3Float64 inputVar:
         VariableType = VariableTypes.Float64;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
@@ -242,6 +217,10 @@ public class Variable
         }
       }
     }
+
+    IsScalar =
+      _originalVariable.GetType().GetProperty("Dimension")?.GetValue(_originalVariable) is not
+        fmi3ArrayableVariableDimension[];
   }
 
   public Variable(fmi2ScalarVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
@@ -255,7 +234,7 @@ public class Variable
       case fmi2ScalarVariableInteger:
         VariableType = VariableTypes.Int32;
         break;
-      case Fmi2.fmi2ScalarVariableReal inputVar:
+      case fmi2ScalarVariableReal inputVar:
         VariableType = VariableTypes.Float64;
         if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
         {
@@ -430,7 +409,7 @@ public class Variable
     return typeDefinitions.ContainsKey(declaredType);
   }
 
-  internal void InitializeArrayLength(ref Dictionary<uint /* ValueReference */, Variable> variables)
+  public void InitializeArrayLength(ref Dictionary<uint /* ValueReference */, Variable> variables)
   {
     if (_originalVariable == null)
     {
@@ -456,6 +435,12 @@ public class Variable
       else
       {
         throw new DataConversionException("The dimension field did not contain the expected type.");
+      }
+
+      FlattenedArrayLength = 1;
+      foreach (var dim in Dimensions)
+      {
+        FlattenedArrayLength *= dim;
       }
     }
   }
@@ -484,7 +469,14 @@ public class Variable
         {
           if (v.Start != null)
           {
-            res[i] = (ulong)v.Start[0];
+            if (v.Start[0] is string)
+            {
+              res[i] = ulong.Parse((string)v.Start[0]);
+            }
+            else
+            {
+              res[i] = (ulong)v.Start[0];
+            }
           }
           else
           {

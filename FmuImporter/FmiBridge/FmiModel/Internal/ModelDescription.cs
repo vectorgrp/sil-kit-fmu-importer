@@ -8,8 +8,6 @@ namespace Fmi.FmiModel.Internal;
 
 public class ModelDescription
 {
-  private Dictionary<uint, Variable> _variables;
-
   // Former attributes
   public string ModelName { get; set; }
   public string Description { get; set; }
@@ -22,17 +20,12 @@ public class ModelDescription
   public CoSimulation CoSimulation { get; set; }
   public DefaultExperiment DefaultExperiment { get; set; }
 
-  public Dictionary<uint /* ValueReference */, Variable> Variables
-  {
-    get
-    {
-      return _variables;
-    }
-    set
-    {
-      _variables = value;
-    }
-  }
+  public Dictionary<uint /* ValueReference */, Variable> Variables;
+
+  /// <summary>
+  ///   This contains the subset of Variables which have 'Dimension' elements.
+  /// </summary>
+  public Dictionary<uint /* ValueReference */, Variable> ArrayVariables;
 
   public Dictionary<string, uint> NameToValueReference { get; set; }
 
@@ -47,7 +40,8 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    _variables = new Dictionary<uint, Variable>();
+    Variables = new Dictionary<uint, Variable>();
+    ArrayVariables = new Dictionary<uint, Variable>();
     NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
@@ -83,7 +77,8 @@ public class ModelDescription
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
     TypeDefinitions = new Dictionary<string, TypeDefinition>();
-    _variables = new Dictionary<uint, Variable>();
+    Variables = new Dictionary<uint, Variable>();
+    ArrayVariables = new Dictionary<uint, Variable>();
     NameToValueReference = new Dictionary<string, uint>();
 
     // Attribute init
@@ -279,18 +274,17 @@ public class ModelDescription
           "Failed to parse model description: multiple variables have the same value reference.");
       }
 
+      if (!v.IsScalar)
+      {
+        ArrayVariables.Add(v.ValueReference, v);
+      }
+
       result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
       if (!result)
       {
         throw new ModelDescriptionException(
           "Failed to parse model description: multiple variables have the same name.");
       }
-    }
-
-    // iterate through all variables again and initialize array length
-    foreach (var variable in Variables)
-    {
-      variable.Value.InitializeArrayLength(ref _variables);
     }
   }
 

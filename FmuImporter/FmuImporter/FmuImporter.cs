@@ -127,12 +127,14 @@ public class FmuImporter
   private void ApplyParameterConfiguration()
   {
     Dictionary<string, Parameter>.ValueCollection usedConfiguredParameters;
+    var isHandlingStructuredParameters = false;
 
     // initialize all configured parameters
     if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Instantiated &&
         _configuredStructuralParameters != null)
     {
       usedConfiguredParameters = _configuredStructuralParameters.Values;
+      isHandlingStructuredParameters = true;
     }
     else if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initializing && _configuredParameters != null)
     {
@@ -176,10 +178,22 @@ public class FmuImporter
           throw new NotSupportedException("FMI 2.0.x does not support arrays.");
         }
 
+        if (isHandlingStructuredParameters)
+        {
+          // modify model description to make sure that the array lengths can be calculated correctly
+          v.Start = objectList.ToArray();
+        }
+
         data = Fmi.Supplements.Serializer.Serialize(objectList, v.VariableType, ref binSizes);
       }
       else
       {
+        if (isHandlingStructuredParameters)
+        {
+          // modify model description to make sure that the array lengths can be calculated correctly
+          v.Start = new[] { configuredParameter.Value };
+        }
+
         data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
       }
 

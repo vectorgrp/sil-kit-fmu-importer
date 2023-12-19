@@ -121,7 +121,10 @@ public class FmuEntity : IDisposable
       fmi3Binding.ExitConfigurationMode();
     }
 
-    // TODO evaluate array length here
+    foreach (var arrayVar in ModelDescription.ArrayVariables.Values)
+    {
+      arrayVar.InitializeArrayLength(ref ModelDescription.Variables);
+    }
 
     fmi3Binding.SetDebugLogging(true, 0, null);
 
