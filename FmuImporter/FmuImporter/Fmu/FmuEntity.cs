@@ -82,6 +82,8 @@ public class FmuEntity : IDisposable
       true,
       true);
 
+    CurrentFmuSuperState = FmuSuperStates.Instantiated;
+
     fmi2Binding.SetDebugLogging(true, Array.Empty<string>());
 
     fmi2Binding.SetupExperiment(
@@ -91,9 +93,13 @@ public class FmuEntity : IDisposable
 
     fmi2Binding.EnterInitializationMode();
 
+    CurrentFmuSuperState = FmuSuperStates.Initializing;
+
     fmuInitializationAction();
 
     fmi2Binding.ExitInitializationMode();
+
+    CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
 
   private void PrepareFmi3Fmu(Action fmuConfigurationAction, Action fmuInitializationAction)
@@ -108,11 +114,11 @@ public class FmuEntity : IDisposable
       true,
       Fmi3Logger);
 
-    // Enter configuration mode
     CurrentFmuSuperState = FmuSuperStates.Instantiated;
 
     if (ModelDescription.Variables.Values.Any(v => v.Causality == Variable.Causalities.StructuralParameter))
     {
+      // Enter configuration mode
       fmi3Binding.EnterConfigurationMode();
 
       fmuConfigurationAction();
@@ -138,6 +144,8 @@ public class FmuEntity : IDisposable
     fmuInitializationAction();
 
     fmi3Binding.ExitInitializationMode();
+
+    CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
 
   private void Fmi2Logger(
