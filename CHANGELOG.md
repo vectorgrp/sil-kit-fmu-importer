@@ -20,6 +20,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * The FMU Importer now uses the stopTime of an FMU's model description by default. 
   * The ``--use-stop-time`` / ``-t`` CLI options are kept for backwards compatibility, but they will not have any effect.
   * The options are not shown by the CLI help command and they are not mentioned in the documentation anymore.
+* Updated SIL Kit libraries to 4.0.43
 
 ### Fixed
 
