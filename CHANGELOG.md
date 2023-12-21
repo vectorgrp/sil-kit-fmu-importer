@@ -17,9 +17,9 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * Moved the vCDL Exporter to a separate solution
 * The FMU Importer now sets exit codes != 0 if any component (e.g., the FMU) reported an issue
-* The FMU Importer now uses the stopTime of an FMU's model description by default. 
-  * The ``--use-stop-time`` / ``-t`` CLI options are kept for backwards compatibility, but they will not have any effect.
-  * The options are not shown by the CLI help command and they are not mentioned in the documentation anymore.
+* The FMU Importer now uses the stopTime of an FMU's model description by default
+  * The ``--use-stop-time`` / ``-t`` CLI options are kept for backwards compatibility, but they will not have any effect
+  * The options are not shown by the CLI help command and they are not mentioned in the documentation anymore
 * Updated SIL Kit libraries to 4.0.43
 
 ### Fixed
@@ -29,6 +29,8 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Fixed missing log messages during FMU initialization
 * Fixed incorrect array length for variables with dimensions that reference reconfigured structural parameters
 * Fixed crash if array-typed parameters were overridden using YAML block style (only flow style worked)
+* Fixed "FileNotFound" exception when including configuration files with absolute path
+* Fixed incorrect topic name if a variable is reconfigured without specifying its topic name
 
 ---
 
