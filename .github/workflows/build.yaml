@@ -1,31 +1,28 @@
-name: Build the SIL Kit FMU Importer (.NET 6) (internal profile)
-
+name: Build the SIL Kit FMU Importer (.NET 6) [internal]
 
 # Define the triggers for this workflow
 on:
   push:
+    # only trigger on branches, not on tags
+    branches: '**'
 
 jobs:
   build-windows:
-
     runs-on: windows
 
     steps:
     # Check out this Git repo
     - uses: actions/checkout@v3
-
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
-
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
-
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+
 
   # Get environment variable for docker image URI and provide it to next build step
   prep-linux:
@@ -42,35 +39,24 @@ jobs:
 
   # Build the project, then remove the built artifacts
   build-linux:
-
-    runs-on: [Linux, Docker]
-
+    runs-on: [Linux, Docker, self-hosted, ska-runner]
     needs: prep-linux
-
     container:
       image: ${{ needs.prep-linux.outputs.image }}
 
     steps:
-    - run: ls -la
-    - run: pwd
     - run: rm -rfv ./FmuImporter/_obj
     - run: rm -rfv ./FmuImporter/_build
-    - run: "echo ImageURI=${{needs.prep-linux.outputs.image}}"
     # Check out this Git repo
     - uses: actions/checkout@v3
-
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
-
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
-
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
-
     - if: always()
       run: rm -rfv * .??*
