@@ -231,7 +231,7 @@ public class Serializer
 
           if (s.ToLower() is "false" or "0")
           {
-            return BitConverter.GetBytes(true);
+            return BitConverter.GetBytes(false);
           }
 
           throw new DataConversionException(

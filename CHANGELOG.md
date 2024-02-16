@@ -12,6 +12,14 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ---
 
+## [1.2.0] - TBD
+
+### Fixed
+
+* Fixed configuration of boolean parameters via config file
+
+---
+
 ## [1.1.0] - 2023-12-20
 
 ### Added
