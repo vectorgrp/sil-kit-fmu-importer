@@ -17,6 +17,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 ### Fixed
 
 * Fixed configuration of boolean parameters via config file
+* The importer did not run with an 'autonomous' lifecycle if the time synchronization mode was set to 'unsynchronized' - this is now working as intended.
 
 ---
 

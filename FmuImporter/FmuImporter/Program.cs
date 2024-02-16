@@ -56,7 +56,7 @@ internal class Program
         "--operation-mode",
         description:
         "Choose the lifecycle mode.",
-        getDefaultValue: () => "coordinated")
+        getDefaultValue: () => "unset")
       .FromAmong(
         "coordinated",
         "autonomous");
@@ -120,6 +120,21 @@ internal class Program
           throw new ArgumentException(
             $"The provided time synchronization mode '{timeSyncMode}' is invalid. " +
             $"Available options are 'synchronized' and 'unsynchronized'.");
+        }
+        
+        // if lifecycle mode was not set manually...
+        //   use coordinated if time-sync-mode = 'synchronized'
+        //   use autonomous if time-sync-mode = 'unsynchronized'
+        if (lifecycleMode == "unset")
+        {
+          if (timeSyncMode == "synchronized")
+          {
+            parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Coordinated;
+          }
+          else if (timeSyncMode == "unsynchronized")
+          {
+            parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Autonomous;
+          }
         }
 
         var instance = new FmuImporter(

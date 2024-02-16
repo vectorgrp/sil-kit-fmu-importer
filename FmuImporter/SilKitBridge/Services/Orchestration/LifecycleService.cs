@@ -31,6 +31,7 @@ public class LifecycleService : ILifecycleService
 
     public enum Modes : byte
     {
+      Unset = 0,
       Coordinated = 10,
       Autonomous = 20
     }
