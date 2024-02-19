@@ -4,6 +4,12 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.2.0] - TBD
+
+### Added
+
+* Added a configuration file schema ``FmuImporterConfiguration.schema.json`` for FmuImporter and included it in release package and extended documentation how to use it.
+
 ---
 
 ## [1.1.0] - 2023-12-20

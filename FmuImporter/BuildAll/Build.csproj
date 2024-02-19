@@ -134,6 +134,9 @@
             SourceFiles="$(MSBuildProjectDirectory)/../../LICENSE"
             DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
         <Copy
+            SourceFiles="$(MSBuildProjectDirectory)/../../FmuImporter/FmuImporter/Config/FmuImporterConfiguration.schema.json"
+            DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
+        <Copy
             SourceFiles="@(ThirdPartyFiles)"
             DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/ThirdParty/%(RecursiveDir)" />
 

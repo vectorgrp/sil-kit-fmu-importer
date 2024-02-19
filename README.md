@@ -112,15 +112,15 @@ To run the FMU Importer, you need to run the following command from the director
 
 Available options are:
 
-| Option | Description |
-| ------ | ----------- |
-| -f, --fmu-path \<fmu-path> (REQUIRED) | Set the path to the FMU file (.fmu). **This is mandatory.** |
-| -s, --sil-kit-config-file \<sil-kit-config-file> | Set the path to the SIL Kit configuration file. |
+| Option                                                      | Description |
+|-------------------------------------------------------------|-------------|
+| -f, --fmu-path \<fmu-path> (REQUIRED)                       | Set the path to the FMU file (.fmu). **This is mandatory.** |
+| -s, --sil-kit-config-file \<sil-kit-config-file>            | Set the path to the SIL Kit configuration file. |
 | -c, --fmu-importer-config-file \<fmu-importer-config-file>  | Set the path to the FMU Importer configuration file. |
-| -p, --participant-name \<participant-name> | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
-| --time-sync-mode \<synchronized \| unsynchronized> | Choose the time synchronization mode. [default: synchronized] |
-| --version | Show version information |
-| -?, -h, --help | Show help and usage information |
+| -p, --participant-name \<participant-name>                  | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
+| --time-sync-mode \<synchronized \| unsynchronized>          | Choose the time synchronization mode. [default: synchronized] |
+| --version                                                   | Show version information |
+| -?, -h, --help                                              | Show help and usage information |
 
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
 If no configuration was provided or if it did not specify a registry URI, the default URI `silkit://localhost:8500` will be used.
@@ -128,8 +128,8 @@ If no configuration was provided or if it did not specify a registry URI, the de
 
 ## **Lifecycle and Time Synchronization Modes**
 
-The FMU Importer coordinates its lifecycle with other SIL Kit participants. 
-This means that the FMU Importer will first wait until all required participants have joined the SIL Kit simulation and then coordinate the lifecycle state with them. 
+The FMU Importer coordinates its lifecycle with other SIL Kit participants.
+This means that the FMU Importer will first wait until all required participants have joined the SIL Kit simulation and then coordinate the lifecycle state with them.
 As a result, all participants will start the actual simulation at the same time.
 Further, if any of the required participants stops the simulation, all other participants, including the FMU Importer, will stop as well.
 
@@ -204,16 +204,23 @@ The configuration file is expected to be a valid YAML file with the following ou
     IgnoreUnmappedVariables: False
 ```
 
+To help write this file, you may use the schema named `FmuImporterConfiguration.schema.json` in the root directory of the release package.
+It depends on your code editor if it supports YAML schemas and how they can be used.
+For instance, if you use Visual Studio Code with the RedHat yaml extension, you can use the schema by adding the following first line to your configuration file:
+```yaml
+# yaml-language-server: $schema=path/to/FmuImporterConfiguration.schema.json
+```
+
 ### **Available Options**
 
-| Setting Name                                    | Description |
-|-------------------------------------------------|-------------|
-| Version                                         | The version of the config format (mandatory). |
-| StepSize                                        | simulation step size in ns. |
-| [Include](#include)                             | Used to include contents of other valid FMU Importer configuration files. |
-| [Parameters](#parameters)                       | Used to override default values of parameters. |
-| [VariableMappings](#variablemappings)           | Used to modify how a variable is represented in a SIL Kit simulation. |
-| IgnoreUnmappedVariables | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
+| Setting Name                          | Description |
+|---------------------------------------|-------------|
+| Version                               | The version of the config format (mandatory). |
+| [Include](#include)                   | Used to include contents of other valid FMU Importer configuration files. |
+| [Parameters](#parameters)             | Used to override default values of parameters. |
+| [VariableMappings](#variablemappings) | Used to modify how a variable is represented in a SIL Kit simulation. |
+| IgnoreUnmappedVariables               | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
+| StepSize                              | Simulation step size in ns. |
 
 #### **_Include_**
 
@@ -229,7 +236,7 @@ Each entry of the list comprises two attributes:
 
 | Attribute Name | Description |
 |----------------|-------------|
-| VariableName        | Name of the variable in the model description (mandatory). |
+| VariableName   | Name of the variable in the model description (mandatory). |
 | Value          | Value of the parameter. Format must match the definition in the model description. |
 
 #### **_VariableMappings_**
@@ -237,11 +244,11 @@ Each entry of the list comprises two attributes:
 Used to modify how a variable is represented in a SIL Kit simulation.
 The following properties of a variable can be modified:
 
-| Attribute Name | Description |
-|----------------|-------------|
-| VariableName        | Name of the variable in the model description (mandatory). |
-| TopicName          | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
-| [Transformation](#variablemappingstransformation)        | Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit. |
+| Attribute Name                                    | Description |
+|---------------------------------------------------|-------------|
+| VariableName                                      | Name of the variable in the model description (mandatory). |
+| TopicName                                         | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
+| [Transformation](#variablemappingstransformation) | Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit. |
 
 In the example below, there are two FMUs (FMU 1 and FMU 2) with variables that should be connected. However, they need to be reconfigured, because they do not have the same name. After applying configurations with the shown excerpts to their FMU Importers, the variables are connected.
 
