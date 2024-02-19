@@ -15,6 +15,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Fixed configuration of boolean parameters via config file
 * The importer did not run with an 'autonomous' lifecycle if the time synchronization mode was set to 'unsynchronized' - this is now working as intended
 * Fixed a crash that occurred if an FMU's model description had a unit definition that did not use a base unit
+* Improved the documentation regarding the time synchronization behavior if the FMU Importer is configured to run in 'unsynchronized' time synchronization mode
 
 ---
 

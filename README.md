@@ -150,12 +150,18 @@ If the FMU Importer does not use virtual time synchronization (`unsynchronized`)
 For example, a one second simulation step would also take approximately one second in real time.
 It is important that the FMU Importer is not designed as a real-time application and cannot guarantee that the simulation steps will always have a perfect alignment with the real time, but it will stay as close as possible in the long run.
 In case it is not possible to execute the simulation step in time, the simulation will be executed as fast as possible.
+As an `unsynchronized` FMU Importer receives its SIL Kit data without a timestamp and therefore schedules all messages to be provided to the FMU in the next simulation step.
 
-> Please note that the time synchronizazion mode only affects how the FMU Importer interacts with SIL Kit, but it does not affect how the FMU Importer interacts with the FMU.
+> The time synchronization mode only affects how the FMU Importer interacts with SIL Kit, but it does not affect how the FMU Importer interacts with the FMU.
 
 ## **Data and Time Synchronization between SIL Kit and FMUs**
 
 ### **Time**
+
+The FMU's model description usually provides a simulation step size. 
+The FMU Importer will align SIL Kit simulation's step size with the FMU's step size. 
+It is possible to set the SIL Kit simulation step size via the FMU Importer's configuration file (see [Available Options](#available-options)). 
+If neither the model description nor the FMU Importer configuration are not providing a step size, a default value of 1 ms is used. 
 
 By default, the FMU Importer requests the same simulation step size on the SIL Kit side as it is provided in the FMU's model description.
 It is possible to change the simulation step size on the SIL Kit side (see [Available Options](#available-options)).
@@ -172,9 +178,15 @@ See [Configuring the FMU Importer](#configuring-the-fmu-importer) for details ho
 As mentioned in [Variable Representation](#variable-representation), input variables with the same name as other FMUs' output variables are connected and therefore receive their data.
 When receiving data for a specific variable more than once in a simulation time step, the last received value is used ('last-is-best').
 
-Internally, the FMU Importer waits until the SIL Kit participant receives the permission to advance its simulation step.
-Once received, it transfers all received data with a valid timestamp (-> data with a timestamp of the last granted simulation time) and advances the simulation to the SIL Kit participant's current virtual time.
+Internally, the FMU Importer coordinates the simulation step advancement of the FMU with SIL Kit.
+The behavior depends on the time synchronization mode the Importer is set to (see [Running the FMU Importer](running-the-fmu-importer)):
+* If the FMU Importer is 'synchronized', it waits until the SIL Kit participant receives the permission to advance its simulation step.
+Once received, it transfers all received data with a due timestamp (-> data with a timestamp less than or equal to the last granted simulation time) and advances the simulation to the SIL Kit participant's current virtual time.
+* If the FMU Importer is 'unsynchronized', the system's wall clock is used as a timer instead of SIL Kit.
 
+For details regarding the time synchronization behavior, see [Time Synchronization Mode](#time-synchronization-mode).
+
+Apart from mechanism how a simulation step advancement is triggered, the general procedure to synchronize the data between SIL Kit and the FMU is the same:
 ![Time synchronization between an FMU and the Importer](./Docs/Images/TimeSynchronization.png)
 
 ---
