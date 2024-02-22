@@ -10,14 +10,11 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * Added a configuration file schema ``FmuImporterConfiguration.schema.json`` for FmuImporter and included it in release package and extended documentation how to use it.
 
----
-
-## [1.2.0] - TBD
-
 ### Fixed
 
 * Fixed configuration of boolean parameters via config file
-* The importer did not run with an 'autonomous' lifecycle if the time synchronization mode was set to 'unsynchronized' - this is now working as intended.
+* The importer did not run with an 'autonomous' lifecycle if the time synchronization mode was set to 'unsynchronized' - this is now working as intended
+* Fixed a crash that occurred if an FMU's model description had a unit definition that did not use a base unit
 
 ---
 

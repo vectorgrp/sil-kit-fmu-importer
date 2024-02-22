@@ -223,10 +223,14 @@ public class ModelDescription
     {
       var unitDefinition = new UnitDefinition
       {
-        Name = fmi3Unit.name,
-        Offset = fmi3Unit.BaseUnit.offset,
-        Factor = fmi3Unit.BaseUnit.factor
+        Name = fmi3Unit.name
       };
+
+      if (fmi3Unit.BaseUnit != null)
+      {
+        unitDefinition.Offset = fmi3Unit.BaseUnit.offset;
+        unitDefinition.Factor = fmi3Unit.BaseUnit.factor;
+      }
 
       UnitDefinitions.Add(unitDefinition.Name, unitDefinition);
     }
@@ -239,14 +243,18 @@ public class ModelDescription
       return;
     }
 
-    foreach (var fmi3Unit in input.Unit)
+    foreach (var fmi2Unit in input.Unit)
     {
       var unitDefinition = new UnitDefinition
       {
-        Name = fmi3Unit.name,
-        Offset = fmi3Unit.BaseUnit.offset,
-        Factor = fmi3Unit.BaseUnit.factor
+        Name = fmi2Unit.name
       };
+
+      if (fmi2Unit.BaseUnit != null)
+      {
+        unitDefinition.Offset = fmi2Unit.BaseUnit.offset;
+        unitDefinition.Factor = fmi2Unit.BaseUnit.factor;
+      }
 
       UnitDefinitions.Add(unitDefinition.Name, unitDefinition);
     }
