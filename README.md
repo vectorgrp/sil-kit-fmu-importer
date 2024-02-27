@@ -18,7 +18,7 @@ Its behavior is configured by configuration files that are passed during launch.
     1. [Time](#time)
     2. [Variable Representation](#variable-representation)
     3. [Data Synchronization](#data-synchronization)
-5. [Configuring the FMU Importer](#configuring-the-fmu-importer)
+5. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
     1. [Configuration Outline](#configuration-outline)
     2. [Available Options](#available-options)
         1. [Include](#include)
@@ -158,13 +158,10 @@ As an `unsynchronized` FMU Importer receives its SIL Kit data without a timestam
 
 ### **Time**
 
-The FMU's model description usually provides a simulation step size. 
-The FMU Importer will align SIL Kit simulation's step size with the FMU's step size. 
-It is possible to set the SIL Kit simulation step size via the FMU Importer's configuration file (see [Available Options](#available-options)). 
-If neither the model description nor the FMU Importer configuration are not providing a step size, a default value of 1 ms is used. 
-
-By default, the FMU Importer requests the same simulation step size on the SIL Kit side as it is provided in the FMU's model description.
-It is possible to change the simulation step size on the SIL Kit side (see [Available Options](#available-options)).
+The FMU's model description usually provides a simulation step size.
+The FMU Importer will align SIL Kit simulation's step size with the FMU's step size.
+It is possible to set the SIL Kit simulation step size via the FMU Importer's configuration file (see [Available Options](#available-options)).
+If neither the model description nor the FMU Importer configuration are not providing a step size, a default value of 1 ms is used.
 
 ### **Variable Representation**
 
@@ -191,9 +188,10 @@ Apart from mechanism how a simulation step advancement is triggered, the general
 
 ---
 
-## **Configuring the FMU Importer**
+## **Configuring the FMU and the FMU Importer**
 
 The FMU Importer can be optionally provided with a configuration file that affects, how the FMU Importer synchronizes data and time between the FMU and a SIL Kit simulation.
+Further, it allows to override the default values of parameter variables.
 
 ### **Configuration Outline**
 
@@ -201,8 +199,6 @@ The configuration file is expected to be a valid YAML file with the following ou
 
 ```yaml
     Version: 1
-
-    StepSize: 1000000
 
     Include:
     - ...
@@ -214,25 +210,27 @@ The configuration file is expected to be a valid YAML file with the following ou
     - ...
 
     IgnoreUnmappedVariables: False
+
+    StepSize: 1000000
 ```
 
 To help write this file, you may use the schema named `FmuImporterConfiguration.schema.json` in the root directory of the release package.
 It depends on your code editor if it supports YAML schemas and how they can be used.
-For instance, if you use Visual Studio Code with the RedHat yaml extension, you can use the schema by adding the following first line to your configuration file:
+For instance, if you use Visual Studio Code with the Red Hat YAML extension, you can use the schema by adding the following first line to your configuration file:
 ```yaml
-# yaml-language-server: $schema=path/to/FmuImporterConfiguration.schema.json
+# yaml-language-server: $schema=</path/to/FmuImporter>/FmuImporterConfiguration.schema.json
 ```
 
 ### **Available Options**
 
-| Setting Name                          | Description |
-|---------------------------------------|-------------|
-| Version                               | The version of the config format (mandatory). |
-| [Include](#include)                   | Used to include contents of other valid FMU Importer configuration files. |
-| [Parameters](#parameters)             | Used to override default values of parameters. |
-| [VariableMappings](#variablemappings) | Used to modify how a variable is represented in a SIL Kit simulation. |
-| IgnoreUnmappedVariables               | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
-| StepSize                              | Simulation step size in ns. |
+| Setting Name                          | Type           | Description |
+|---------------------------------------|----------------|-------------|
+| Version                               | Integer        | The version of the config format (mandatory). |
+| [Include](#include)                   | Array\<String> | Used to include contents of other valid FMU Importer configuration files. |
+| [Parameters](#parameters)             | Array\<Object> | Used to override default values of parameters. |
+| [VariableMappings](#variablemappings) | Array\<Object> | Used to modify how a variable is represented in a SIL Kit simulation. |
+| IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
+| StepSize                              | Integer        | Simulation step size in ns. |
 
 #### **_Include_**
 
@@ -241,36 +239,82 @@ Imported configuration files are evaluated before local definitions (e.g., param
 Local definitions take precedence over imported definitions.
 In case of circular imports, a file will only be imported the first time it is encountered.
 
+Syntax:
+```yaml
+Include:
+  - <path/to/fmu-importer-config>
+  - ...
+```
+
+The paths to the included files can either absolute or relative to the including configuration file.
+
 #### **_Parameters_**
 
 Used to override default values of parameters.
 Each entry of the list comprises two attributes:
 
-| Attribute Name | Description |
-|----------------|-------------|
-| VariableName   | Name of the variable in the model description (mandatory). |
-| Value          | Value of the parameter. Format must match the definition in the model description. |
+| Attribute Name | Type   | Description |
+|----------------|--------|-------------|
+| VariableName   | String | Name of the variable in the model description (mandatory). |
+| Value          | Object | Value of the parameter. Type must match the definition in the model description. |
+
+Syntax:
+```yaml
+Parameters:
+  - VariableName: <name-in-model-description>
+    Value: <new-start-value>
+  - ...
+```
 
 #### **_VariableMappings_**
 
 Used to modify how a variable is represented in a SIL Kit simulation.
 The following properties of a variable can be modified:
 
-| Attribute Name                                    | Description |
-|---------------------------------------------------|-------------|
-| VariableName                                      | Name of the variable in the model description (mandatory). |
-| TopicName                                         | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
-| [Transformation](#variablemappingstransformation) | Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit. |
+| Attribute Name                                    | Type   | Description |
+|---------------------------------------------------|--------|-------------|
+| VariableName                                      | String | Name of the variable in the model description (mandatory). |
+| TopicName                                         | String | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
+| [Transformation](#variablemappingstransformation) | Object | Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit. |
 
-In the example below, there are two FMUs (FMU 1 and FMU 2) with variables that should be connected. However, they need to be reconfigured, because they do not have the same name. After applying configurations with the shown excerpts to their FMU Importers, the variables are connected.
+In the example below, there are two FMUs (FMU1 and FMU2) with variables that should be connected.
+However, they need to be reconfigured, because they do not have the same name.
+After applying configurations with the shown excerpts to their FMU Importers, the variables are connected.
 
 ![Relation between an FMU and the Importer](./Docs/Images/VariableConfiguration.png)
 
 #### **VariableMappings.Transformation**
 
-In addition to the optional transformation that is part of a variable's unit, an additional transformation can be defined.
-This transformation can also be applied to Integer values.
-The resulting value is converted to an integer value.
+In addition to the optional transformation that is part of a variable's unit, the FMU Importer allows to additional linear transformation as well as a type cast for floating point numbers and integers.
+If a linear transformation is applied to an integer, the result will be type casted from the resulting floating point number to the original integer type.
 
-- `Output variables:` The transformation is applied after the UnitDefinition's transformation and before it is serialized and sent via the variable's corresponding SIL Kit DataPublisher.
-- `Input variables:` The transformation is applied after the data was received and deserialized via the variable's corresponding SIL Kit DataSubscriber and before the FMUs unit transformation is applied.
+The point in time when the transformations are applied depends on the variable type:
+- `Output variables:`
+The linear transformation is applied after the UnitDefinition's transformation.
+The result is then cast to the target transmission type, serialized, and sent via the variable's corresponding SIL Kit DataPublisher.
+- `Input variables:`
+Once received by SIL Kit's DataSubscriber, the data is cast from the provided transmission type to the variable's data type.
+Then, the linear transformation is applied.
+At last, the FMU's unit transformation is applied.
+
+The following properties of a variable can be modified:
+
+| Attribute Name   | Type    | Description |
+|------------------|---------|-------------|
+| Factor           | Double  | First order part of the linear transformation. Applied before the offset. |
+| Offset           | Double  | Constant offset of the linear transformation. Applied after the factor. |
+| TransmissionType | String  | Data encoding in SIL Kit. If necessary, the data is converted between the SIL Kit and the FMU components. Allowed values: "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64", "Float", "Float32", "Double", "Float64" |
+| ReverseTransform | Boolean | Allows to reverse transformation if original factor and offset are known. |
+
+Syntax:
+```yaml
+VariableMapping:
+  - VariableName: <name-in-model-description>
+    TopicName: <topic-name-in-sil-kit>
+    Transformation: 
+      Factor: <factor-of-linear-transform>
+      Offset: <offset-of-linear-transform>
+      TransmissionType: {"Int8"|"Int16"|"Int32"|"Int64"|"UInt8"|"UInt16"|"UInt32"|"UInt64"|"Float"|"Float32"|"Double"|"Float64"}
+      ReverseTransform: {true|false}
+  - ...
+```

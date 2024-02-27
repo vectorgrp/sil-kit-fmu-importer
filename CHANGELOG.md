@@ -8,7 +8,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ### Added
 
-* Added a configuration file schema ``FmuImporterConfiguration.schema.json`` for FmuImporter and included it in release package and extended documentation how to use it.
+* Added a configuration file schema ``FmuImporterConfiguration.schema.json`` for the FMU Importer and included it in release package and extended documentation how to use it
 
 ### Fixed
 
@@ -16,6 +16,8 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * The importer did not run with an 'autonomous' lifecycle if the time synchronization mode was set to 'unsynchronized' - this is now working as intended
 * Fixed a crash that occurred if an FMU's model description had a unit definition that did not use a base unit
 * Improved the documentation regarding the time synchronization behavior if the FMU Importer is configured to run in 'unsynchronized' time synchronization mode
+* Improved documentation regarding the configuration file
+* Adapted the documentation's table of contents to indicate more explicitly where to find information on how to configure the FMU (including the parameter values)
 
 ---
 
