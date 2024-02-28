@@ -21,7 +21,13 @@ jobs:
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
     - name: Run Tests
-      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: fmu-importer-win-x64-test-result
+        retention-days: 14
+        path: ./FmuImporter/_testResults
 
 
   # Get environment variable for docker image URI and provide it to next build step
@@ -43,6 +49,11 @@ jobs:
     needs: prep-linux
     container:
       image: ${{ needs.prep-linux.outputs.image }}
+      volumes:
+        - /opt/store/ca/:/tmp/ca/
+    env:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
 
     steps:
     - run: rm -rfv ./FmuImporter/_obj
@@ -57,6 +68,26 @@ jobs:
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
     - name: Run Tests
-      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+      run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      env:
+        NODE_EXTRA_CA_CERTS: "/tmp/ca/Vector_Root_CA_2.0.crt"
+        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        https_proxy: ""  # Explicitly disable the proxy for Node.js
+      with:
+        name: fmu-importer-x64-build
+        retention-days: 14
+        path: ./FmuImporter/_publish/*.zip
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      env:
+        NODE_EXTRA_CA_CERTS: "/tmp/ca/Vector_Root_CA_2.0.crt"
+        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        https_proxy: ""  # Explicitly disable the proxy for Node.js
+      with:
+        name: fmu-importer-linux-x64-test-result
+        retention-days: 14
+        path: ./FmuImporter/_testResults
     - if: always()
       run: rm -rfv * .??*
