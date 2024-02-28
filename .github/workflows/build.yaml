@@ -12,8 +12,8 @@ jobs:
 
     steps:
     # Check out this Git repo
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '6.0.x'
     - name: Build & Publish
@@ -48,8 +48,8 @@ jobs:
     - run: rm -rfv ./FmuImporter/_obj
     - run: rm -rfv ./FmuImporter/_build
     # Check out this Git repo
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '6.0.x'
     - name: Build & Publish

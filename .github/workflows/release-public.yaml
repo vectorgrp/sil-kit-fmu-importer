@@ -28,7 +28,7 @@ jobs:
       image: ${{ needs.prep-linux.outputs.image }}
     steps:
     # Check out this Git repo
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
     - name: Release
