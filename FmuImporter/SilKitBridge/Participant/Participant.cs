@@ -11,6 +11,48 @@ namespace SilKit;
 
 public class Participant : IDisposable
 {
+  public enum ParticipantStates : short
+  {
+    /*! An invalid participant state */
+    Invalid = 0,
+
+    /*! The controllers created state */
+    ServicesCreated = 10,
+
+    /*! The communication initializing state */
+    CommunicationInitializing = 20,
+
+    /*! The communication initialized state */
+    CommunicationInitialized = 30,
+
+    /*! The initialized state */
+    ReadyToRun = 40,
+
+    /*! The running state */
+    Running = 50,
+
+    /*! The paused state */
+    Paused = 60,
+
+    /*! The stopping state */
+    Stopping = 70,
+
+    /*! The stopped state */
+    Stopped = 80,
+
+    /*! The error state */
+    Error = 90,
+
+    /*! The shutting down state */
+    ShuttingDown = 100,
+
+    /*! The shutdown state */
+    Shutdown = 110,
+
+    /*! The aborting state */
+    Aborting = 120
+  }
+
   internal static ILogger? Logger { get; private set; }
 
   private IntPtr _participantPtr = IntPtr.Zero;

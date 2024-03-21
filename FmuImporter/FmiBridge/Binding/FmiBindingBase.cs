@@ -18,18 +18,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     (int)FmiStatus.Pending // asynchronous doStep (FMI 2 only)
   };
 
-  internal enum States
-  {
-    Initial,
-    Instantiated,
-    ConfigurationMode,
-    InitializationMode,
-    StepMode,
-    Terminated,
-    Freed
-  }
 
-  internal States CurrentState { get; set; } = States.Initial;
+  public InternalFmuStates CurrentState { get; internal set; } = InternalFmuStates.Initial;
 
   public ModelDescription ModelDescription { get; }
 
@@ -87,7 +77,21 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   private ModelDescription InitializeModelDescription(string extractedFolderPath)
   {
-    return ModelLoader.LoadModelFromExtractedPath(extractedFolderPath);
+    try
+    {
+      return ModelLoader.LoadModelFromExtractedPath(extractedFolderPath);
+    }
+    catch (Exception e)
+    {
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FailedToReadModelDescription;
+      }
+
+      Log(LogSeverity.Error, $"An error was encountered while reading the model description: {e.Message}");
+      Log(LogSeverity.Debug, $"An error was encountered while reading the model description: {e}");
+      throw;
+    }
   }
 
   private void InitializeModelBinding(string fullPathToLibrary)
@@ -186,32 +190,39 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     if ((FmiStatus)statusCode is FmiStatus.Fatal)
     {
       // FMU is unrecoverable - consider it as freed
-      CurrentState = States.Freed;
-    }
-
-    if ((FmiStatus)statusCode is FmiStatus.Discard or FmiStatus.Error)
-    {
-      // Errors before the initialized state lead to the terminated state, otherwise Terminate() is called
-      if (CurrentState is States.Initial or States.Instantiated or States.InitializationMode)
+      CurrentState = InternalFmuStates.Freed;
+      if (Environment.ExitCode == ExitCodes.Success)
       {
-        CurrentState = States.Terminated;
-      }
-      else
-      {
-        // attempt to terminate FMU gracefully
-        Terminate();
+        Environment.ExitCode = ExitCodes.FmuFailedWithFatal;
       }
     }
 
-    try
+    if ((FmiStatus)statusCode is FmiStatus.Error)
     {
-      Log(LogSeverity.Error, result.Item2!.ToString());
+      // the FMU is internally terminated, the Importer needs to 'free' the FMU
+      CurrentState = InternalFmuStates.TerminatedWithError;
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FmuFailedWithError;
+      }
+
+      FreeInstance();
     }
-    finally
+
+    if ((FmiStatus)statusCode is FmiStatus.Discard)
     {
-      // Throwing ensures that the FMU Importer will exit
-      throw new NativeCallException(result.Item2?.ToString());
+      // We treat 'Discard' the same way as 'Error' (as suggested by the standard)
+      CurrentState = InternalFmuStates.TerminatedWithError;
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FmuFailedWithDiscard;
+      }
+
+      FreeInstance();
     }
+
+    // Throwing ensures that the FMU Importer will exit
+    throw new NativeCallException(result.Item2?.ToString());
   }
 
   protected void Log(LogSeverity severity, string message)

@@ -149,7 +149,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   private void ReleaseUnmanagedResources()
   {
-    if (CurrentState != States.Freed)
+    if (CurrentState != InternalFmuStates.Freed)
     {
       try
       {
@@ -269,19 +269,43 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
           }
         }
 
-        SetReal(new[] { mdVar.ValueReference }, new[] { value });
+        SetReal(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            value
+          });
         return;
       }
       case VariableTypes.Int32:
       {
         var value = BitConverter.ToInt32(data);
-        SetInteger(new[] { mdVar.ValueReference }, new[] { value });
+        SetInteger(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            value
+          });
         return;
       }
       case VariableTypes.Boolean:
       {
         var value = BitConverter.ToBoolean(data);
-        SetBoolean(new[] { mdVar.ValueReference }, new[] { value });
+        SetBoolean(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            value
+          });
         return;
       }
       case VariableTypes.String:
@@ -289,14 +313,30 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         var byteLength = BitConverter.ToInt32(data, 0);
         // offset = 4 byte -> 32 bit
         var value = Encoding.UTF8.GetString(data, 4, byteLength);
-        SetString(new[] { mdVar.ValueReference }, new[] { value });
+        SetString(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            value
+          });
         return;
       }
       case VariableTypes.EnumFmi2:
       {
         var value = BitConverter.ToInt32(data);
 
-        SetInteger(new[] { mdVar.ValueReference }, new[] { value });
+        SetInteger(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            value
+          });
         return;
       }
       default:
@@ -382,7 +422,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       throw new NullReferenceException("Failed to create an FMU instance.");
     }
 
-    CurrentState = States.Instantiated;
+    CurrentState = InternalFmuStates.Instantiated;
   }
 
   /*
@@ -411,7 +451,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   public override void FreeInstance()
   {
     _fmi2FreeInstance(_component);
-    CurrentState = States.Freed;
+    CurrentState = InternalFmuStates.Freed;
   }
 
   /*
@@ -461,7 +501,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       _fmi2EnterInitializationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.InitializationMode;
+    CurrentState = InternalFmuStates.InitializationMode;
   }
 
   /*
@@ -478,7 +518,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
       _fmi2ExitInitializationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.StepMode;
+    CurrentState = InternalFmuStates.StepMode;
   }
 
   /*
@@ -492,7 +532,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public override void Terminate()
   {
-    if (CurrentState == States.Terminated)
+    if (CurrentState is InternalFmuStates.Terminated or InternalFmuStates.TerminatedWithError)
     {
       // skip termination
       return;
@@ -500,15 +540,19 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
     try
     {
-      CurrentState = States.Terminated;
+      CurrentState = InternalFmuStates.Terminated;
       ProcessReturnCode(
         _fmi2Terminate(_component),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
     catch (Exception e)
     {
-      Log(LogSeverity.Error, "Terminate encountered an error:" + e);
-      Environment.ExitCode = e.HResult;
+      Log(LogSeverity.Error, "Terminate encountered an error:" + e.Message);
+      Log(LogSeverity.Debug, "Terminate encountered an error:" + e);
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FmuFailedToTerminate;
+      }
     }
   }
 

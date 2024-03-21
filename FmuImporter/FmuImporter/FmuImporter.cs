@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Fmi;
+using Fmi.Binding;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using FmuImporter.Exceptions;
@@ -48,7 +49,24 @@ public class FmuImporter
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>
       {
-        Environment.ExitCode = ((Exception)e.ExceptionObject).HResult;
+        if (Environment.ExitCode == ExitCodes.Success)
+        {
+          Environment.ExitCode = ExitCodes.UnhandledException;
+        }
+
+        Console.ForegroundColor = ConsoleColor.Red;
+        // Log unhandled exceptions
+        if (e.ExceptionObject is Exception ex)
+        {
+          Console.WriteLine($"Unhandled exception: {ex.Message}.\nMore information was written to the debug console.");
+          Debug.WriteLine($"Unhandled exception: {ex}.");
+        }
+        else
+        {
+          Console.WriteLine($"Unhandled non-exception object: {e.ExceptionObject}");
+        }
+
+        Console.ResetColor();
       };
 
     SilKitEntity = new SilKitEntity(
@@ -75,7 +93,8 @@ public class FmuImporter
     }
     catch (Exception e)
     {
-      Console.WriteLine(e);
+      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
+      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
       throw;
     }
 
@@ -113,8 +132,13 @@ public class FmuImporter
     }
     catch (Exception e)
     {
-      SilKitEntity.Logger.Log(LogLevel.Error, e.ToString());
-      Environment.ExitCode = e.HResult;
+      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
+      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
+      }
+
       ExitFmuImporter();
     }
   }
@@ -191,7 +215,10 @@ public class FmuImporter
         if (isHandlingStructuredParameters)
         {
           // modify model description to make sure that the array lengths can be calculated correctly
-          v.Start = new[] { configuredParameter.Value };
+          v.Start = new[]
+          {
+            configuredParameter.Value
+          };
         }
 
         data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
@@ -265,7 +292,7 @@ public class FmuImporter
 
     try
     {
-      SilKitEntity.StartSimulation(SimulationStepReached, stepDuration);
+      SilKitEntity.StartSimulation(OnSimulationStepWrapper, stepDuration);
       CurrentSilKitStatus = SilKitStatus.LifecycleStarted;
 
       SilKitEntity.WaitForLifecycleToComplete();
@@ -273,7 +300,12 @@ public class FmuImporter
     }
     catch (Exception e)
     {
-      Environment.ExitCode = e.HResult;
+      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
+      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringSimulation;
+      }
     }
     finally
     {
@@ -290,14 +322,34 @@ public class FmuImporter
   private Stopwatch? _stopWatch;
   private long _nextSimTime;
 
-  private void SimulationStepReached(ulong nowInNs, ulong durationInNs)
+  private void OnSimulationStepWrapper(ulong nowInNs, ulong durationInNs)
+  {
+    try
+    {
+      OnSimulationStep(nowInNs, durationInNs);
+    }
+    catch (Exception e)
+    {
+      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
+      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringUserCallbackExecution;
+      }
+
+      ExitFmuImporter();
+    }
+  }
+
+
+  private void OnSimulationStep(ulong nowInNs, ulong durationInNs)
   {
     if (FmuDataManager == null)
     {
       throw new NullReferenceException($"{nameof(FmuDataManager)} was null.");
     }
 
-    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Exited)
+    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Terminated)
     {
       ExitFmuImporter();
       return;
@@ -367,8 +419,14 @@ public class FmuImporter
     }
     catch (Exception e)
     {
+      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
+      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
       ExitFmuImporter();
-      Environment.ExitCode = e.HResult;
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringFmuSimulationStepExecution;
+      }
+
       return;
     }
 
@@ -390,14 +448,16 @@ public class FmuImporter
 
   private bool IsSimulationStopped()
   {
-    return FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Exited ||
+    return FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Terminated ||
            CurrentSilKitStatus == SilKitStatus.Stopped ||
            CurrentSilKitStatus == SilKitStatus.ShutDown;
   }
 
   public void ExitFmuImporter()
   {
-    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initialized)
+    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initialized &&
+        !(FmuEntity.Binding.CurrentState is
+            InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
     {
       FmuEntity.Terminate();
       // FreeInstance will be called by the dispose pattern

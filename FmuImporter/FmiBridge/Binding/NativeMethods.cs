@@ -44,7 +44,15 @@ internal static class NativeMethods
     }
     catch (Exception e)
     {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.WriteLine($"Failed to load the dll '{dllToLoad}'. Error message and stack trace follow:");
       Console.WriteLine(e);
+      Console.ResetColor();
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FailedToLoadLibrary;
+      }
+
       throw;
     }
   }

@@ -16,7 +16,7 @@ public class FmuEntity : IDisposable
     Instantiated,
     Initializing,
     Initialized,
-    Exited
+    Terminated
   }
 
   public FmiVersions FmiVersion { get; }
@@ -218,8 +218,8 @@ public class FmuEntity : IDisposable
 
   public void Terminate()
   {
+    CurrentFmuSuperState = FmuSuperStates.Terminated;
     Binding.Terminate();
-    CurrentFmuSuperState = FmuSuperStates.Exited;
   }
 
 #region IDisposable

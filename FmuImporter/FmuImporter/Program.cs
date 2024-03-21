@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.CommandLine;
+using System.Diagnostics;
 using System.Globalization;
 using FmuImporter.SilKit;
 using SilKit.Services.Orchestration;
@@ -12,6 +13,8 @@ internal class Program
 {
   private static async Task Main(string[] args)
   {
+    AppDomain.CurrentDomain.UnhandledException += PrintUnhandledException;
+
     // Set output to be OS language independent
     CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
     CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
@@ -83,70 +86,93 @@ internal class Program
         lifecycleMode,
         timeSyncMode) =>
       {
-        if (!File.Exists(fmuPath))
+        try
         {
-          throw new FileNotFoundException($"The provided FMU file path ({fmuPath}) is invalid.");
-        }
-
-        if (silKitConfigFile != null && !File.Exists(silKitConfigFile))
-        {
-          throw new FileNotFoundException(
-            $"The provided SIL Kit configuration file path ({silKitConfigFile}) is invalid.");
-        }
-
-        if (fmuImporterConfigFile != null && !File.Exists(fmuImporterConfigFile))
-        {
-          throw new FileNotFoundException(
-            $"The provided FMU Importer configuration file path ({fmuImporterConfigFile}) is invalid.");
-        }
-
-        var parseSucceeded = Enum.TryParse(
-          lifecycleMode,
-          true,
-          out LifecycleService.LifecycleConfiguration.Modes parsedLifecycleMode);
-        if (!parseSucceeded)
-        {
-          throw new ArgumentException(
-            $"The provided lifecycle mode '{lifecycleMode}' is invalid. " +
-            $"Available options are 'autonomous' and 'coordinated'.");
-        }
-
-        parseSucceeded = Enum.TryParse(
-          timeSyncMode,
-          true,
-          out TimeSyncModes parsedTimeSyncMode);
-        if (!parseSucceeded)
-        {
-          throw new ArgumentException(
-            $"The provided time synchronization mode '{timeSyncMode}' is invalid. " +
-            $"Available options are 'synchronized' and 'unsynchronized'.");
-        }
-        
-        // if lifecycle mode was not set manually...
-        //   use coordinated if time-sync-mode = 'synchronized'
-        //   use autonomous if time-sync-mode = 'unsynchronized'
-        if (lifecycleMode == "unset")
-        {
-          if (timeSyncMode == "synchronized")
+          if (!File.Exists(fmuPath))
           {
-            parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Coordinated;
+            throw new FileNotFoundException($"The provided FMU file path ({fmuPath}) is invalid.");
           }
-          else if (timeSyncMode == "unsynchronized")
+
+          if (silKitConfigFile != null && !File.Exists(silKitConfigFile))
           {
-            parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Autonomous;
+            throw new FileNotFoundException(
+              $"The provided SIL Kit configuration file path ({silKitConfigFile}) is invalid.");
           }
+
+          if (fmuImporterConfigFile != null && !File.Exists(fmuImporterConfigFile))
+          {
+            throw new FileNotFoundException(
+              $"The provided FMU Importer configuration file path ({fmuImporterConfigFile}) is invalid.");
+          }
+
+          var parseSucceeded = Enum.TryParse(
+            lifecycleMode,
+            true,
+            out LifecycleService.LifecycleConfiguration.Modes parsedLifecycleMode);
+          if (!parseSucceeded)
+          {
+            throw new ArgumentException(
+              $"The provided lifecycle mode '{lifecycleMode}' is invalid. " +
+              $"Available options are 'autonomous' and 'coordinated'.");
+          }
+
+          parseSucceeded = Enum.TryParse(
+            timeSyncMode,
+            true,
+            out TimeSyncModes parsedTimeSyncMode);
+          if (!parseSucceeded)
+          {
+            throw new ArgumentException(
+              $"The provided time synchronization mode '{timeSyncMode}' is invalid. " +
+              $"Available options are 'synchronized' and 'unsynchronized'.");
+          }
+
+          // if lifecycle mode was not set manually...
+          //   use coordinated if time-sync-mode = 'synchronized'
+          //   use autonomous if time-sync-mode = 'unsynchronized'
+          if (lifecycleMode == "unset")
+          {
+            if (timeSyncMode == "synchronized")
+            {
+              parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Coordinated;
+            }
+            else if (timeSyncMode == "unsynchronized")
+            {
+              parsedLifecycleMode = LifecycleService.LifecycleConfiguration.Modes.Autonomous;
+            }
+          }
+
+          var instance = new FmuImporter(
+            fmuPath,
+            silKitConfigFile,
+            fmuImporterConfigFile,
+            participantName,
+            parsedLifecycleMode,
+            parsedTimeSyncMode);
+
+          instance.StartSimulation();
+          instance.Dispose();
         }
+        catch (Exception e)
+        {
+          if (Environment.ExitCode == ExitCodes.Success)
+          {
+            if (e is FileNotFoundException)
+            {
+              Environment.ExitCode = ExitCodes.FileNotFound;
+            }
+            else
+            {
+              Environment.ExitCode = ExitCodes.UnhandledException;
+            }
+          }
 
-        var instance = new FmuImporter(
-          fmuPath,
-          silKitConfigFile,
-          fmuImporterConfigFile,
-          participantName,
-          parsedLifecycleMode,
-          parsedTimeSyncMode);
-
-        instance.StartSimulation();
-        instance.Dispose();
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine(
+            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+          Debug.WriteLine($"Encountered exception: {e}.");
+          Console.ResetColor();
+        }
       },
       fmuPathOption,
       silKitConfigFileOption,
@@ -157,5 +183,26 @@ internal class Program
       timeSyncModeOption);
 
     await rootCommand.InvokeAsync(args);
+  }
+
+  private static void PrintUnhandledException(object sender, UnhandledExceptionEventArgs e)
+  {
+    if (Environment.ExitCode == ExitCodes.Success)
+    {
+      Environment.ExitCode = ExitCodes.UnhandledException;
+    }
+
+    Console.ForegroundColor = ConsoleColor.Red;
+    if (e.ExceptionObject is Exception ex)
+    {
+      Console.WriteLine($"Unhandled exception: {ex.Message}.\nMore information was written to the debug console.");
+      Debug.WriteLine($"Unhandled exception: {ex}.");
+    }
+    else
+    {
+      Console.WriteLine($"Unhandled non-exception: {e.ExceptionObject}");
+    }
+
+    Console.ResetColor();
   }
 }

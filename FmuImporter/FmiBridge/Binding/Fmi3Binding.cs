@@ -99,7 +99,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   private void ReleaseUnmanagedResources()
   {
-    if (CurrentState != States.Freed)
+    if (CurrentState != InternalFmuStates.Freed)
     {
       try
       {
@@ -177,7 +177,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("Failed to create an FMU instance.");
     }
 
-    CurrentState = States.Instantiated;
+    CurrentState = InternalFmuStates.Instantiated;
   }
 
   /*
@@ -226,7 +226,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       _fmi3EnterConfigurationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.ConfigurationMode;
+    CurrentState = InternalFmuStates.ConfigurationMode;
   }
 
   /*
@@ -243,7 +243,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       _fmi3ExitConfigurationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.Instantiated;
+    CurrentState = InternalFmuStates.Instantiated;
   }
 
   /*
@@ -266,7 +266,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         (stopTime.HasValue) ? stopTime.Value : double.NaN),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.InitializationMode;
+    CurrentState = InternalFmuStates.InitializationMode;
   }
 
   /*
@@ -295,7 +295,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       _fmi3ExitInitializationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = States.StepMode;
+    CurrentState = InternalFmuStates.StepMode;
   }
 
   /*
@@ -436,7 +436,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToSingle(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
@@ -466,7 +469,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           }
         }
 
-        SetFloat32(new[] { mdVar.ValueReference }, values);
+        SetFloat32(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Float64:
@@ -476,7 +484,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToDouble(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
@@ -506,7 +517,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           }
         }
 
-        SetFloat64(new[] { mdVar.ValueReference }, values);
+        SetFloat64(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Int8:
@@ -522,7 +538,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         var values = new sbyte[arraySize];
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
 
-        SetInt8(new[] { mdVar.ValueReference }, new[] { (sbyte)data[0] });
+        SetInt8(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          new[]
+          {
+            (sbyte)data[0]
+          });
         return;
       }
       case VariableTypes.Int16:
@@ -532,14 +556,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt16(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetInt16(new[] { mdVar.ValueReference }, values);
+        SetInt16(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Int32:
@@ -549,14 +581,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt32(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetInt32(new[] { mdVar.ValueReference }, values);
+        SetInt32(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Int64:
@@ -566,14 +606,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt64(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetInt64(new[] { mdVar.ValueReference }, values);
+        SetInt64(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.UInt8:
@@ -586,7 +634,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           }
         }
 
-        SetUInt8(new[] { mdVar.ValueReference }, data);
+        SetUInt8(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          data);
         return;
       }
       case VariableTypes.UInt16:
@@ -596,14 +649,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt16(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetUInt16(new[] { mdVar.ValueReference }, values);
+        SetUInt16(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.UInt32:
@@ -613,14 +674,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt32(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetUInt32(new[] { mdVar.ValueReference }, values);
+        SetUInt32(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.UInt64:
@@ -630,14 +699,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt64(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetUInt64(new[] { mdVar.ValueReference }, values);
+        SetUInt64(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Boolean:
@@ -647,14 +724,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToBoolean(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetBoolean(new[] { mdVar.ValueReference }, values);
+        SetBoolean(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.String:
@@ -673,7 +758,12 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           values[i] = value;
         }
 
-        SetString(new[] { mdVar.ValueReference }, values);
+        SetString(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       case VariableTypes.Binary:
@@ -687,14 +777,22 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt64(data);
-          values = new[] { value };
+          values = new[]
+          {
+            value
+          };
         }
         else
         {
           Buffer.BlockCopy(data, 0, values, 0, data.Length);
         }
 
-        SetInt64(new[] { mdVar.ValueReference }, values);
+        SetInt64(
+          new[]
+          {
+            mdVar.ValueReference
+          },
+          values);
         return;
       }
       default:
@@ -746,7 +844,16 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       values[i] = handler.AddrOfPinnedObject();
     }
 
-    SetBinary(new[] { valueRef }, new[] { (IntPtr)data.Length }, values);
+    SetBinary(
+      new[]
+      {
+        valueRef
+      },
+      new[]
+      {
+        (IntPtr)data.Length
+      },
+      values);
 
     foreach (var gcHandle in handlers)
     {
@@ -804,7 +911,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public override void Terminate()
   {
-    if (CurrentState == States.Terminated)
+    if (CurrentState is InternalFmuStates.Terminated or InternalFmuStates.TerminatedWithError)
     {
       // skip termination
       return;
@@ -812,13 +919,19 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
     try
     {
+      CurrentState = InternalFmuStates.Terminated;
       ProcessReturnCode(
         _fmi3Terminate(_component),
         System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
     }
-    finally
+    catch (Exception e)
     {
-      CurrentState = States.Terminated;
+      Log(LogSeverity.Error, "Terminate encountered an error:" + e.Message);
+      Log(LogSeverity.Debug, "Terminate encountered an error:" + e);
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FmuFailedToTerminate;
+      }
     }
   }
 
@@ -833,7 +946,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   public override void FreeInstance()
   {
     _fmi3FreeInstance(_component);
-    CurrentState = States.Freed;
+    CurrentState = InternalFmuStates.Freed;
   }
 
 #endregion Common & Co-Simulation Functions for FMI 3.0

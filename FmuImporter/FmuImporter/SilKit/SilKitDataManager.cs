@@ -82,7 +82,7 @@ public class SilKitDataManager : IDisposable
     var valueRef = (uint)context;
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : dataMessageEvent.TimestampInNS;
 
-    // data is processed in sim. step callback (SimulationStepReached)
+    // data is processed in sim. step callback (OnSimulationStep)
     if (DataBuffer.TryGetValue(dataMessageEvent.TimestampInNS, out var futureDict))
     {
       futureDict[valueRef] = dataMessageEvent.Data;
@@ -91,7 +91,9 @@ public class SilKitDataManager : IDisposable
     {
       var dict = new Dictionary<uint, byte[]>
       {
-        { valueRef, dataMessageEvent.Data }
+        {
+          valueRef, dataMessageEvent.Data
+        }
       };
       DataBuffer.Add(dataMessageEvent.TimestampInNS, dict);
     }

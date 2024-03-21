@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SilKit.Services.Logger;
 
@@ -47,11 +48,16 @@ internal static class Helpers
       {
         if (Participant.Logger != null)
         {
-          Participant.Logger.Log(LogLevel.Error, e.ToString());
+          Participant.Logger.Log(LogLevel.Error, e.Message);
+          Participant.Logger.Log(LogLevel.Debug, e.ToString());
         }
         else
         {
-          Console.WriteLine(e);
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine(
+            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+          Debug.WriteLine($"Encountered exception: {e}.");
+          Console.ResetColor();
         }
 
         throw;

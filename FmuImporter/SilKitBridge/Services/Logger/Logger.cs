@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace SilKit.Services.Logger;
@@ -48,9 +49,18 @@ public class Logger : ILogger
     }
     catch (Exception e)
     {
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringLog;
+      }
+
+      Console.ForegroundColor = ConsoleColor.Red;
       Console.WriteLine("Logging via SIL Kit logger failed.");
-      Console.WriteLine(e);
-      Environment.ExitCode = e.HResult;
+      Console.WriteLine(
+        $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+      Debug.WriteLine("Logging via SIL Kit logger failed.");
+      Debug.WriteLine($"Encountered exception: {e}.");
+      Console.ResetColor();
     }
   }
 

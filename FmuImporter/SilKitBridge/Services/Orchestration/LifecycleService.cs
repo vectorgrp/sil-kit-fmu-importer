@@ -253,9 +253,9 @@ public class LifecycleService : ILifecycleService
         LifecycleServicePtr,
         out var finalState),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
-    if ((short)finalState != 110)
+    if ((Participant.ParticipantStates)finalState != Participant.ParticipantStates.Shutdown)
     {
-      Debug.WriteLine($"Finished SIL Kit with state '{finalState}'");
+      Debug.WriteLine($"Finished SIL Kit with state '{(Participant.ParticipantStates)finalState}'");
     }
   }
 

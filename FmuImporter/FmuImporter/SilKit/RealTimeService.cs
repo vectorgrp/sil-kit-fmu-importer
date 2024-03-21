@@ -19,7 +19,7 @@ public class RealTimeService : ITimeSyncService
     _stepSize = initialStepSize;
   }
 
-  public void Start()
+  public Task Start()
   {
     if (_stepHandler == null)
     {
@@ -28,7 +28,7 @@ public class RealTimeService : ITimeSyncService
 
     _isRunning = true;
 
-    Task.Run(
+    return Task.Run(
       async () =>
       {
         while (_isRunning)

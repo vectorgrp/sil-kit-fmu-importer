@@ -10,6 +10,17 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 * Added a configuration file schema ``FmuImporterConfiguration.schema.json`` for the FMU Importer and included it in release package and extended documentation how to use it
 
+### Changed
+
+* Changed exception logging behavior
+  * The exception message is logged at the `Error` log level
+  * The entire exception including its stack trace is logged at the `Debug` log level
+* Added more meaningful exit codes and documented them
+  * 0 indicates success
+  * 1xxx indicates an issue in the FMU Importer
+  * 2xxx indicates an issue in the FMI binding
+  * 3xxx indicates an issue in the SIL Kit binding
+
 ### Fixed
 
 * Fixed configuration of boolean parameters via config file
@@ -19,6 +30,8 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Improved documentation regarding the configuration file
 * Adapted the documentation's table of contents to indicate more explicitly where to find information on how to configure the FMU (including the parameter values)
 * The documentation now correctly states that there are prebuilt packages and the requirements to run them
+* Fixed a possible StackOverflow exception if an FMU returns a discard or error status code
+* Fixed a possible stall of the SIL Kit component if the FMU component terminates unexpectedly
 
 ---
 

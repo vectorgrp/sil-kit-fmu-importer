@@ -117,7 +117,32 @@ public class SilKitEntity : IDisposable
   private void OnSimulationStarting()
   {
     // only occurs if virtual time synchronization is inactive
-    ((RealTimeService)_timeSyncService).Start();
+    try
+    {
+      ((RealTimeService)_timeSyncService)
+        .Start()
+        .ContinueWith(
+          (t) =>
+          {
+            if (t.IsFaulted)
+            {
+              if (t.Exception != null)
+              {
+                Logger.Log(LogLevel.Error, t.Exception.Message);
+                Logger.Log(LogLevel.Debug, t.Exception.ToString());
+                // NB: Current options are to either call "Error" and stall or call "Stop" (at the cost of not being able to see the error in the exit code)
+                // Since we do not want to stall, we call "Stop" here.
+                _lifecycleService.Stop(t.Exception.Message);
+              }
+            }
+          });
+    }
+    catch (Exception e)
+    {
+      Logger.Log(LogLevel.Error, e.Message);
+      Logger.Log(LogLevel.Debug, e.ToString());
+      throw;
+    }
   }
 
 #endregion simulation control
