@@ -43,17 +43,21 @@ The SIL Kit FMU Importer has two roles
 
 ## **Setup**
 
-Currently, the SIL Kit FMU Importer does not provide prebuilt packages.
-Therefore, you must build them yourselves before you can run the tool.
+The SIL Kit FMU Importer ships as prebuilt portable packages.
+This means that the FMU Importer requires an installed .NET 6 Runtime on the target machine.
+The package itself provides executables for Windows and Linux.
+The Linux distributables are tested on Ubuntu 22.04, but they should also run on other similar distributions.
+
+Please refer to the section [Build Instructions](#build-instructions) if you want to build the FMU Importer yourself.
 
 ### **Requirements**
 
 - .NET 6
   - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) has guides on how to get .NET 6 for your OS
-  - May also be installed as part of a Visual Studio (v17.2 / 2022) installation
+  - May also be installed as part of a Visual Studio (v17.2+ / 2022) installation
 - SIL Kit* (only needed to run the FMU Importer; not required for build step)
   - Package can be downloaded from [GitHub (SIL Kit)](https://github.com/vectorgrp/sil-kit/releases)
-  - The FMU Importer was tested with SIL Kit 4.0.26 and prebuilt packages ship with this SIL Kit
+  - The FMU Importer was tested with SIL Kit 4.0.43 and prebuilt packages ship with this SIL Kit version
 - FMU Importer Source Code
   - Can be downloaded from [GitHub (FMU Importer)](https://github.com/vectorgrp/sil-kit-fmu-importer)
 
@@ -124,6 +128,8 @@ Available options are:
 
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
 If no configuration was provided or if it did not specify a registry URI, the default URI `silkit://localhost:8500` will be used.
+The FMU Importer uses the SIL Kit logger for its output.
+Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer.
 
 
 ## **Lifecycle and Time Synchronization Modes**

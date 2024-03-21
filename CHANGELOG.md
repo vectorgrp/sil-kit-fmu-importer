@@ -18,6 +18,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * Improved the documentation regarding the time synchronization behavior if the FMU Importer is configured to run in 'unsynchronized' time synchronization mode
 * Improved documentation regarding the configuration file
 * Adapted the documentation's table of contents to indicate more explicitly where to find information on how to configure the FMU (including the parameter values)
+* The documentation now correctly states that there are prebuilt packages and the requirements to run them
 
 ---
 
