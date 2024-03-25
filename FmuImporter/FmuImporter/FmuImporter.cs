@@ -140,6 +140,7 @@ public class FmuImporter
       }
 
       ExitFmuImporter();
+      throw;
     }
   }
 

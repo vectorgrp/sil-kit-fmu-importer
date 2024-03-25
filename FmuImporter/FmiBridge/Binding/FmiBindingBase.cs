@@ -184,6 +184,11 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       methodHandle);
     if (result.Item1)
     {
+      if (result.Item2 != null)
+      {
+        Log(LogSeverity.Warning, result.Item2.ToString());
+      }
+
       return;
     }
 
@@ -227,7 +232,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   protected void Log(LogSeverity severity, string message)
   {
-    _loggerAction?.Invoke(LogSeverity.Error, message);
+    _loggerAction?.Invoke(severity, message);
   }
 
   private Action<LogSeverity, string>? _loggerAction;

@@ -926,8 +926,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
     catch (Exception e)
     {
-      Log(LogSeverity.Error, "Terminate encountered an error:" + e.Message);
-      Log(LogSeverity.Debug, "Terminate encountered an error:" + e);
+      Log(LogSeverity.Error, "Terminate encountered an error: " + e.Message);
+      Log(LogSeverity.Debug, "Terminate encountered an error: " + e);
       if (Environment.ExitCode == ExitCodes.Success)
       {
         Environment.ExitCode = ExitCodes.FmuFailedToTerminate;

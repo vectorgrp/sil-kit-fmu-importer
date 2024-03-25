@@ -165,13 +165,13 @@ internal class Program
             {
               Environment.ExitCode = ExitCodes.UnhandledException;
             }
-          }
 
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine(
-            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
-          Debug.WriteLine($"Encountered exception: {e}.");
-          Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(
+              $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+            Debug.WriteLine($"Encountered exception: {e}.");
+            Console.ResetColor();
+          }
         }
       },
       fmuPathOption,

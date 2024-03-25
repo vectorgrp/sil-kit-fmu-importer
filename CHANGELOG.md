@@ -32,6 +32,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 * The documentation now correctly states that there are prebuilt packages and the requirements to run them
 * Fixed a possible StackOverflow exception if an FMU returns a discard or error status code
 * Fixed a possible stall of the SIL Kit component if the FMU component terminates unexpectedly
+* FMU Importer erroneously started SIL Kit lifecycle even if the initialization of the FMU or Importer failed
 
 ---
 
