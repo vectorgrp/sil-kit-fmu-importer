@@ -812,8 +812,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     var arraySize = 1;
     if (!isScalar)
     {
-      arraySize = BitConverter.ToInt32(data, 0);
-      data = data.Skip(4).ToArray();
+      arraySize = binSizes.Length;
 
       if (binSizes.Sum() != data.Length)
       {
@@ -849,10 +848,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       {
         valueRef
       },
-      new[]
-      {
-        (IntPtr)data.Length
-      },
+      Array.ConvertAll(binSizes, b => (IntPtr)b),
       values);
 
     foreach (var gcHandle in handlers)
@@ -1479,15 +1475,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       throw new NullReferenceException("FMU was not initialized.");
     }
 
-    var valueSizes = new size_t[valueReferences.Length];
     var nValues = CalculateValueLength(ref valueReferences);
     var result = new fmi3Binary[(int)nValues];
+    var valueSizes = new IntPtr[(int)nValues];
 
     ProcessReturnCode(
       _fmi3GetBinary(
         _component,
         valueReferences,
-        (size_t)valueReferences.Length,
+        (IntPtr)valueReferences.Length,
         valueSizes,
         result,
         nValues),
