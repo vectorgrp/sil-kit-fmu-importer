@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace SilKit.Supplements;
 
@@ -89,7 +90,7 @@ public class Deserializer
       AssertCapacity(size);
       var span = DeserializeAligned(size);
       EndArray();
-      return span.ToString();
+      return Encoding.ASCII.GetString(span);
     }
 
     if (type == typeof(byte[]))
