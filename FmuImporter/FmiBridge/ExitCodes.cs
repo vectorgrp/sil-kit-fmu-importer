@@ -5,12 +5,13 @@ namespace Fmi;
 
 public class ExitCodes
 {
+  private const int Offset = 50;
   public const int Success = 0;
 
-  public const int FailedToLoadLibrary = 2001;
-  public const int FailedToReadModelDescription = 2002;
-  public const int FmuFailedToTerminate = 2003;
-  public const int FmuFailedWithDiscard = 2004;
-  public const int FmuFailedWithError = 2005;
-  public const int FmuFailedWithFatal = 2006;
+  public const int FailedToLoadLibrary = Offset + 1;
+  public const int FailedToReadModelDescription = Offset + 2;
+  public const int FmuFailedToTerminate = Offset + 3;
+  public const int FmuFailedWithDiscard = Offset + 4;
+  public const int FmuFailedWithError = Offset + 5;
+  public const int FmuFailedWithFatal = Offset + 6;
 }

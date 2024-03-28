@@ -5,7 +5,8 @@ namespace SilKit;
 
 public class ExitCodes
 {
+  private const int Offset = 100;
   public const int Success = 0;
 
-  public const int ErrorDuringLog = 3001;
+  public const int ErrorDuringLog = Offset + 1;
 }

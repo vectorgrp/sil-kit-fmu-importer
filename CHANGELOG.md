@@ -17,9 +17,9 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
   * The entire exception including its stack trace is logged at the `Debug` log level
 * Added more meaningful exit codes and documented them
   * 0 indicates success
-  * 1xxx indicates an issue in the FMU Importer
-  * 2xxx indicates an issue in the FMI binding
-  * 3xxx indicates an issue in the SIL Kit binding
+  * 1-49 indicates an issue in the FMU Importer
+  * 50-99 indicates an issue in the FMI binding
+  * 100+ indicates an issue in the SIL Kit binding
 * Updated SIL Kit version to 4.0.47
 
 ### Fixed

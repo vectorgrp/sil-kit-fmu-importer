@@ -337,26 +337,26 @@ This includes a stack trace if the error originated from an exception.
 
 If the FMU Importer exited without any issues, the exit code will be 0.
 All other exit codes set by the FMU Importer have four digits, of which the first digit indicates the component that reported the error:
-* 1xxx: The error originated in the FMU Importer itself
-* 2xxx: The error originated in the FMI binding
-* 3xxx: The error originated in the SIL Kit binding
+* 1-49: The error originated in the FMU Importer itself
+* 50-99: The error originated in the FMI binding
+* 100+: The error originated in the SIL Kit binding
 
 The following table lists the meaning of the current exit codes:
 
 
 | Code | Origin          | Description |
 |------|-----------------|-------------|
-| 0    | FMU Importer    | The application terminated successfuly |
-| 1001 | FMU Importer    | Error during initialization |
-| 1002 | FMU Importer    | Error during simulation |
-| 1003 | FMU Importer    | Error during FMU's simulation step execution |
-| 1004 | FMU Importer    | Error during user callback execution |
-| 1005 | FMU Importer    | One of the required or provided files was not found |
-| 2001 | FMI Binding     | Failed to load a library, most likely the FMU's .dll or .so file |
-| 2002 | FMI Binding     | Failed to read the FMU's model description file |
-| 2003 | FMI Binding     | FMU failed to terminate |
-| 2004 | FMI Binding     | FMU failed due to call that return with 'discard' status code  |
-| 2005 | FMI Binding     | FMU failed due to call that return with 'error' status code |
-| 2006 | FMI Binding     | FMU failed due to call that return with 'fatal' status code |
-| 3001 | SIL Kit Binding | Failed to log using SIL Kit's logger |
-| -1   | Any             | Encountered an unknown or unspecified error |
+|  0   | FMU Importer    | The application terminated successfuly |
+|  1   | FMU Importer    | Error during initialization |
+|  2   | FMU Importer    | Error during simulation |
+|  3   | FMU Importer    | Error during FMU's simulation step execution |
+|  4   | FMU Importer    | Error during user callback execution |
+|  5   | FMU Importer    | One of the required or provided files was not found |
+| 49   | FMU Importer    | Encountered an unknown or unspecified error |
+| 51   | FMI Binding     | Failed to load a library, most likely the FMU's .dll or .so file |
+| 52   | FMI Binding     | Failed to read the FMU's model description file |
+| 53   | FMI Binding     | FMU failed to terminate |
+| 54   | FMI Binding     | FMU failed due to call that return with 'discard' status code  |
+| 55   | FMI Binding     | FMU failed due to call that return with 'error' status code |
+| 56   | FMI Binding     | FMU failed due to call that return with 'fatal' status code |
+| 101  | SIL Kit Binding | Failed to log using SIL Kit's logger |
