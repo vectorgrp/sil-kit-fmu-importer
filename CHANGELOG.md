@@ -4,7 +4,7 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
-## [1.2.0] - TBD
+## [1.2.0] - 2024-03-28
 
 ### Added
 
@@ -20,6 +20,7 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
   * 1xxx indicates an issue in the FMU Importer
   * 2xxx indicates an issue in the FMI binding
   * 3xxx indicates an issue in the SIL Kit binding
+* Updated SIL Kit version to 4.0.47
 
 ### Fixed
 

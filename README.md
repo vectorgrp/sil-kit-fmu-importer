@@ -58,7 +58,7 @@ Please refer to the section [Build Instructions](#build-instructions) if you wan
   - May also be installed as part of a Visual Studio (v17.2+ / 2022) installation
 - SIL Kit* (only needed to run the FMU Importer; not required for build step)
   - Package can be downloaded from [GitHub (SIL Kit)](https://github.com/vectorgrp/sil-kit/releases)
-  - The FMU Importer was tested with SIL Kit 4.0.43 and prebuilt packages ship with this SIL Kit version
+  - The FMU Importer was tested with SIL Kit 4.0.47 and prebuilt packages ship with this SIL Kit version
 - FMU Importer Source Code
   - Can be downloaded from [GitHub (FMU Importer)](https://github.com/vectorgrp/sil-kit-fmu-importer)
 
@@ -109,7 +109,7 @@ You must provide the path to the vCDL output file (including its file extension)
 
 >Please make sure that you have a running and reachable SIL Kit registry before starting the FMU Importer executable.
 
->If you built the FMU Importer yourself, you may need to copy the SilKit.dll/libSilKit.so file from a SIL Kit release package (we recommend SIL Kit 4.0.26) to the root folder of your build directory (the same folder where FmuImporter[.exe] is located).
+>If you built the FMU Importer yourself, you may need to copy the SilKit.dll/libSilKit.so file from a SIL Kit release package (we recommend SIL Kit 4.0.47) to the root folder of your build directory (the same folder where FmuImporter[.exe] is located).
 
 To run the FMU Importer, you need to run the following command from the directory your built execuable resides in:
 
