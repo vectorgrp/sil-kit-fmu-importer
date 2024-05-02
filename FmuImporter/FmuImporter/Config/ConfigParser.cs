@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.ComponentModel.DataAnnotations;
+using FmuImporter.CommDescription;
 using FmuImporter.Config.ParserExtensions;
 using FmuImporter.Exceptions;
 using YamlDotNet.Core;
@@ -88,36 +89,7 @@ public static class ConfigParser
     }
     catch (Exception e)
     {
-      var currentException = e;
-      var continueDescending = currentException.InnerException != null &&
-                               currentException is not InvalidConfigurationException;
-
-      while (continueDescending)
-      {
-        if (currentException is YamlException yamlException)
-        {
-          if (currentException.InnerException != null &&
-              currentException.InnerException is YamlException or InvalidConfigurationException)
-          {
-            currentException = currentException.InnerException;
-            continue;
-          }
-
-          currentException = new InvalidConfigurationException(
-            $"Invalid configuration. Issue detected between {yamlException.Start} and {yamlException.End}.",
-            yamlException);
-        }
-        else
-        {
-          currentException = new InvalidConfigurationException(
-            $"Invalid configuration. {currentException.Message}",
-            currentException);
-        }
-
-        continueDescending = false;
-      }
-
-      throw currentException;
+      throw ProcessException(e);
     }
 
     config.ConfigurationPath = Path.GetFullPath(path);
@@ -125,7 +97,76 @@ public static class ConfigParser
     return config;
   }
 
-  private static void ValidateConfig(Configuration config)
+  private static bool ValidateConfig(Configuration config)
   {
+    return true;
+  }
+
+  public static CommunicationInterface LoadCommInterface(string path)
+  {
+    var deserializer =
+      new DeserializerBuilder()
+        .WithNodeDeserializer(
+          inner => new ValidatingNodeDeserializer(inner),
+          s => s.InsteadOf<ObjectNodeDeserializer>())
+        .Build();
+
+    CommunicationInterface? commInterface;
+    try
+    {
+      commInterface = deserializer.Deserialize<CommunicationInterface?>(File.ReadAllText(path));
+      if (commInterface == null)
+      {
+        throw new InvalidConfigurationException("Failed to deserialize the provided FMU configuration file");
+      }
+    }
+    catch (Exception e)
+    {
+      throw ProcessException(e);
+    }
+
+    //commInterface.ConfigurationPath = Path.GetFullPath(path);
+    ValidateCommInterface(commInterface);
+    return commInterface;
+  }
+
+  private static bool ValidateCommInterface(
+    CommunicationInterface? commInterface)
+  {
+    return true;
+  }
+
+  private static Exception ProcessException(Exception e)
+  {
+    var currentException = e;
+    var continueDescending = currentException.InnerException != null &&
+                             currentException is not InvalidConfigurationException;
+
+    while (continueDescending)
+    {
+      if (currentException is YamlException yamlException)
+      {
+        if (currentException.InnerException != null &&
+            currentException.InnerException is YamlException or InvalidConfigurationException)
+        {
+          currentException = currentException.InnerException;
+          continue;
+        }
+
+        currentException = new InvalidConfigurationException(
+          $"Invalid configuration. Issue detected between {yamlException.Start} and {yamlException.End}.",
+          yamlException);
+      }
+      else
+      {
+        currentException = new InvalidConfigurationException(
+          $"Invalid configuration. {currentException.Message}",
+          currentException);
+      }
+
+      continueDescending = false;
+    }
+
+    return currentException;
   }
 }

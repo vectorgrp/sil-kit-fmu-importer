@@ -6,11 +6,14 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 
 ## [1.3.0] - TBD
 
+This version introduces a new feature to bundle several variables to structures and exchange them through one service via SIL Kit.
+
 ### Added
 
 * Added an option 'AlwaysUseStructuredNamingConvention' to the configuration's root level. 
   It defaults to false. 
   If set, it activate the structured naming convention detection (and therefore the variable aggregation feature) even if it is not set in the FMU's model description.
+* Added a new communication interface description format that must be provided via ``-i `` or ``--fmu-importer-communication-interface-file`` if variables shall be aggregated to structures.
   
 ### Changed
 

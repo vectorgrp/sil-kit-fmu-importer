@@ -40,6 +40,12 @@ internal class Program
     fmuImporterConfigFileOption.AddAlias("-c");
     rootCommand.AddOption(fmuImporterConfigFileOption);
 
+    var fmuImporterCommInterfaceFileOption = new Option<string?>(
+      "--fmu-importer-communication-interface-file",
+      "Set the path to the FMU Importer configuration file.");
+    fmuImporterCommInterfaceFileOption.AddAlias("-i");
+    rootCommand.AddOption(fmuImporterCommInterfaceFileOption);
+
     var participantNameOption = new Option<string>(
       "--participant-name",
       description: "Set the name of the SIL Kit participant.",
@@ -81,6 +87,7 @@ internal class Program
         fmuPath,
         silKitConfigFile,
         fmuImporterConfigFile,
+        fmuImporterCommInterface,
         participantName,
         useStopTime,
         lifecycleMode,
@@ -103,6 +110,12 @@ internal class Program
           {
             throw new FileNotFoundException(
               $"The provided FMU Importer configuration file path ({fmuImporterConfigFile}) is invalid.");
+          }
+
+          if (fmuImporterCommInterface != null && !File.Exists(fmuImporterCommInterface))
+          {
+            throw new FileNotFoundException(
+              $"The provided FMU Importer communication interface file path ({fmuImporterCommInterface}) is invalid.");
           }
 
           var parseSucceeded = Enum.TryParse(
@@ -146,6 +159,7 @@ internal class Program
             fmuPath,
             silKitConfigFile,
             fmuImporterConfigFile,
+            fmuImporterCommInterface,
             participantName,
             parsedLifecycleMode,
             parsedTimeSyncMode);
@@ -177,6 +191,7 @@ internal class Program
       fmuPathOption,
       silKitConfigFileOption,
       fmuImporterConfigFileOption,
+      fmuImporterCommInterfaceFileOption,
       participantNameOption,
       useStopTimeOption,
       lifecycleModeOption,

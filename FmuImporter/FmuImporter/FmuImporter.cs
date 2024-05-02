@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
+using FmuImporter.CommDescription;
 using FmuImporter.Config;
 using FmuImporter.Exceptions;
 using FmuImporter.Fmu;
@@ -33,6 +34,7 @@ public class FmuImporter
   private FmuDataManager? FmuDataManager { get; set; }
 
   private readonly Configuration _fmuImporterConfig;
+  private readonly CommunicationInterface? _fmuImporterCommInterface;
 
   private readonly Dictionary<string, Parameter>? _configuredParameters;
   private readonly Dictionary<string, Parameter>? _configuredStructuralParameters;
@@ -42,6 +44,7 @@ public class FmuImporter
     string fmuPath,
     string? silKitConfigurationPath,
     string? fmuImporterConfigFilePath,
+    string? fmuImporterCommInterfaceFilePath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
     TimeSyncModes timeSyncMode)
@@ -95,6 +98,19 @@ public class FmuImporter
     {
       SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
       SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
+      throw;
+    }
+
+    try
+    {
+      if (!string.IsNullOrEmpty(fmuImporterCommInterfaceFilePath))
+      {
+        _fmuImporterCommInterface = ConfigParser.LoadCommInterface(fmuImporterCommInterfaceFilePath);
+      }
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine(e);
       throw;
     }
 
