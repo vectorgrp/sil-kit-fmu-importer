@@ -280,6 +280,15 @@ public class FmuImporter
         new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
     }
 
+    // create subscribers for input structures
+    foreach (var configuredStructure in FmuDataManager.InputConfiguredStructures.Values)
+    {
+      SilKitDataManager.CreateSubscriber(
+        configuredStructure.Name,
+        configuredStructure.Name,
+        new IntPtr(configuredStructure.StructureId));
+    }
+
     // create publishers for output variables
     foreach (var configuredVariable in FmuDataManager.OutputConfiguredVariables)
     {
@@ -298,6 +307,17 @@ public class FmuImporter
         configuredVariable.FmuVariableDefinition.Name,
         configuredVariable.TopicName,
         new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+        0);
+    }
+
+    // create publishers for output structures
+    foreach (var configuredStructure in FmuDataManager.OutputConfiguredStructures.Values)
+    {
+      // TODO add label support
+      SilKitDataManager.CreatePublisher(
+        configuredStructure.Name,
+        configuredStructure.Name,
+        new IntPtr(configuredStructure.StructureId),
         0);
     }
 
@@ -441,7 +461,7 @@ public class FmuImporter
       _initialSimTime = nowInNs;
       // skip initialization - it was done already.
       // However, publish all initial output variable values
-      var initialData = FmuDataManager.GetInitialData();
+      var initialData = FmuDataManager.GetInitialVariableData();
       SilKitDataManager.PublishAll(initialData);
       return;
     }
@@ -479,8 +499,12 @@ public class FmuImporter
       return;
     }
 
-    var currentOutputData = FmuDataManager.GetOutputData(false);
+    // Publish non-structured variables
+    var currentOutputData = FmuDataManager.GetVariableOutputData(false);
     SilKitDataManager.PublishAll(currentOutputData);
+
+    var currentStructureOutputData = FmuDataManager.GetStructureOutputData(false);
+    SilKitDataManager.PublishAll(currentStructureOutputData);
 
     var stopTime = FmuEntity.GetStopTime();
     if (stopTime.HasValue)

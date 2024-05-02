@@ -10,7 +10,6 @@ public class StructMemberInternal
   public StructMemberInternal(Dictionary<string, string> member)
   {
     Member = member;
-    // TODO fix this!
   }
 
   public string QualifiedName { get; set; } = default!;

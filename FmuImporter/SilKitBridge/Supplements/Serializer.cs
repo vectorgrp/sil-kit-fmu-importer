@@ -127,7 +127,6 @@ public class Serializer
     Align();
     var result = _buffer;
     Reset();
-    // TODO double-check content of result
     return result;
   }
 

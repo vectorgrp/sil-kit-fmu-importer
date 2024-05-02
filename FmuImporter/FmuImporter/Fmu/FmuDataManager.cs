@@ -17,13 +17,16 @@ public class FmuDataManager
   private ModelDescription ModelDescription { get; }
 
   public List<ConfiguredVariable> ParameterConfiguredVariables { get; }
-  public Dictionary<string, ConfiguredStructure> ParameterConfiguredStructures { get; }
+  public Dictionary<long, ConfiguredStructure> ParameterConfiguredStructures { get; }
+  private readonly Dictionary<string, ConfiguredStructure> _parameterConfiguredStructureByName;
 
-  public Dictionary<uint /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
-  public Dictionary<string, ConfiguredStructure> InputConfiguredStructures { get; }
+  public Dictionary<long /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
+  public Dictionary<long, ConfiguredStructure> InputConfiguredStructures { get; }
+  private readonly Dictionary<string, ConfiguredStructure> _inputConfiguredStructureByName;
 
   public List<ConfiguredVariable> OutputConfiguredVariables { get; }
-  public Dictionary<string, ConfiguredStructure> OutputConfiguredStructures { get; }
+  public Dictionary<long, ConfiguredStructure> OutputConfiguredStructures { get; }
+  private readonly Dictionary<string, ConfiguredStructure> _outputConfiguredStructureByName;
 
   public FmuDataManager(
     IFmiBindingCommon binding,
@@ -33,13 +36,16 @@ public class FmuDataManager
     ModelDescription = modelDescription;
 
     ParameterConfiguredVariables = new List<ConfiguredVariable>();
-    ParameterConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
+    ParameterConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
+    _parameterConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
-    InputConfiguredVariables = new Dictionary<uint, ConfiguredVariable>();
-    InputConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
+    InputConfiguredVariables = new Dictionary<long, ConfiguredVariable>();
+    InputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
+    _inputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
     OutputConfiguredVariables = new List<ConfiguredVariable>();
-    OutputConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
+    OutputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
+    _outputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
   }
 
   /// <summary>
@@ -118,7 +124,6 @@ public class FmuDataManager
       if (useStructuredNamingConvention)
       {
         var topic = configuredVariable.TopicName;
-        // TODO check if this parser / structure is sufficient
         configuredVariable.StructuredPath = StructuredVariableParser.Parse(topic);
       }
       else
@@ -187,17 +192,21 @@ public class FmuDataManager
       return true;
     }
 
-    Dictionary<string, ConfiguredStructure> targetStructure;
+    Dictionary<string, ConfiguredStructure> targetStructureInternal;
+    Dictionary<long, ConfiguredStructure> targetStructure;
     switch (configuredVariable.FmuVariableDefinition.Causality)
     {
       case Variable.Causalities.Output:
+        targetStructureInternal = _outputConfiguredStructureByName;
         targetStructure = OutputConfiguredStructures;
         break;
       case Variable.Causalities.Parameter:
       case Variable.Causalities.StructuralParameter:
+        targetStructureInternal = _parameterConfiguredStructureByName;
         targetStructure = ParameterConfiguredStructures;
         break;
       case Variable.Causalities.Input:
+        targetStructureInternal = _inputConfiguredStructureByName;
         targetStructure = InputConfiguredStructures;
         break;
       default:
@@ -205,7 +214,7 @@ public class FmuDataManager
         return true;
     }
 
-    var configStructFound = targetStructure.TryGetValue(
+    var configStructFound = targetStructureInternal.TryGetValue(
       varStructName,
       out var configuredStructure);
     if (!configStructFound)
@@ -219,7 +228,8 @@ public class FmuDataManager
 
       var flattenedMembers = structDefinitionOfPubType.FlattenedMembers;
       configuredStructure = new ConfiguredStructure(varStructName, flattenedMembers.Select(fm => fm.QualifiedName));
-      targetStructure.Add(varStructName, configuredStructure);
+      targetStructureInternal.Add(varStructName, configuredStructure);
+      targetStructure.Add(configuredStructure.StructureId, configuredStructure);
     }
 
     configuredStructure!.AddMember(configuredVariable);
@@ -229,7 +239,7 @@ public class FmuDataManager
 
   private void ValidateCommInterfaceMapping()
   {
-    var targetStructureDictionaryValues = new List<Dictionary<string, ConfiguredStructure>.ValueCollection>()
+    var targetStructureDictionaryValues = new List<Dictionary<long, ConfiguredStructure>.ValueCollection>()
     {
       ParameterConfiguredStructures.Values,
       InputConfiguredStructures.Values,
@@ -239,7 +249,7 @@ public class FmuDataManager
     {
       foreach (var configuredStructure in targetStructureDictionary)
       {
-        foreach (var member in configuredStructure.SortedStructureMembers)
+        foreach (var member in configuredStructure.StructureMembers)
         {
           if (member == null)
           {
@@ -251,26 +261,33 @@ public class FmuDataManager
     }
   }
 
-  public List<Tuple<uint, byte[]>> GetInitialData()
+  public List<Tuple<long, byte[]>> GetInitialVariableData()
   {
-    var result = GetParameterData();
-    result.AddRange(GetOutputData(true));
+    var result = GetVariableParameterData();
+    result.AddRange(GetVariableOutputData(true));
     return result;
   }
 
-  public List<Tuple<uint, byte[]>> GetOutputData(bool initialKnownsOnly)
+  public List<Tuple<long, byte[]>> GetVariableOutputData(bool initialKnownsOnly)
   {
-    return GetData(initialKnownsOnly, OutputConfiguredVariables);
+    return GetVariableData(initialKnownsOnly, OutputConfiguredVariables);
   }
 
-  public List<Tuple<uint, byte[]>> GetParameterData()
+  public List<Tuple<long, byte[]>> GetStructureOutputData(bool initialKnownsOnly)
   {
-    return GetData(true, ParameterConfiguredVariables);
+    return GetStructureData(initialKnownsOnly, OutputConfiguredStructures);
   }
 
-  private List<Tuple<uint, byte[]>> GetData(bool initialKnownsOnly, List<ConfiguredVariable> configuredVariables)
+  public List<Tuple<long, byte[]>> GetVariableParameterData()
   {
-    var returnData = new List<Tuple<uint, byte[]>>();
+    return GetVariableData(true, ParameterConfiguredVariables);
+  }
+
+  private List<Tuple<long, byte[]>> GetVariableData(
+    bool initialKnownsOnly,
+    List<ConfiguredVariable> configuredVariables)
+  {
+    var returnData = new List<Tuple<long, byte[]>>();
 
     foreach (var configuredVariable in configuredVariables)
     {
@@ -283,7 +300,6 @@ public class FmuDataManager
       }
 
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
-      // TODO: Extend when introducing signal groups
       var valueRefArr = new[]
       {
         configuredVariable.FmuVariableDefinition.ValueReference
@@ -314,8 +330,85 @@ public class FmuDataManager
 
         var dc = new DataConverter();
         var byteArray = dc.TransformToSilKitData(variable, configuredVariable);
-        returnData.Add(Tuple.Create(configuredVariable.FmuVariableDefinition.ValueReference, byteArray));
+        returnData.Add(Tuple.Create((long)configuredVariable.FmuVariableDefinition.ValueReference, byteArray));
       }
+    }
+
+    return returnData;
+  }
+
+  private List<Tuple<long, byte[]>> GetStructureData(
+    bool initialKnownsOnly,
+    Dictionary<long, ConfiguredStructure> configuredStructures)
+  {
+    // TODO
+    //if (initialKnownsOnly &&
+    //    ModelDescription.ModelStructure.InitialUnknowns.Contains(
+    //      configuredVariable.FmuVariableDefinition.ValueReference))
+    //{
+    //  // skip initially unknown variables
+    //  continue;
+    //}
+
+    var returnData = new List<Tuple<long, byte[]>>();
+
+    // retrieve individual structures
+    foreach (var configuredStructure in configuredStructures.Values)
+    {
+      var memberData = new List<Fmi.Binding.Helper.ReturnVariable.Variable>();
+      // retrieve data of individual variables
+      foreach (var structureMember in configuredStructure.StructureMembers)
+      {
+        if (structureMember == null)
+        {
+          throw new NullReferenceException(
+            $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
+        }
+
+        var configuredVariableType = structureMember.FmuVariableDefinition!.VariableType;
+        var valueRefArr = new[]
+        {
+          structureMember.FmuVariableDefinition.ValueReference
+        };
+        Binding.GetValue(valueRefArr, out var result, configuredVariableType);
+
+        // apply linear transformation to individual variables
+        if (structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float32 ||
+            structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float64)
+        {
+          // apply FMI unit transformation
+          foreach (var variable in result.ResultArray)
+          {
+            var mdVar = ModelDescription.Variables[variable.ValueReference];
+            for (var i = 0; i < variable.Values.Length; i++)
+            {
+              // Apply unit transformation
+              Helpers.ApplyLinearTransformationFmi(
+                ref variable.Values[i],
+                structureMember);
+            }
+          }
+        }
+
+        for (var i = 0; i < result.ResultArray.Length; i++)
+        {
+          var variable = result.ResultArray[i];
+          Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], structureMember);
+        }
+
+        if (result.ResultArray.Length != 1)
+        {
+          throw new NotSupportedException("Currently, this method only supports to process one variable at a time.");
+        }
+
+        // NB: fix this if more than one value is retrieved at once
+        memberData.Add(result.ResultArray[0]);
+      }
+
+      // serialize structure as a whole
+      var dc = new DataConverter();
+      var byteArray = dc.TransformToSilKitData(memberData, configuredStructure);
+      returnData.Add(Tuple.Create(configuredStructure.StructureId, byteArray));
     }
 
     return returnData;
@@ -323,7 +416,7 @@ public class FmuDataManager
 
   public void SetData(uint refValue, byte[] data)
   {
-    var fmuData = TransformSilKitToFmuData(refValue, data, out var binSizes);
+    var fmuData = TransformSilKitToFmuData(refValue, data.ToList(), out var binSizes).ToArray();
     if (binSizes.Count == 0)
     {
       Binding.SetValue(refValue, fmuData);
@@ -334,16 +427,74 @@ public class FmuDataManager
     }
   }
 
-  public void SetData(Dictionary<uint, byte[]> silKitDataMap)
+  public void SetData(Dictionary<long, byte[]> silKitDataMap)
   {
     foreach (var dataKvp in silKitDataMap)
     {
-      SetData(dataKvp.Key, dataKvp.Value);
+      if (dataKvp.Key <= uint.MaxValue)
+      {
+        // key is refValue
+        SetData((uint)dataKvp.Key, dataKvp.Value);
+      }
+      else
+      {
+        SetStructure(dataKvp.Key, dataKvp.Value);
+      }
+    }
+  }
+
+  public void SetStructure(long structureId, byte[] silKitData)
+  {
+    // retrieve the structural information of the received data
+    var success = InputConfiguredStructures.TryGetValue(structureId, out var configuredStructure);
+    if (!success)
+    {
+      // note: this should not be possible, as structureId is a local information
+      throw new InvalidDataException("The received data belongs to an unknown structure ID.");
+    }
+
+    var fmuData = TransformSilKitToStructuredFmuData(structureId, silKitData, out var binSizes);
+
+    var index = 0;
+    foreach (var structureMember in configuredStructure!.StructureMembers)
+    {
+      if (structureMember == null)
+      {
+        throw new NullReferenceException(
+          $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
+      }
+
+      var refValue = structureMember.FmuVariableDefinition.ValueReference;
+
+      if (binSizes[index].Count == 0)
+      {
+        Binding.SetValue(refValue, fmuData[index].ToArray());
+      }
+      else
+      {
+        Binding.SetValue(refValue, fmuData[index].ToArray(), binSizes[index].ToArray());
+      }
     }
   }
 
 
-  private byte[] TransformSilKitToFmuData(uint refValue, byte[] silKitData, out List<int> binSizes)
+  private List<List<byte>> TransformSilKitToStructuredFmuData(
+    long refValue,
+    byte[] silKitData,
+    out List<List<int>> binSizes)
+  {
+    var success = InputConfiguredStructures.TryGetValue(refValue, out var configuredStructure);
+    if (success && configuredStructure != null)
+    {
+      var dc = new DataConverter();
+      return dc.TransformSilKitToStructuredFmuData(configuredStructure, silKitData.ToList(), out binSizes);
+    }
+
+    throw new ArgumentOutOfRangeException(
+      $"Failed to transform received SIL Kit data. The target variable's reference value was {refValue}");
+  }
+
+  private List<byte> TransformSilKitToFmuData(long refValue, List<byte> silKitData, out List<int> binSizes)
   {
     var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
     if (success && configuredVariable != null)

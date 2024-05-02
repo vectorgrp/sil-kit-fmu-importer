@@ -7,36 +7,41 @@ public class ConfiguredStructure
 {
   public string Name { get; }
 
-  private readonly SortedDictionary<string, ConfiguredVariable?> _sortedStructureMembers;
+  // NB: this currently relies on the .net implementation of Dictionary, which uses lists of key/value pairs
+  // (and therefore .Values returns the order in which the members were added)
+  private readonly IDictionary<string, ConfiguredVariable?> _structureMembers;
+  private static long sStructureId;
 
   public ConfiguredStructure(string structureName, IEnumerable<string> expectedMemberNames)
   {
     Name = structureName;
-    _sortedStructureMembers = new SortedDictionary<string, ConfiguredVariable?>();
+    StructureId = long.MaxValue - sStructureId++;
+    _structureMembers = new Dictionary<string, ConfiguredVariable?>();
     foreach (var expectedMemberName in expectedMemberNames)
     {
-      _sortedStructureMembers.Add(expectedMemberName, null);
+      _structureMembers.Add(expectedMemberName, null);
     }
   }
 
   public void AddMember(ConfiguredVariable configuredVariable)
   {
-    var exists = _sortedStructureMembers.ContainsKey(configuredVariable.StructuredPath!.PathWithoutInstanceName);
+    var exists = _structureMembers.ContainsKey(configuredVariable.StructuredPath!.PathWithoutInstanceName);
     if (!exists)
     {
       throw new ArgumentException(
         $"Failed to map '{configuredVariable.StructuredPath.PathWithoutInstanceName}' as a structure member.");
     }
 
-    _sortedStructureMembers[configuredVariable.StructuredPath.PathWithoutInstanceName] = configuredVariable;
+    _structureMembers[configuredVariable.StructuredPath.PathWithoutInstanceName] = configuredVariable;
   }
 
-  public IEnumerable<ConfiguredVariable?> SortedStructureMembers
+  public IEnumerable<ConfiguredVariable?> StructureMembers
   {
     get
     {
-      // TODO check if this is properly sorted
-      return _sortedStructureMembers.Values.ToList();
+      return _structureMembers.Values.ToList();
     }
   }
+
+  public long StructureId { get; }
 }

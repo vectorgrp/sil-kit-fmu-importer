@@ -8,34 +8,36 @@ namespace FmuImporter.SilKit;
 public class SilKitDataManager : IDisposable
 {
   private readonly SilKitEntity _silKitEntity;
-  private SortedList<ulong, Dictionary<uint, byte[]>> DataBuffer { get; }
+  private SortedList<ulong, Dictionary<long, byte[]>> DataBuffer { get; }
 
   public SilKitDataManager(SilKitEntity silKitEntity)
   {
     _silKitEntity = silKitEntity;
 
-    DataBuffer = new SortedList<ulong, Dictionary<uint, byte[]>>();
+    DataBuffer = new SortedList<ulong, Dictionary<long, byte[]>>();
     if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized)
     {
-      DataBuffer.Add(0, new Dictionary<uint, byte[]>());
+      DataBuffer.Add(0, new Dictionary<long, byte[]>());
     }
 
-    ValueRefToPublisher = new Dictionary<uint, IDataPublisher>();
-    ValueRefToSubscriber = new Dictionary<uint, IDataSubscriber>();
+    ValueRefToPublisher = new Dictionary<long, IDataPublisher>();
+    ValueRefToSubscriber = new Dictionary<long, IDataSubscriber>();
   }
 
 #region service creation
 
-  public Dictionary<uint, IDataPublisher> ValueRefToPublisher { get; }
-  public Dictionary<uint, IDataSubscriber> ValueRefToSubscriber { get; }
+  public Dictionary<long, IDataPublisher> ValueRefToPublisher { get; }
+  public Dictionary<long, IDataSubscriber> ValueRefToSubscriber { get; }
 
+  // Create publisher for regular FMU variable
   public bool CreatePublisher(string serviceName, string topicName, IntPtr context, byte historySize)
   {
     return ValueRefToPublisher.TryAdd(
-      (uint)context,
+      (long)context,
       _silKitEntity.CreateDataPublisher(serviceName, topicName, historySize));
   }
 
+  // Create subscriber for regular FMU variable
   public bool CreateSubscriber(
     string serviceName,
     string topicName,
@@ -47,12 +49,12 @@ public class SilKitDataManager : IDisposable
       context,
       DataMessageHandler);
 
-    return ValueRefToSubscriber.TryAdd((uint)context, sub);
+    return ValueRefToSubscriber.TryAdd((long)context, sub);
   }
 
 #endregion service creation
 
-  public void PublishAll(List<Tuple<uint, byte[]>> dataList)
+  public void PublishAll(List<Tuple<long, byte[]>> dataList)
   {
     foreach (var tuple in dataList)
     {
@@ -60,7 +62,7 @@ public class SilKitDataManager : IDisposable
     }
   }
 
-  public void Publish(uint valueReference, byte[] data)
+  public void Publish(long valueReference, byte[] data)
   {
     var success = ValueRefToPublisher.TryGetValue(valueReference, out var publisher);
     if (!success)
@@ -79,7 +81,7 @@ public class SilKitDataManager : IDisposable
     // buffer data
     // Use a last-is-best approach for storage
 
-    var valueRef = (uint)context;
+    var valueRef = (long)context;
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : dataMessageEvent.TimestampInNS;
 
     // data is processed in sim. step callback (OnSimulationStep)
@@ -89,7 +91,7 @@ public class SilKitDataManager : IDisposable
     }
     else
     {
-      var dict = new Dictionary<uint, byte[]>
+      var dict = new Dictionary<long, byte[]>
       {
         { valueRef, dataMessageEvent.Data }
       };
@@ -103,11 +105,11 @@ public class SilKitDataManager : IDisposable
   /// </summary>
   /// <param name="currentTime">The time (included) up to which the data will be retrieved.</param>
   /// <returns>The aggregated data, divided by the value reference of the variable.</returns>
-  public Dictionary<uint, byte[]> RetrieveReceivedData(ulong currentTime)
+  public Dictionary<long, byte[]> RetrieveReceivedData(ulong currentTime)
   {
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
     var removeList = new List<ulong>();
-    var valueUpdates = new Dictionary<uint, byte[]>();
+    var valueUpdates = new Dictionary<long, byte[]>();
     foreach (var timeDataPair in DataBuffer)
     {
       if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
