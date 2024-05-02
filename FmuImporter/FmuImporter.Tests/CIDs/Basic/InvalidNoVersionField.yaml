@@ -1,0 +1,5 @@
+StructDefinitions:
+  - Blub:
+      Name: Blub
+      Members:
+        - Key : Name

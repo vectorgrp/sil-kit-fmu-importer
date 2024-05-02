@@ -5,7 +5,7 @@ using Fmi;
 using FmuImporter.Config;
 using SilKit.Services.Logger;
 
-namespace FmuImporter;
+namespace FmuImporter.Helpers;
 
 public static class Helpers
 {
@@ -105,19 +105,19 @@ public static class Helpers
       case "uint8":
         return typeof(byte);
       case "uint16":
-        return typeof(UInt16);
+        return typeof(ushort);
       case "uint32":
-        return typeof(UInt32);
+        return typeof(uint);
       case "uint64":
         return typeof(double);
       case "int8":
         return typeof(sbyte);
       case "int16":
-        return typeof(Int16);
+        return typeof(short);
       case "int32":
-        return typeof(Int32);
+        return typeof(int);
       case "int64":
-        return typeof(Int64);
+        return typeof(long);
       case "float32":
       case "float":
         return typeof(float);
@@ -195,17 +195,17 @@ public static class Helpers
       }
       case VariableTypes.Int16:
       {
-        o = (Int16)((Int16)o * factor + offset);
+        o = (short)((short)o * factor + offset);
         return;
       }
       case VariableTypes.Int32:
       {
-        o = (Int32)((Int32)o * factor + offset);
+        o = (int)((int)o * factor + offset);
         return;
       }
       case VariableTypes.Int64:
       {
-        o = (Int64)((Int64)o * factor + offset);
+        o = (long)((long)o * factor + offset);
         return;
       }
       case VariableTypes.UInt8:
@@ -215,17 +215,17 @@ public static class Helpers
       }
       case VariableTypes.UInt16:
       {
-        o = (UInt16)((UInt16)o * factor + offset);
+        o = (ushort)((ushort)o * factor + offset);
         return;
       }
       case VariableTypes.UInt32:
       {
-        o = (UInt32)((UInt32)o * factor + offset);
+        o = (uint)((uint)o * factor + offset);
         return;
       }
       case VariableTypes.UInt64:
       {
-        o = (UInt64)((UInt64)o * factor + offset);
+        o = (ulong)((ulong)o * factor + offset);
         return;
       }
       case VariableTypes.Boolean:

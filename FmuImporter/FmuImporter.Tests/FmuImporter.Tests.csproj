@@ -27,10 +27,15 @@
   <Target Name="CopyTestConfigs" AfterTargets="Build">
     <ItemGroup>
       <TestConfigs Include="$(MSBuildProjectDirectory)/Configs/**/*.*" />
+      <TestCommInterfaceDescriptions Include="$(MSBuildProjectDirectory)/CIDs/**/*.*" />
     </ItemGroup>
     <Copy
       SourceFiles="@(TestConfigs)"
       DestinationFolder="$(OutputPath)Configs/%(RecursiveDir)"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(TestCommInterfaceDescriptions)"
+      DestinationFolder="$(OutputPath)CIDs/%(RecursiveDir)"
       SkipUnchangedFiles="true" />
   </Target>
 

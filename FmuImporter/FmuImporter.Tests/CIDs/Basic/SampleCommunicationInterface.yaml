@@ -1,0 +1,29 @@
+Version: 1
+
+EnumDefinitions:
+  - Name: EnumSample
+    IndexType: int32
+    Items:
+      - "EnumValue1" : 1
+      - EnumValue2 : 2
+      - '3' : 3
+
+StructDefinitions:
+  - Name: StructSample
+    Members:
+      - Member1: int
+      - Member2: double
+      - Member3: EnumSample
+
+
+Publishers:
+  - PubInt : Int
+  - PubDouble : double  
+  - PubEnum : EnumSample
+  - PubStruct : StructSample
+  
+Subscribers:
+  - SubInt : Int
+  - SubDouble : double  
+  - SubEnum : EnumSample
+  - SubStruct : StructSample

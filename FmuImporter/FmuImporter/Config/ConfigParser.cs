@@ -2,7 +2,6 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.ComponentModel.DataAnnotations;
-using FmuImporter.CommDescription;
 using FmuImporter.Config.ParserExtensions;
 using FmuImporter.Exceptions;
 using YamlDotNet.Core;
@@ -98,42 +97,6 @@ public static class ConfigParser
   }
 
   private static bool ValidateConfig(Configuration config)
-  {
-    return true;
-  }
-
-  public static CommunicationInterfaceInternal LoadCommInterface(string path)
-  {
-    var deserializer =
-      new DeserializerBuilder()
-        .WithNodeDeserializer(
-          inner => new ValidatingNodeDeserializer(inner),
-          s => s.InsteadOf<ObjectNodeDeserializer>())
-        .Build();
-
-    CommunicationInterfaceInternal? commInterface;
-    try
-    {
-      commInterface = deserializer.Deserialize<CommunicationInterfaceInternal?>(File.ReadAllText(path));
-      if (commInterface == null)
-      {
-        throw new InvalidConfigurationException("Failed to deserialize the provided communication interface file");
-      }
-
-      commInterface.ResolveStructDefinitionDependencies();
-    }
-    catch (Exception e)
-    {
-      throw ProcessException(e);
-    }
-
-    //commInterface.ConfigurationPath = Path.GetFullPath(path);
-    ValidateCommInterface(commInterface);
-    return commInterface;
-  }
-
-  private static bool ValidateCommInterface(
-    CommunicationInterface? commInterface)
   {
     return true;
   }

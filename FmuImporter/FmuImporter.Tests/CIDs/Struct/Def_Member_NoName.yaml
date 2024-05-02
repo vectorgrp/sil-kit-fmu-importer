@@ -1,0 +1,6 @@
+Version: 1
+
+StructDefinitions:
+  - Name: StructDef1
+    Members:
+      - : int

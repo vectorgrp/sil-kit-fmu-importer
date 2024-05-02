@@ -11,5 +11,5 @@ public class EnumItem
   public string Name { get; set; } = default!;
 
   [Required]
-  public int Value { get; set; } = default!;
+  public long? Value { get; set; }
 }

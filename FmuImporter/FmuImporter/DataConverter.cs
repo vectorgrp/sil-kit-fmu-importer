@@ -107,8 +107,8 @@ public class DataConverter
     ref List<int> binSizes)
   {
     var deserializedData = TransformReceivedDataType(deserializer, configuredVariable);
-    Helpers.ApplyLinearTransformationImporterConfig(ref deserializedData, configuredVariable);
-    Helpers.ApplyLinearTransformationFmi(ref deserializedData, configuredVariable);
+    Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref deserializedData, configuredVariable);
+    Helpers.Helpers.ApplyLinearTransformationFmi(ref deserializedData, configuredVariable);
 
     return Fmi.Supplements.Serializer.Serialize(
       deserializedData,
@@ -118,13 +118,13 @@ public class DataConverter
 
   private object TransformReceivedDataType(Deserializer deserializer, ConfiguredVariable configuredVariable)
   {
-    var fmuType = Helpers.VariableTypeToType(configuredVariable.FmuVariableDefinition!.VariableType);
+    var fmuType = Helpers.Helpers.VariableTypeToType(configuredVariable.FmuVariableDefinition!.VariableType);
 
     // apply type conversion if required
     if (configuredVariable.ImporterVariableConfiguration.Transformation?.TransmissionType != null)
     {
       var receivedType =
-        Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
+        Helpers.Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
       var deserializedData = deserializer.Deserialize(receivedType);
       // change data type to type expected by FMU
       return Convert.ChangeType(deserializedData, fmuType);
@@ -142,11 +142,11 @@ public class DataConverter
         !string.IsNullOrEmpty(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType))
     {
       transmissionType =
-        Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
+        Helpers.Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
     }
     else
     {
-      transmissionType = Helpers.VariableTypeToType(variable.Type);
+      transmissionType = Helpers.Helpers.VariableTypeToType(variable.Type);
     }
 
     var serializer = new Serializer();
@@ -176,11 +176,11 @@ public class DataConverter
           !string.IsNullOrEmpty(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType))
       {
         transmissionType =
-          Helpers.StringToType(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType);
+          Helpers.Helpers.StringToType(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType);
       }
       else
       {
-        transmissionType = Helpers.VariableTypeToType(variable.Type);
+        transmissionType = Helpers.Helpers.VariableTypeToType(variable.Type);
       }
 
       SerDes.Serialize(

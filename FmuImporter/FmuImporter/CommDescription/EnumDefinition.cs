@@ -12,6 +12,6 @@ public class EnumDefinition
 
   public string? IndexType { get; set; }
 
-  [Required]
+  [Required, MinLength(1)]
   public List<EnumItem> Items { get; set; } = default!;
 }

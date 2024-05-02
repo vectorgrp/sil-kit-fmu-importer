@@ -105,7 +105,8 @@ public class FmuImporter
     {
       if (!string.IsNullOrEmpty(fmuImporterCommInterfaceFilePath))
       {
-        _fmuImporterCommInterface = ConfigParser.LoadCommInterface(fmuImporterCommInterfaceFilePath);
+        _fmuImporterCommInterface =
+          CommunicationInterfaceDescriptionParser.LoadCommInterface(fmuImporterCommInterfaceFilePath);
       }
     }
     catch (Exception e)
@@ -159,7 +160,7 @@ public class FmuImporter
 
   private void FmuEntity_OnFmuLog(LogSeverity severity, string message)
   {
-    SilKitEntity.Logger.Log(Helpers.FmiLogLevelToSilKitLogLevel(severity), message);
+    SilKitEntity.Logger.Log(Helpers.Helpers.FmiLogLevelToSilKitLogLevel(severity), message);
   }
 
   private void ApplyParameterConfiguration()
@@ -355,8 +356,8 @@ public class FmuImporter
     {
       var fmuStepSize = FmuEntity.GetStepSize();
       stepDuration = fmuStepSize.HasValue
-                       ? Helpers.FmiTimeToSilKitTime(fmuStepSize.Value)
-                       : Helpers.DefaultSimStepDuration;
+                       ? Helpers.Helpers.FmiTimeToSilKitTime(fmuStepSize.Value)
+                       : Helpers.Helpers.DefaultSimStepDuration;
     }
 
     try
@@ -479,12 +480,12 @@ public class FmuImporter
     }
 
     // Calculate simulation step
-    var fmiNow = Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
+    var fmiNow = Helpers.Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
     try
     {
       FmuEntity.DoStep(
         fmiNow,
-        Helpers.SilKitTimeToFmiTime(durationInNs));
+        Helpers.Helpers.SilKitTimeToFmiTime(durationInNs));
     }
     catch (Exception e)
     {
@@ -509,7 +510,7 @@ public class FmuImporter
     var stopTime = FmuEntity.GetStopTime();
     if (stopTime.HasValue)
     {
-      if (Helpers.SilKitTimeToFmiTime(nowInNs) >= stopTime)
+      if (Helpers.Helpers.SilKitTimeToFmiTime(nowInNs) >= stopTime)
       {
         // stop the SIL Kit simulation
         SilKitEntity.StopSimulation("FMU stopTime reached.");

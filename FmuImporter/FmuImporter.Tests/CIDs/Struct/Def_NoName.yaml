@@ -1,0 +1,5 @@
+Version: 1
+
+StructDefinitions:
+  - Members:
+      - Member1: int

@@ -316,7 +316,7 @@ public class FmuDataManager
           for (var i = 0; i < variable.Values.Length; i++)
           {
             // Apply unit transformation
-            Helpers.ApplyLinearTransformationFmi(
+            Helpers.Helpers.ApplyLinearTransformationFmi(
               ref variable.Values[i],
               configuredVariable);
           }
@@ -326,7 +326,7 @@ public class FmuDataManager
       for (var i = 0; i < result.ResultArray.Length; i++)
       {
         var variable = result.ResultArray[i];
-        Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], configuredVariable);
+        Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], configuredVariable);
 
         var dc = new DataConverter();
         var byteArray = dc.TransformToSilKitData(variable, configuredVariable);
@@ -383,7 +383,7 @@ public class FmuDataManager
             for (var i = 0; i < variable.Values.Length; i++)
             {
               // Apply unit transformation
-              Helpers.ApplyLinearTransformationFmi(
+              Helpers.Helpers.ApplyLinearTransformationFmi(
                 ref variable.Values[i],
                 structureMember);
             }
@@ -393,7 +393,7 @@ public class FmuDataManager
         for (var i = 0; i < result.ResultArray.Length; i++)
         {
           var variable = result.ResultArray[i];
-          Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], structureMember);
+          Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], structureMember);
         }
 
         if (result.ResultArray.Length != 1)

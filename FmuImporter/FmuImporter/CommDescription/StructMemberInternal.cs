@@ -3,30 +3,13 @@
 
 namespace FmuImporter.CommDescription;
 
-public class StructMemberInternal
+public class StructMemberInternal : StructMember
 {
-  public Dictionary<string, string> Member { get; }
-
-  public StructMemberInternal(Dictionary<string, string> member)
+  public StructMemberInternal(StructMember member)
   {
-    Member = member;
+    Name = member.Name;
+    Type = member.Type;
   }
 
   public string QualifiedName { get; set; } = default!;
-
-  public string Name
-  {
-    get
-    {
-      return Member.First().Key;
-    }
-  }
-
-  public string Type
-  {
-    get
-    {
-      return Member.First().Value;
-    }
-  }
 }
