@@ -79,6 +79,10 @@ public class FmuDataManager
       variableConfigurationsDictionary.Add(refValue, variableConfiguration);
     }
 
+    var useStructuredNamingConvention =
+      (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured) ||
+      importerConfiguration.AlwaysUseStructuredNamingConvention;
+
     foreach (var modelDescriptionVariable in ModelDescription.Variables.Values)
     {
       if (modelDescriptionVariable.Causality
@@ -116,10 +120,6 @@ public class FmuDataManager
         }
       }
 
-      var useStructuredNamingConvention =
-        ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
-        importerConfiguration.AlwaysUseStructuredNamingConvention;
-
       var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
       if (useStructuredNamingConvention)
       {
@@ -135,25 +135,43 @@ public class FmuDataManager
           });
       }
 
-      // TODO there is more potential for simplification here!
-      if (useStructuredNamingConvention && commInterface != null)
-      {
-        var handleAsVariable = AddConfiguredDictionaryEntry(
-          configuredVariable,
-          commInterface);
-        if (handleAsVariable)
-        {
-          AddConfiguredVariable(configuredVariable);
-        }
-      }
-      else
-      {
-        AddConfiguredVariable(configuredVariable);
-      }
+      ProcessConfiguredVariable(configuredVariable, useStructuredNamingConvention, commInterface);
     }
 
-    // TODO this needs to be fixed!
-    //ValidateVcdlMapping();
+    ValidateCommInterfaceMapping();
+  }
+
+  private void ProcessConfiguredVariable(
+    ConfiguredVariable configuredVariable,
+    bool useStructuredNamingConvention,
+    CommunicationInterfaceInternal? commInterface)
+  {
+    if (useStructuredNamingConvention &&
+        (commInterface != null) &&
+        (configuredVariable.StructuredPath != null) &&
+        (configuredVariable.StructuredPath.Path.Count > 1))
+    {
+      // use structure handling for data processing
+      var structName = configuredVariable.StructuredPath.InstanceName;
+      var structType = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == structName)?.Type;
+      if (structType == null)
+      {
+        structType = commInterface.Subscribers?.FirstOrDefault(sub => sub.Name == structName)?.Type;
+      }
+
+      if (!string.IsNullOrEmpty(structType))
+      {
+        AddConfiguredDictionaryEntry(
+          configuredVariable,
+          commInterface,
+          structName,
+          structType);
+      }
+    }
+    else
+    {
+      AddConfiguredVariable(configuredVariable);
+    }
   }
 
   private void AddConfiguredVariable(ConfiguredVariable c)
@@ -173,25 +191,12 @@ public class FmuDataManager
     }
   }
 
-  private bool AddConfiguredDictionaryEntry(
+  private void AddConfiguredDictionaryEntry(
     ConfiguredVariable configuredVariable,
-    CommunicationInterfaceInternal commInterface)
+    CommunicationInterfaceInternal commInterface,
+    string structName,
+    string structType)
   {
-    if (configuredVariable.StructuredPath == null || configuredVariable.StructuredPath.Path.Count == 1)
-    {
-      // scalar value -> skip structure handling
-      return true;
-    }
-
-    var varStructName = configuredVariable.StructuredPath.InstanceName;
-    var publisher = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == varStructName);
-    if (publisher == null)
-    {
-      // TODO better return value needed!
-      // there is no publisher that corresponds to the defined struct name...?
-      return true;
-    }
-
     Dictionary<string, ConfiguredStructure> targetStructureInternal;
     Dictionary<long, ConfiguredStructure> targetStructure;
     switch (configuredVariable.FmuVariableDefinition.Causality)
@@ -211,30 +216,29 @@ public class FmuDataManager
         break;
       default:
         // handle as if it is a variable
-        return true;
+        throw new InvalidCommunicationInterfaceException(
+          "The structure has a member variable with a causality other than Output, Parameter, " +
+          "StructuralParameter, or Input.");
     }
 
     var configStructFound = targetStructureInternal.TryGetValue(
-      varStructName,
+      structName,
       out var configuredStructure);
     if (!configStructFound)
     {
-      var structDefinitionOfPubType = commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == publisher.Type);
-      if (structDefinitionOfPubType == null)
+      var structDefinitionOfPubSubType = commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == structType);
+      if (structDefinitionOfPubSubType == null)
       {
-        // TODO / FIXME enums must be checked as well
-        throw new InvalidConfigurationException("A publisher has a type that is not defined!");
+        throw new InvalidConfigurationException("A service has a type that is not defined!");
       }
 
-      var flattenedMembers = structDefinitionOfPubType.FlattenedMembers;
-      configuredStructure = new ConfiguredStructure(varStructName, flattenedMembers.Select(fm => fm.QualifiedName));
-      targetStructureInternal.Add(varStructName, configuredStructure);
+      var flattenedMembers = structDefinitionOfPubSubType.FlattenedMembers;
+      configuredStructure = new ConfiguredStructure(structName, flattenedMembers.Select(fm => fm.QualifiedName));
+      targetStructureInternal.Add(structName, configuredStructure);
       targetStructure.Add(configuredStructure.StructureId, configuredStructure);
     }
 
     configuredStructure!.AddMember(configuredVariable);
-
-    return false;
   }
 
   private void ValidateCommInterfaceMapping()
@@ -306,8 +310,8 @@ public class FmuDataManager
       };
 
       Binding.GetValue(valueRefArr, out var result, configuredVariableType);
-      if (configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32 ||
-          configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float64)
+      if ((configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
+          (configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float64))
       {
         // apply FMI unit transformation
         foreach (var variable in result.ResultArray)
@@ -373,8 +377,8 @@ public class FmuDataManager
         Binding.GetValue(valueRefArr, out var result, configuredVariableType);
 
         // apply linear transformation to individual variables
-        if (structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float32 ||
-            structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float64)
+        if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
+            (structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float64))
         {
           // apply FMI unit transformation
           foreach (var variable in result.ResultArray)
@@ -474,6 +478,8 @@ public class FmuDataManager
       {
         Binding.SetValue(refValue, fmuData[index].ToArray(), binSizes[index].ToArray());
       }
+
+      index++;
     }
   }
 
@@ -484,7 +490,7 @@ public class FmuDataManager
     out List<List<int>> binSizes)
   {
     var success = InputConfiguredStructures.TryGetValue(refValue, out var configuredStructure);
-    if (success && configuredStructure != null)
+    if (success && (configuredStructure != null))
     {
       var dc = new DataConverter();
       return dc.TransformSilKitToStructuredFmuData(configuredStructure, silKitData.ToList(), out binSizes);
@@ -497,7 +503,7 @@ public class FmuDataManager
   private List<byte> TransformSilKitToFmuData(long refValue, List<byte> silKitData, out List<int> binSizes)
   {
     var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
-    if (success && configuredVariable != null)
+    if (success && (configuredVariable != null))
     {
       var dc = new DataConverter();
       return dc.TransformSilKitToFmuData(configuredVariable, silKitData, out binSizes);
