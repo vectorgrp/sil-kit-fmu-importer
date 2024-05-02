@@ -11,7 +11,7 @@ public class CommunicationInterface
   public int Version { get; set; } = default!;
 
   public List<EnumDefinition>? EnumDefinitions { get; set; }
-  public List<StructDefinition>? StructDefinitions { get; set; }
+  public List<StructDefinitionInternal>? StructDefinitions { get; set; }
   public List<Publisher>? Publishers { get; set; }
   public List<Subscriber>? Subscribers { get; set; }
   public string? InstanceName { get; set; }

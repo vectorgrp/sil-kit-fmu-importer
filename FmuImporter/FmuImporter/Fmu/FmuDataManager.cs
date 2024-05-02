@@ -4,6 +4,8 @@
 using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
+using Fmi.Supplements;
+using FmuImporter.CommDescription;
 using FmuImporter.Config;
 using FmuImporter.Exceptions;
 
@@ -14,10 +16,14 @@ public class FmuDataManager
   private IFmiBindingCommon Binding { get; }
   private ModelDescription ModelDescription { get; }
 
-  private List<ConfiguredVariable> OutputConfiguredVariables { get; }
-  private List<ConfiguredVariable> ParameterConfiguredVariables { get; }
+  public List<ConfiguredVariable> ParameterConfiguredVariables { get; }
+  public Dictionary<string, ConfiguredStructure> ParameterConfiguredStructures { get; }
 
-  private Dictionary<uint /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
+  public Dictionary<uint /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
+  public Dictionary<string, ConfiguredStructure> InputConfiguredStructures { get; }
+
+  public List<ConfiguredVariable> OutputConfiguredVariables { get; }
+  public Dictionary<string, ConfiguredStructure> OutputConfiguredStructures { get; }
 
   public FmuDataManager(
     IFmiBindingCommon binding,
@@ -26,9 +32,14 @@ public class FmuDataManager
     Binding = binding;
     ModelDescription = modelDescription;
 
-    OutputConfiguredVariables = new List<ConfiguredVariable>();
     ParameterConfiguredVariables = new List<ConfiguredVariable>();
+    ParameterConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
+
     InputConfiguredVariables = new Dictionary<uint, ConfiguredVariable>();
+    InputConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
+
+    OutputConfiguredVariables = new List<ConfiguredVariable>();
+    OutputConfiguredStructures = new Dictionary<string, ConfiguredStructure>();
   }
 
   /// <summary>
@@ -41,13 +52,8 @@ public class FmuDataManager
   ///   Thrown if one of the variables in the Importer configuration does not exist in the FMU's model description.
   /// </exception>
   /// <exception cref="NullReferenceException"></exception>
-  public List<ConfiguredVariable> Initialize(Configuration importerConfiguration)
+  public void Initialize(Configuration importerConfiguration, CommunicationInterfaceInternal? commInterface)
   {
-    var relevantConfiguredVariables = new List<ConfiguredVariable>();
-
-    var configuredVariableDictionary =
-      new Dictionary<uint, ConfiguredVariable>(ModelDescription.Variables.Values.Count);
-
     var variableConfigurationsDictionary =
       new Dictionary<uint, VariableConfiguration>(ModelDescription.Variables.Values.Count);
 
@@ -70,67 +76,79 @@ public class FmuDataManager
     foreach (var modelDescriptionVariable in ModelDescription.Variables.Values)
     {
       if (modelDescriptionVariable.Causality
-          is Variable.Causalities.Input
+          is not (Variable.Causalities.Input
           or Variable.Causalities.Output
           or Variable.Causalities.Parameter
-          or Variable.Causalities.StructuralParameter)
+          or Variable.Causalities.StructuralParameter))
       {
-        var success =
-          variableConfigurationsDictionary.TryGetValue(
-            modelDescriptionVariable.ValueReference,
-            out var variableConfiguration);
-        if (!success)
+        // ignore variables with other causalities, such as calculatedParameter or local
+        continue;
+      }
+
+      var success =
+        variableConfigurationsDictionary.TryGetValue(
+          modelDescriptionVariable.ValueReference,
+          out var variableConfiguration);
+      if (!success)
+      {
+        // Only subscribe and publish unmapped variables if they are not ignored
+        if (importerConfiguration.IgnoreUnmappedVariables)
         {
-          // Only subscribe and publish unmapped variables if they are not ignored
-          if (importerConfiguration.IgnoreUnmappedVariables)
+          continue;
+        }
+
+        // initialize a default configured variable
+        variableConfiguration = new VariableConfiguration(
+          modelDescriptionVariable.Name,
+          modelDescriptionVariable.Name);
+      }
+      else
+      {
+        if (variableConfiguration == null)
+        {
+          throw new NullReferenceException("The retrieved configured variable was null.");
+        }
+      }
+
+      var useStructuredNamingConvention =
+        ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
+        importerConfiguration.AlwaysUseStructuredNamingConvention;
+
+      var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
+      if (useStructuredNamingConvention)
+      {
+        var topic = configuredVariable.TopicName;
+        // TODO check if this parser / structure is sufficient
+        configuredVariable.StructuredPath = StructuredVariableParser.Parse(topic);
+      }
+      else
+      {
+        configuredVariable.StructuredPath = new StructuredNameContainer(
+          new List<string>()
           {
-            continue;
-          }
+            configuredVariable.TopicName
+          });
+      }
 
-          // initialize a default configured variable
-          variableConfiguration = new VariableConfiguration(
-            modelDescriptionVariable.Name,
-            modelDescriptionVariable.Name);
-        }
-        else
+      // TODO there is more potential for simplification here!
+      if (useStructuredNamingConvention && commInterface != null)
+      {
+        var handleAsVariable = AddConfiguredDictionaryEntry(
+          configuredVariable,
+          commInterface);
+        if (handleAsVariable)
         {
-          if (variableConfiguration == null)
-          {
-            throw new NullReferenceException("The retrieved configured variable was null.");
-          }
-        }
-
-        var configuredVariable = new ConfiguredVariable(variableConfiguration, modelDescriptionVariable);
-        if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
-            importerConfiguration.AlwaysUseStructuredNamingConvention)
-        {
-          var topic = configuredVariable.TopicName;
-          configuredVariable.StructuredPath = Fmi.Supplements.StructuredVariableParser.Parse(topic);
-        }
-        else
-        {
-          configuredVariable.StructuredPath = new List<string>() { configuredVariable.TopicName };
-        }
-
-        configuredVariableDictionary.Add(modelDescriptionVariable.ValueReference, configuredVariable);
-
-        relevantConfiguredVariables.Add(configuredVariable);
-        if (configuredVariable.FmuVariableDefinition.Causality
-            is Variable.Causalities.Input
-            or Variable.Causalities.Output
-            or Variable.Causalities.Parameter
-            or Variable.Causalities.StructuralParameter
-           )
-        {
-          if (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured ||
-              importerConfiguration.AlwaysUseStructuredNamingConvention)
           AddConfiguredVariable(configuredVariable);
         }
-        // ignore variables with other causalities, such as calculatedParameter or local
+      }
+      else
+      {
+        AddConfiguredVariable(configuredVariable);
       }
     }
 
-    return relevantConfiguredVariables;
+    // TODO this needs to be fixed!
+    //ValidateVcdlMapping();
   }
 
   private void AddConfiguredVariable(ConfiguredVariable c)
@@ -147,6 +165,89 @@ public class FmuDataManager
       case Variable.Causalities.Input:
         InputConfiguredVariables.Add(c.FmuVariableDefinition.ValueReference, c);
         break;
+    }
+  }
+
+  private bool AddConfiguredDictionaryEntry(
+    ConfiguredVariable configuredVariable,
+    CommunicationInterfaceInternal commInterface)
+  {
+    if (configuredVariable.StructuredPath == null || configuredVariable.StructuredPath.Path.Count == 1)
+    {
+      // scalar value -> skip structure handling
+      return true;
+    }
+
+    var varStructName = configuredVariable.StructuredPath.InstanceName;
+    var publisher = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == varStructName);
+    if (publisher == null)
+    {
+      // TODO better return value needed!
+      // there is no publisher that corresponds to the defined struct name...?
+      return true;
+    }
+
+    Dictionary<string, ConfiguredStructure> targetStructure;
+    switch (configuredVariable.FmuVariableDefinition.Causality)
+    {
+      case Variable.Causalities.Output:
+        targetStructure = OutputConfiguredStructures;
+        break;
+      case Variable.Causalities.Parameter:
+      case Variable.Causalities.StructuralParameter:
+        targetStructure = ParameterConfiguredStructures;
+        break;
+      case Variable.Causalities.Input:
+        targetStructure = InputConfiguredStructures;
+        break;
+      default:
+        // handle as if it is a variable
+        return true;
+    }
+
+    var configStructFound = targetStructure.TryGetValue(
+      varStructName,
+      out var configuredStructure);
+    if (!configStructFound)
+    {
+      var structDefinitionOfPubType = commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == publisher.Type);
+      if (structDefinitionOfPubType == null)
+      {
+        // TODO / FIXME enums must be checked as well
+        throw new InvalidConfigurationException("A publisher has a type that is not defined!");
+      }
+
+      var flattenedMembers = structDefinitionOfPubType.FlattenedMembers;
+      configuredStructure = new ConfiguredStructure(varStructName, flattenedMembers.Select(fm => fm.QualifiedName));
+      targetStructure.Add(varStructName, configuredStructure);
+    }
+
+    configuredStructure!.AddMember(configuredVariable);
+
+    return false;
+  }
+
+  private void ValidateCommInterfaceMapping()
+  {
+    var targetStructureDictionaryValues = new List<Dictionary<string, ConfiguredStructure>.ValueCollection>()
+    {
+      ParameterConfiguredStructures.Values,
+      InputConfiguredStructures.Values,
+      OutputConfiguredStructures.Values
+    };
+    foreach (var targetStructureDictionary in targetStructureDictionaryValues)
+    {
+      foreach (var configuredStructure in targetStructureDictionary)
+      {
+        foreach (var member in configuredStructure.SortedStructureMembers)
+        {
+          if (member == null)
+          {
+            throw new InvalidConfigurationException(
+              "Not all members of the used communication interface structures are mapped correctly to FMU variables");
+          }
+        }
+      }
     }
   }
 
@@ -183,7 +284,10 @@ public class FmuDataManager
 
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
       // TODO: Extend when introducing signal groups
-      var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
+      var valueRefArr = new[]
+      {
+        configuredVariable.FmuVariableDefinition.ValueReference
+      };
 
       Binding.GetValue(valueRefArr, out var result, configuredVariableType);
       if (configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32 ||

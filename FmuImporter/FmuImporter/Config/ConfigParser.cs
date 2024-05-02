@@ -102,7 +102,7 @@ public static class ConfigParser
     return true;
   }
 
-  public static CommunicationInterface LoadCommInterface(string path)
+  public static CommunicationInterfaceInternal LoadCommInterface(string path)
   {
     var deserializer =
       new DeserializerBuilder()
@@ -111,14 +111,16 @@ public static class ConfigParser
           s => s.InsteadOf<ObjectNodeDeserializer>())
         .Build();
 
-    CommunicationInterface? commInterface;
+    CommunicationInterfaceInternal? commInterface;
     try
     {
-      commInterface = deserializer.Deserialize<CommunicationInterface?>(File.ReadAllText(path));
+      commInterface = deserializer.Deserialize<CommunicationInterfaceInternal?>(File.ReadAllText(path));
       if (commInterface == null)
       {
-        throw new InvalidConfigurationException("Failed to deserialize the provided FMU configuration file");
+        throw new InvalidConfigurationException("Failed to deserialize the provided communication interface file");
       }
+
+      commInterface.ResolveStructDefinitionDependencies();
     }
     catch (Exception e)
     {

@@ -1,14 +1,23 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.ComponentModel.DataAnnotations;
-
 namespace FmuImporter.CommDescription;
 
-public class StructMember
+public class StructMember : Dictionary<string, string>
 {
-  [Required]
-  public string Name { get; set; } = default!;
+  public string Name
+  {
+    get
+    {
+      return this.First().Key;
+    }
+  }
 
-  public string Type { get; set; } = default!;
+  public string Type
+  {
+    get
+    {
+      return this.First().Value;
+    }
+  }
 }

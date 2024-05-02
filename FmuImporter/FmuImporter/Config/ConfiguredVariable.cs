@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using Fmi.FmiModel.Internal;
+using Fmi.Supplements;
 
 namespace FmuImporter.Config;
 
@@ -33,5 +34,5 @@ public class ConfiguredVariable
     }
   }
 
-  public List<string>? StructuredPath { get; set; }
+  public StructuredNameContainer? StructuredPath { get; set; }
 }

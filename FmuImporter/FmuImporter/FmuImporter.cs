@@ -34,7 +34,7 @@ public class FmuImporter
   private FmuDataManager? FmuDataManager { get; set; }
 
   private readonly Configuration _fmuImporterConfig;
-  private readonly CommunicationInterface? _fmuImporterCommInterface;
+  private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
 
   private readonly Dictionary<string, Parameter>? _configuredParameters;
   private readonly Dictionary<string, Parameter>? _configuredStructuralParameters;
@@ -168,13 +168,14 @@ public class FmuImporter
     var isHandlingStructuredParameters = false;
 
     // initialize all configured parameters
-    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Instantiated &&
-        _configuredStructuralParameters != null)
+    if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Instantiated) &&
+        (_configuredStructuralParameters != null))
     {
       usedConfiguredParameters = _configuredStructuralParameters.Values;
       isHandlingStructuredParameters = true;
     }
-    else if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initializing && _configuredParameters != null)
+    else if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initializing) &&
+             (_configuredParameters != null))
     {
       usedConfiguredParameters = _configuredParameters.Values;
     }
@@ -200,7 +201,7 @@ public class FmuImporter
       }
 
       result = FmuEntity.ModelDescription.Variables.TryGetValue(refValue, out var v);
-      if (!result || v == null)
+      if (!result || (v == null))
       {
         throw new InvalidConfigurationException(
           $"Configured parameter '{configuredParameter.VariableName}' not found in model description.");
@@ -259,29 +260,66 @@ public class FmuImporter
       throw new NullReferenceException($"{nameof(FmuDataManager)} was null.");
     }
 
-    var relevantConfiguredVariables = FmuDataManager.Initialize(_fmuImporterConfig);
+    FmuDataManager.Initialize(_fmuImporterConfig, _fmuImporterCommInterface);
 
-    foreach (var configuredVariable in relevantConfiguredVariables)
+    // create subscribers for input variables
+    foreach (var configuredVariable in FmuDataManager.InputConfiguredVariables.Values)
     {
-      if (configuredVariable.FmuVariableDefinition.Causality == Variable.Causalities.Input)
+      // This is a redundant sanity check. It is also done when adding the variable to InputConfiguredVariable.
+      if (configuredVariable.FmuVariableDefinition.Causality != Variable.Causalities.Input)
       {
-        SilKitDataManager.CreateSubscriber(
-          configuredVariable.FmuVariableDefinition.Name,
-          configuredVariable.TopicName,
-          new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
+        throw new InvalidConfigurationException(
+          $"An internal error occurred. " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of input variables, but its " +
+          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
       }
-      else if (configuredVariable.FmuVariableDefinition.Causality
-               is Variable.Causalities.Output
-               or Variable.Causalities.Parameter
-               or Variable.Causalities.StructuralParameter
-              )
+
+      SilKitDataManager.CreateSubscriber(
+        configuredVariable.FmuVariableDefinition.Name,
+        configuredVariable.TopicName,
+        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
+    }
+
+    // create publishers for output variables
+    foreach (var configuredVariable in FmuDataManager.OutputConfiguredVariables)
+    {
+      if (configuredVariable.FmuVariableDefinition.Causality is not
+          (Variable.Causalities.Output
+          or Variable.Causalities.Parameter
+          or Variable.Causalities.StructuralParameter))
       {
-        SilKitDataManager.CreatePublisher(
-          configuredVariable.FmuVariableDefinition.Name,
-          configuredVariable.TopicName,
-          new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
-          0);
+        throw new InvalidConfigurationException(
+          $"An internal error occurred. " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of output variables, but its " +
+          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
       }
+
+      SilKitDataManager.CreatePublisher(
+        configuredVariable.FmuVariableDefinition.Name,
+        configuredVariable.TopicName,
+        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+        0);
+    }
+
+    // create publishers for parameter variables
+    foreach (var configuredVariable in FmuDataManager.ParameterConfiguredVariables)
+    {
+      if (configuredVariable.FmuVariableDefinition.Causality is not
+          (Variable.Causalities.Output
+          or Variable.Causalities.Parameter
+          or Variable.Causalities.StructuralParameter))
+      {
+        throw new InvalidConfigurationException(
+          $"An internal error occurred. " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of parameter variables, but its " +
+          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
+      }
+
+      SilKitDataManager.CreatePublisher(
+        configuredVariable.FmuVariableDefinition.Name,
+        configuredVariable.TopicName,
+        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+        0);
     }
   }
 
@@ -459,14 +497,14 @@ public class FmuImporter
 
   private bool IsSimulationStopped()
   {
-    return FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Terminated ||
-           CurrentSilKitStatus == SilKitStatus.Stopped ||
-           CurrentSilKitStatus == SilKitStatus.ShutDown;
+    return (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Terminated) ||
+           (CurrentSilKitStatus == SilKitStatus.Stopped) ||
+           (CurrentSilKitStatus == SilKitStatus.ShutDown);
   }
 
   public void ExitFmuImporter()
   {
-    if (FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initialized &&
+    if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initialized) &&
         !(FmuEntity.Binding.CurrentState is
             InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
     {

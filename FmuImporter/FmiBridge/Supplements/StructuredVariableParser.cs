@@ -7,11 +7,11 @@ namespace Fmi.Supplements;
 
 public static class StructuredVariableParser
 {
-  public static List<string> Parse(string variableName)
+  public static StructuredNameContainer Parse(string variableName)
   {
     var result = new List<string>();
     Parse(variableName.AsSpan(), ref result);
-    return result;
+    return new StructuredNameContainer(result);
   }
 
   private static void Parse(ReadOnlySpan<char> input, ref List<string> path)

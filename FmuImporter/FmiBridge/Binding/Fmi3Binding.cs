@@ -1442,7 +1442,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
     size_t[] valueSizes,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)]
-    IntPtr[] values, // TODO convert to blittable ByteArray if possible
+    IntPtr[] values,
     size_t nValues);
 
   /////////////
