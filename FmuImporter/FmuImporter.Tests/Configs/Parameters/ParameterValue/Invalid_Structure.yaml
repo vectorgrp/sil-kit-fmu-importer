@@ -1,0 +1,7 @@
+Version: 1
+
+Parameters:
+  - VariableName: InvalidStructure
+    Value:
+      Type: Double
+      Value: 42

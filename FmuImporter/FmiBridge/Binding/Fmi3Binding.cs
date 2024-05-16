@@ -436,10 +436,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToSingle(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -470,10 +467,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetFloat32(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -484,10 +478,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToDouble(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -518,10 +509,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetFloat64(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -539,14 +527,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         Buffer.BlockCopy(data, 0, values, 0, data.Length);
 
         SetInt8(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            (sbyte)data[0]
-          });
+          new[] { mdVar.ValueReference },
+          new[] { (sbyte)data[0] });
         return;
       }
       case VariableTypes.Int16:
@@ -556,10 +538,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt16(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -567,10 +546,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetInt16(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -581,10 +557,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt32(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -592,10 +565,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetInt32(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -606,10 +576,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt64(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -617,10 +584,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetInt64(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -635,10 +599,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetUInt8(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           data);
         return;
       }
@@ -649,10 +610,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt16(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -660,10 +618,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetUInt16(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -674,10 +629,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt32(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -685,10 +637,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetUInt32(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -699,10 +648,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToUInt64(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -710,10 +656,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetUInt64(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -724,10 +667,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToBoolean(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -735,10 +675,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetBoolean(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -759,10 +696,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetString(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -777,10 +711,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         if (isScalar)
         {
           var value = BitConverter.ToInt64(data);
-          values = new[]
-          {
-            value
-          };
+          values = new[] { value };
         }
         else
         {
@@ -788,10 +719,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         }
 
         SetInt64(
-          new[]
-          {
-            mdVar.ValueReference
-          },
+          new[] { mdVar.ValueReference },
           values);
         return;
       }
@@ -844,10 +772,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
 
     SetBinary(
-      new[]
-      {
-        valueRef
-      },
+      new[] { valueRef },
       Array.ConvertAll(binSizes, b => (IntPtr)b),
       values);
 

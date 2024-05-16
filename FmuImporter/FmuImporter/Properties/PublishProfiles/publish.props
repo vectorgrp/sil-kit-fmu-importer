@@ -2,29 +2,29 @@
 
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <PropertyGroup>
+    <PublishProtocol>FileSystem</PublishProtocol>
+    <_TargetId>Folder</_TargetId>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishReadyToRun>false</PublishReadyToRun>
+
+    <Configuration>Release</Configuration>
+    <ConfigurationOverride>Release</ConfigurationOverride>
+  </PropertyGroup>
+
+  <Import Project="../../../common.props" Condition="$(CommonImported) == ''" />
+
+  <Target Name="ConfigOverride" BeforeTargets="Build">
     <PropertyGroup>
-        <PublishProtocol>FileSystem</PublishProtocol>
-        <_TargetId>Folder</_TargetId>
-        <PublishSingleFile>false</PublishSingleFile>
-        <PublishReadyToRun>false</PublishReadyToRun>
-
-        <Configuration>Release</Configuration>
-        <ConfigurationOverride>Release</ConfigurationOverride>
+      <ConfigurationOverride>Release</ConfigurationOverride>
     </PropertyGroup>
+  </Target>
 
-    <Import Project="../../../common.props" Condition="$(CommonImported) == ''" />
-
-    <Target Name="ConfigOverride" BeforeTargets="Build">
-        <PropertyGroup>
-            <ConfigurationOverride>Release</ConfigurationOverride>
-        </PropertyGroup>
-    </Target>
-
-    <Target Name="Cleanup"
-            AfterTargets="Build">
-        <Delete Files="$(PublishDir)/BuildAll.dll" />
-        <Delete Files="$(PublishDir)/BuildAll.pdb" />
-        <Delete Files="$(PublishDir)/BuildAll.deps.json" />
-    </Target>
+  <Target Name="Cleanup"
+          AfterTargets="Build">
+    <Delete Files="$(PublishDir)/BuildAll.dll" />
+    <Delete Files="$(PublishDir)/BuildAll.pdb" />
+    <Delete Files="$(PublishDir)/BuildAll.deps.json" />
+  </Target>
 
 </Project>

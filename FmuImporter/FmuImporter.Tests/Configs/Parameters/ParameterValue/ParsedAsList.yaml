@@ -1,0 +1,10 @@
+Version: 1
+
+Parameters:
+  - VariableName: ValidList
+    Value:
+      - 42
+      - -42
+      - 3.14
+      - 42.42.42.42
+      - '42'

@@ -51,7 +51,7 @@ public class DataConverter
 
     return Fmi.Supplements.Serializer.Serialize(
       deserializedData,
-      configuredVariable.FmuVariableDefinition!.VariableType,
+      configuredVariable.FmuVariableDefinition!,
       ref binSizes);
   }
 

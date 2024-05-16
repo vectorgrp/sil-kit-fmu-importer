@@ -4,85 +4,85 @@
 
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-    <PropertyGroup>
-        <Version>1.2.0</Version>
-        <SilKitVersion>4.0.47</SilKitVersion>
-        <Copyright>Copyright (c) Vector Informatik GmbH. All rights reserved.</Copyright>
-    </PropertyGroup>
+  <PropertyGroup>
+    <Version>1.2.0</Version>
+    <SilKitVersion>4.0.47</SilKitVersion>
+    <Copyright>Copyright (c) Vector Informatik GmbH. All rights reserved.</Copyright>
+  </PropertyGroup>
 
-    <!-- Apply Configuration override, if applicable -->
-    <PropertyGroup Condition="$(ConfigurationOverride) != ''">
-        <Configuration>$(ConfigurationOverride)</Configuration>
-    </PropertyGroup>
+  <!-- Apply Configuration override, if applicable -->
+  <PropertyGroup Condition="$(ConfigurationOverride) != ''">
+    <Configuration>$(ConfigurationOverride)</Configuration>
+  </PropertyGroup>
 
-    <PropertyGroup>
-        <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
-        <GenerateAssemblyCopyrightInfo>True</GenerateAssemblyCopyrightInfo>
+  <PropertyGroup>
+    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
+    <GenerateAssemblyCopyrightInfo>True</GenerateAssemblyCopyrightInfo>
 
-        <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
-        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <Platforms>x64</Platforms>
-        <Platform>x64</Platform>
-        <PlatformTarget>x64</PlatformTarget>
-        <TargetFramework>net6.0</TargetFramework>
-        <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <PlatformTarget>x64</PlatformTarget>
+    <TargetFramework>net6.0</TargetFramework>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
 
-        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-        <InvariantGlobalization>true</InvariantGlobalization>
-    </PropertyGroup>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
 
-    <!-- Output/Publish directory configuration -->
-    <PropertyGroup>
-        <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
-        <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
-        <SilKitDirBase>$([System.IO.Path]::GetFullPath($(MSBuildProjectDirectory)/../_silkit/))</SilKitDirBase>
-        <SilKitWinLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit.dll"))</SilKitWinLibPath>
-        <SilKitLinuxLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "libSilKit.so"))</SilKitLinuxLibPath>
-    </PropertyGroup>
+  <!-- Output/Publish directory configuration -->
+  <PropertyGroup>
+    <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
+    <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
+    <SilKitDirBase>$([System.IO.Path]::GetFullPath($(MSBuildProjectDirectory)/../_silkit/))</SilKitDirBase>
+    <SilKitWinLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit.dll"))</SilKitWinLibPath>
+    <SilKitLinuxLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "libSilKit.so"))</SilKitLinuxLibPath>
+  </PropertyGroup>
 
-    <PropertyGroup
-        Condition="$(Standalone) == 'True' AND 
+  <PropertyGroup
+    Condition="$(Standalone) == 'True' AND 
                    ($(RuntimeIdentifier)=='linux-x64' OR 
                    ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('Linux'))))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/linux-$(Platform)-$(Configuration)/</IntermediateOutputPath>
-        <OutputPath>$(OutputPathBase)linux-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(PublishDirBase)linux-$(Platform)/$(Version)</PublishDir>
-        <RuntimeIdentifier>linux-$(Platform)</RuntimeIdentifier>
-    </PropertyGroup>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/linux-$(Platform)-$(Configuration)/</IntermediateOutputPath>
+    <OutputPath>$(OutputPathBase)linux-$(Platform)-$(Configuration)</OutputPath>
+    <PublishDir>$(PublishDirBase)linux-$(Platform)/$(Version)</PublishDir>
+    <RuntimeIdentifier>linux-$(Platform)</RuntimeIdentifier>
+  </PropertyGroup>
 
-    <PropertyGroup
-        Condition="$(Standalone) == 'True' AND 
+  <PropertyGroup
+    Condition="$(Standalone) == 'True' AND 
                    ($(RuntimeIdentifier)=='osx-x64' OR 
                    ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('OSX'))))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/osx-$(Platform)-$(Configuration)/</IntermediateOutputPath>
-        <OutputPath>$(OutputPathBase)osx-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(PublishDirBase)osx-$(Platform)/$(Version)</PublishDir>
-        <RuntimeIdentifier>osx-$(Platform)</RuntimeIdentifier>
-    </PropertyGroup>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)/../_obj/osx-$(Platform)-$(Configuration)/</IntermediateOutputPath>
+    <OutputPath>$(OutputPathBase)osx-$(Platform)-$(Configuration)</OutputPath>
+    <PublishDir>$(PublishDirBase)osx-$(Platform)/$(Version)</PublishDir>
+    <RuntimeIdentifier>osx-$(Platform)</RuntimeIdentifier>
+  </PropertyGroup>
 
-    <PropertyGroup
-        Condition="$(Standalone) == 'True' AND 
+  <PropertyGroup
+    Condition="$(Standalone) == 'True' AND 
                    ($(RuntimeIdentifier)=='win-x64' OR 
                    ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('Windows'))))">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\win-$(Platform)-$(Configuration)</IntermediateOutputPath>
-        <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)\$(Version)</PublishDir>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    </PropertyGroup>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\win-$(Platform)-$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
+    <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)\$(Version)</PublishDir>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="$(Standalone) != 'True'">
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\crossplatform-$(Platform)-$(Configuration)</IntermediateOutputPath>
-        <OutputPath>$(MSBuildProjectDirectory)\..\_build\crossplatform-$(Platform)-$(Configuration)</OutputPath>
-        <PublishDir>$(MSBuildProjectDirectory)\..\_publish\crossplatform-$(Platform)\SilKitFmuImporter-$(Version)-xPlatform-$(Platform)</PublishDir>
-        <OsDefined>True</OsDefined>
-    </PropertyGroup>
+  <PropertyGroup Condition="$(Standalone) != 'True'">
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\crossplatform-$(Platform)-$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\..\_build\crossplatform-$(Platform)-$(Configuration)</OutputPath>
+    <PublishDir>$(MSBuildProjectDirectory)\..\_publish\crossplatform-$(Platform)\SilKitFmuImporter-$(Version)-xPlatform-$(Platform)</PublishDir>
+    <OsDefined>True</OsDefined>
+  </PropertyGroup>
 
-    <PropertyGroup>
-        <CommonImported>True</CommonImported>
-    </PropertyGroup>
+  <PropertyGroup>
+    <CommonImported>True</CommonImported>
+  </PropertyGroup>
 
-    <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
+  <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
 
 </Project>

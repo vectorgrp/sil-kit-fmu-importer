@@ -195,7 +195,7 @@ public class FmuImporter
 
       byte[] data;
       var binSizes = new List<int>();
-      if (configuredParameter.Value is List<object> objectList)
+      if (configuredParameter.Value.Value is List<object> objectList)
       {
         // the parameter is an array
         if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
@@ -209,20 +209,17 @@ public class FmuImporter
           v.Start = objectList.ToArray();
         }
 
-        data = Fmi.Supplements.Serializer.Serialize(objectList, v.VariableType, ref binSizes);
+        data = Fmi.Supplements.Serializer.Serialize(objectList, v, ref binSizes);
       }
       else
       {
         if (isHandlingStructuredParameters)
         {
           // modify model description to make sure that the array lengths can be calculated correctly
-          v.Start = new[]
-          {
-            configuredParameter.Value
-          };
+          v.Start = new[] { configuredParameter.Value.Value };
         }
 
-        data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value, v.VariableType, ref binSizes);
+        data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value.Value, v, ref binSizes);
       }
 
       if (v.VariableType != VariableTypes.Binary)

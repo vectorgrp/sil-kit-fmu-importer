@@ -270,42 +270,24 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         }
 
         SetReal(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            value
-          });
+          new[] { mdVar.ValueReference },
+          new[] { value });
         return;
       }
       case VariableTypes.Int32:
       {
         var value = BitConverter.ToInt32(data);
         SetInteger(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            value
-          });
+          new[] { mdVar.ValueReference },
+          new[] { value });
         return;
       }
       case VariableTypes.Boolean:
       {
         var value = BitConverter.ToBoolean(data);
         SetBoolean(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            value
-          });
+          new[] { mdVar.ValueReference },
+          new[] { value });
         return;
       }
       case VariableTypes.String:
@@ -314,14 +296,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         // offset = 4 byte -> 32 bit
         var value = Encoding.UTF8.GetString(data, 4, byteLength);
         SetString(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            value
-          });
+          new[] { mdVar.ValueReference },
+          new[] { value });
         return;
       }
       case VariableTypes.EnumFmi2:
@@ -329,14 +305,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         var value = BitConverter.ToInt32(data);
 
         SetInteger(
-          new[]
-          {
-            mdVar.ValueReference
-          },
-          new[]
-          {
-            value
-          });
+          new[] { mdVar.ValueReference },
+          new[] { value });
         return;
       }
       default:

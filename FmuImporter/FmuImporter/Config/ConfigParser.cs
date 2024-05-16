@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.ComponentModel.DataAnnotations;
+using FmuImporter.Config.ParserExtensions;
 using FmuImporter.Exceptions;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -40,10 +41,6 @@ public static class ConfigParser
           {
             throw new InvalidConfigurationException($"The configuration is invalid: {e.Message}", e);
           }
-          catch (Exception)
-          {
-            throw;
-          }
         }
 
         return success;
@@ -77,6 +74,7 @@ public static class ConfigParser
         .WithNodeDeserializer(
           inner => new ValidatingNodeDeserializer(inner),
           s => s.InsteadOf<ObjectNodeDeserializer>())
+        .WithTypeConverter(new ParameterValueTypeConverter())
         .Build();
 
     Configuration? config;

@@ -274,8 +274,187 @@ public class ConfigFileTests
       () => ConfigParser.LoadConfiguration(configPath));
   }
 
-#endregion parameters block checks
+// The following tests checks how the YAML parsing result is typed.
 
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_UInt64()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/ParsedAsUInt64.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(UInt64)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_Int64()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/ParsedAsInt64.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(Int64)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_Double()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/ParsedAsDouble.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(Double)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_Large_Unsigned_As_Double()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/LargeNumberParsedAsDouble.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(Double)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_String()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/ParsedAsString.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(string)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Parse_List()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/ParsedAsList.yaml";
+
+    var cfg = CheckNoThrowNotNull(configPath);
+    cfg.MergeIncludes();
+
+    Assert.Multiple(
+      () =>
+      {
+        Assert.That(() => cfg.Parameters != null, Is.True);
+        Assert.That(() => cfg.Parameters!.Count, Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters(),
+          Throws.Nothing);
+        Assert.That(
+          () => cfg.GetParameters().Count,
+          Is.EqualTo(1));
+        Assert.That(
+          () => cfg.GetParameters().First().Value.Value.Value.GetType(),
+          Is.EqualTo(typeof(List<object>)));
+        var values = (List<object>)cfg.GetParameters().First().Value.Value.Value;
+        Assert.That(
+          () => values.Count,
+          Is.EqualTo(5));
+        Assert.That(
+          () => values[0].GetType(),
+          Is.EqualTo(typeof(UInt64)));
+        Assert.That(
+          () => values[1].GetType(),
+          Is.EqualTo(typeof(Int64)));
+        Assert.That(
+          () => values[2].GetType(),
+          Is.EqualTo(typeof(Double)));
+        Assert.That(
+          () => values[3].GetType(),
+          Is.EqualTo(typeof(string)));
+        Assert.That(
+          () => values[4].GetType(),
+          Is.EqualTo(typeof(string)));
+      });
+  }
+
+  [Test, Order(1)]
+  public void Configuration_Parameters_Structure_Value()
+  {
+    var configPath = "Configs/Parameters/ParameterValue/Invalid_Structure.yaml";
+
+    Assert.Throws<InvalidConfigurationException>(
+      () => ConfigParser.LoadConfiguration(configPath));
+  }
+
+#endregion parameters block checks
 
 #region variableMapping block checks
 
@@ -410,8 +589,8 @@ public class ConfigFileTests
         return
           localParam.VariableName == "OnlyLocal" &&
           localParam.Value != null &&
-          double.TryParse((string)localParam.Value, out res) &&
-          res == 7.0;
+          ((localParam.Value.Value is double && (double)localParam.Value.Value == 7.0) ||
+           (double.TryParse((string)localParam.Value.Value, out res) && res == 7.0));
       },
       Is.True);
 
@@ -422,8 +601,8 @@ public class ConfigFileTests
         return
           globalParam.VariableName == "Global" &&
           globalParam.Value != null &&
-          double.TryParse((string)globalParam.Value, out res) &&
-          res == 7.0;
+          ((globalParam.Value.Value is double && (double)globalParam.Value.Value == 7.0) ||
+           (double.TryParse((string)globalParam.Value.Value, out res) && res == 7.0));
       },
       Is.True);
 
@@ -434,8 +613,8 @@ public class ConfigFileTests
         return
           includeParam.VariableName == "OnlyInclude" &&
           includeParam.Value != null &&
-          double.TryParse((string)includeParam.Value, out res) &&
-          res == 7.0;
+          ((includeParam.Value.Value is double && (double)includeParam.Value.Value == 7.0) ||
+           (double.TryParse((string)includeParam.Value.Value, out res) && res == 7.0));
       },
       Is.True);
   }

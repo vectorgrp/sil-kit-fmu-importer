@@ -1,0 +1,5 @@
+Version: 1
+
+Parameters:
+  - VariableName: ValidDouble
+    Value: 9223372036854775807000000000000

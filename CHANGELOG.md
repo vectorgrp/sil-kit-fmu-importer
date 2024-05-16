@@ -4,6 +4,12 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.3.0] - TBD
+
+### Changed
+
+* If the value of an enumeration-typed variable is set, strings are now considered referring to an enumerator's name, whereas integers refer to an enumerators' value.
+
 ## [1.2.0] - 2024-03-28
 
 ### Added

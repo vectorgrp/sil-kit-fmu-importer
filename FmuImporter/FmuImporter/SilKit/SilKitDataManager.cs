@@ -91,9 +91,7 @@ public class SilKitDataManager : IDisposable
     {
       var dict = new Dictionary<uint, byte[]>
       {
-        {
-          valueRef, dataMessageEvent.Data
-        }
+        { valueRef, dataMessageEvent.Data }
       };
       DataBuffer.Add(dataMessageEvent.TimestampInNS, dict);
     }

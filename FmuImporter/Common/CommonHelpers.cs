@@ -32,6 +32,7 @@ internal static class Helpers
           {
             stringBuilder.AppendLine(".");
           }
+
           return new Tuple<bool, StringBuilder?>(true, stringBuilder);
         }
       }

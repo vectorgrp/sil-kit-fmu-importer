@@ -259,18 +259,34 @@ The paths to the included files can either absolute or relative to the including
 #### **_Parameters_**
 
 Used to override default values of parameters.
-Each entry of the list comprises two attributes:
+Each entry of the list must have attributes:
 
 | Attribute Name | Type   | Description |
 |----------------|--------|-------------|
-| VariableName   | String | Name of the variable in the model description (mandatory). |
+| VariableName   | String | Name of the variable in the model description. |
 | Value          | Object | Value of the parameter. Type must match the definition in the model description. |
+
+The `Value` attribute may be one of the following:
+* A string (with single (`'`) or double (`"`) quotes) even if the content of the string is a numeric value;
+* A numeric value (example: `42`, `3.14`). If it's not representable by an integer type of size 64 bits or a double-precision floating point due to overflow, it'll be considered a string;
+* A list of the above (lists nesting is not supported).
+
+If the `VariableName` designates a variable whose type is an enumeration, integer values are interpreted as the the enumerator's underlying value. If it is a string, it is interpreted as an enumerator's name and the value is taken from the Model Description.
+
+In the case where the `VariableName` designates a variable whose type is a multi-dimensional array, the `Value` attribute is the flattened array which will be used to initialise the variable.
 
 Syntax:
 ```yaml
 Parameters:
   - VariableName: <name-in-model-description>
     Value: <new-start-value>
+  - VariableName: <enum-typed-variable-name-in-model-description>
+    Value: "<name-of-enumerator-used-as-start-value>"
+  - VariableName: <array-name-in-model-description>
+    Value:
+      - <first-item-of-the-start-value>
+      - <second-item-of-the-start-value>
+      - ...
   - ...
 ```
 

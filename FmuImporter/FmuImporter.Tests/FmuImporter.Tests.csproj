@@ -3,35 +3,35 @@
 
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\build.props" />
+  <Import Project="..\build.props" />
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
 
-        <IsPackable>false</IsPackable>
-        <IsTestProject>true</IsTestProject>
-    </PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
+    <PackageReference Include="coverlet.collector" Version="3.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FmuImporter\FmuImporter.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyTestConfigs" AfterTargets="Build">
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-        <PackageReference Include="NUnit" Version="3.13.3" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
-        <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
-        <PackageReference Include="coverlet.collector" Version="3.2.0" />
+      <TestConfigs Include="$(MSBuildProjectDirectory)/Configs/**/*.*" />
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\FmuImporter\FmuImporter.csproj" />
-    </ItemGroup>
-
-    <Target Name="CopyTestConfigs" AfterTargets="Build">
-        <ItemGroup>
-            <TestConfigs Include="$(MSBuildProjectDirectory)/Configs/**/*.*" />
-        </ItemGroup>
-        <Copy
-            SourceFiles="@(TestConfigs)" 
-            DestinationFolder="$(OutputPath)Configs/%(RecursiveDir)"
-            SkipUnchangedFiles="true" />
-    </Target>
+    <Copy
+      SourceFiles="@(TestConfigs)"
+      DestinationFolder="$(OutputPath)Configs/%(RecursiveDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

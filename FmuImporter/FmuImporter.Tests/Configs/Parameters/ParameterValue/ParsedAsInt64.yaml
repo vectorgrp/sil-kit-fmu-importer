@@ -1,0 +1,5 @@
+Version: 1
+
+Parameters:
+  - VariableName: ValidInt64
+    Value: -42

@@ -3,15 +3,15 @@
 
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\build.props" />
+  <Import Project="..\build.props" />
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <Compile Include="..\Common\CommonHelpers.cs" Link="Binding\CommonHelpers.cs" />
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Common\CommonHelpers.cs" Link="Binding\CommonHelpers.cs" />
+  </ItemGroup>
 
 </Project>
