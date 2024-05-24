@@ -11,5 +11,5 @@ public class StructDefinition
   public string Name { get; set; } = default!;
 
   [Required]
-  public List<StructMember> Members { get; set; } = default!;
+  public List<StructMemberInternal> Members { get; set; } = default!;
 }

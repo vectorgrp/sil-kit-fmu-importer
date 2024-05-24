@@ -198,11 +198,10 @@ public class SerDes
         throw new NotSupportedException("Strings cannot be converted to or from other types");
       }
 
-      // strings cannot be convert
+      // strings cannot be converted
       var convertedArray = Array.ConvertAll(objectArray, Convert.ToString);
       for (var i = 0; i < convertedArray.Length; i++)
       {
-        // TODO check if this conversion works as intended
         serializer.Serialize(convertedArray[i] ?? "");
       }
 

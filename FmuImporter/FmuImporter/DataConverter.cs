@@ -125,7 +125,7 @@ public class DataConverter
     {
       var receivedType =
         Helpers.Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
-      var deserializedData = deserializer.Deserialize(receivedType);
+      var deserializedData = deserializer.Deserialize(receivedType.Type); // TODO fixme
       // change data type to type expected by FMU
       return Convert.ChangeType(deserializedData, fmuType);
     }
@@ -142,7 +142,7 @@ public class DataConverter
         !string.IsNullOrEmpty(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType))
     {
       transmissionType =
-        Helpers.Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
+        configuredVariable.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType.Type; // TODO fixme
     }
     else
     {
@@ -176,7 +176,7 @@ public class DataConverter
           !string.IsNullOrEmpty(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType))
       {
         transmissionType =
-          Helpers.Helpers.StringToType(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType);
+          structureMember.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType.Type; // TODO FIXME
       }
       else
       {

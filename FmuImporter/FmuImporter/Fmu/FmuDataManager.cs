@@ -233,7 +233,9 @@ public class FmuDataManager
       }
 
       var flattenedMembers = structDefinitionOfPubSubType.FlattenedMembers;
-      configuredStructure = new ConfiguredStructure(structName, flattenedMembers.Select(fm => fm.QualifiedName));
+      configuredStructure = new ConfiguredStructure(
+        structName,
+        flattenedMembers.Select(fm => structName + "." + fm.QualifiedName));
       targetStructureInternal.Add(structName, configuredStructure);
       targetStructure.Add(configuredStructure.StructureId, configuredStructure);
     }
@@ -304,10 +306,7 @@ public class FmuDataManager
       }
 
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
-      var valueRefArr = new[]
-      {
-        configuredVariable.FmuVariableDefinition.ValueReference
-      };
+      var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
 
       Binding.GetValue(valueRefArr, out var result, configuredVariableType);
       if ((configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
@@ -370,10 +369,7 @@ public class FmuDataManager
         }
 
         var configuredVariableType = structureMember.FmuVariableDefinition!.VariableType;
-        var valueRefArr = new[]
-        {
-          structureMember.FmuVariableDefinition.ValueReference
-        };
+        var valueRefArr = new[] { structureMember.FmuVariableDefinition.ValueReference };
         Binding.GetValue(valueRefArr, out var result, configuredVariableType);
 
         // apply linear transformation to individual variables

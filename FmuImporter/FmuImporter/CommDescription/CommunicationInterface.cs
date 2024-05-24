@@ -20,10 +20,10 @@ public class CommunicationInterface
   public List<StructDefinitionInternal>? StructDefinitions { get; set; }
 
   [NullOrNotEmpty]
-  public List<Publisher>? Publishers { get; set; }
+  public List<PublisherInternal>? Publishers { get; set; }
 
   [NullOrNotEmpty]
-  public List<Subscriber>? Subscribers { get; set; }
+  public List<SubscriberInternal>? Subscribers { get; set; }
 
   public string? InstanceName { get; set; }
   public string? Namespace { get; set; }

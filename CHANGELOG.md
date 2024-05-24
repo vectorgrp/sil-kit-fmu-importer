@@ -10,11 +10,13 @@ This version introduces a new feature to bundle several variables to structures 
 
 ### Added
 
-* Added an option 'AlwaysUseStructuredNamingConvention' to the configuration's root level. 
-  It defaults to false. 
+* Added an option 'AlwaysUseStructuredNamingConvention' to the configuration's root level (default: false).
   If set, it activate the structured naming convention detection (and therefore the variable aggregation feature) even if it is not set in the FMU's model description.
 * Added a new communication interface description format that must be provided via ``-i `` or ``--fmu-importer-communication-interface-file`` if variables shall be aggregated to structures.
-  
+* Added support for optional data types.
+Optional data types are used in SIL Kit to indicate if the provided data (e.g., a structure member) contains a payload or not.
+Optional data types can be defined in the communication interface description and in the configuration file by appending a question mark at the end of the data type that should be optional.
+
 ### Changed
 
 * If the value of an enumeration-typed variable is set, strings are now considered referring to an enumerator's name, whereas integers refer to an enumerators' value.

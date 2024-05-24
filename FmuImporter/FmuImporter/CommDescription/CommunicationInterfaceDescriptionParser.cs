@@ -103,22 +103,14 @@ public static class CommunicationInterfaceDescriptionParser
           "Failed to deserialize the provided communication interface file");
       }
 
-      commInterface.ResolveStructDefinitionDependencies();
+      commInterface.CheckAndAssignCustomTypeDependencies();
     }
     catch (Exception e)
     {
       throw ProcessException(e);
     }
 
-    //commInterface.ConfigurationPath = Path.GetFullPath(path);
-    ValidateCommInterface(commInterface);
     return commInterface;
-  }
-
-  private static bool ValidateCommInterface(
-    CommunicationInterface? commInterface)
-  {
-    return true;
   }
 
   private static Exception ProcessException(Exception e)

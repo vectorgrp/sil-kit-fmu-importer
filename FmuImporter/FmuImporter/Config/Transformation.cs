@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using FmuImporter.Helpers;
+
 namespace FmuImporter.Config;
 
 public class Transformation : TransformationPublic
@@ -56,4 +58,22 @@ public class Transformation : TransformationPublic
       return (double)_computedOffset;
     }
   }
+
+  public new string? TransmissionType
+  {
+    get
+    {
+      return base.TransmissionType;
+    }
+    set
+    {
+      base.TransmissionType = value;
+      if (value != null)
+      {
+        ResolvedTransmissionType = Helpers.Helpers.StringToType(value);
+      }
+    }
+  }
+
+  public OptionalType? ResolvedTransmissionType { get; private set; }
 }

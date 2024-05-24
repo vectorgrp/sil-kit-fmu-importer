@@ -13,7 +13,7 @@ public class SubscriberTypeConverter : IYamlTypeConverter
 {
   public bool Accepts(Type type)
   {
-    return type == typeof(List<Subscriber>);
+    return type == typeof(List<SubscriberInternal>);
   }
 
   public object? ReadYaml(IParser parser, Type type)
@@ -36,13 +36,13 @@ public class SubscriberTypeConverter : IYamlTypeConverter
     throw new NotSupportedException();
   }
 
-  private List<Subscriber> ProcessSequence(IParser parser)
+  private List<SubscriberInternal> ProcessSequence(IParser parser)
   {
-    var subscriberList = new List<Subscriber>();
+    var subscriberList = new List<SubscriberInternal>();
 
     while (!parser.Accept<SequenceEnd>(out _))
     {
-      var subscriber = new Subscriber();
+      var subscriber = new SubscriberInternal();
       if (!parser.TryConsume<MappingStart>(out _))
       {
         throw new InvalidCommunicationInterfaceException(

@@ -1,0 +1,9 @@
+Version: 1
+
+StructDefinitions:
+  - Name: StructSample
+    Members:
+      - Member3: StructSample2
+
+Publishers:
+  - PubStruct : StructSample

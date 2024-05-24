@@ -98,47 +98,22 @@ public static class Helpers
     throw new ArgumentOutOfRangeException(nameof(type), type, null);
   }
 
-  public static Type StringToType(string s)
+  public static OptionalType StringToType(string s)
   {
-    switch (s.ToLowerInvariant())
-    {
-      case "uint8":
-        return typeof(byte);
-      case "uint16":
-        return typeof(ushort);
-      case "uint32":
-        return typeof(uint);
-      case "uint64":
-        return typeof(double);
-      case "int8":
-        return typeof(sbyte);
-      case "int16":
-        return typeof(short);
-      case "int32":
-        return typeof(int);
-      case "int64":
-        return typeof(long);
-      case "float32":
-      case "float":
-        return typeof(float);
-      case "float64":
-      case "double":
-        return typeof(double);
-      default:
-        throw new NotSupportedException($"The transformDuringTransmissionType '{s}' does not exist.");
-    }
+    var tg = new TypeGenerator(s);
+    return tg.GenerateType();
   }
 
   public static void ApplyLinearTransformationFmi(ref object deserializedData, ConfiguredVariable configuredVariable)
   {
-    if (configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float32 &&
-        configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float64)
+    if ((configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float32) &&
+        (configuredVariable.FmuVariableDefinition.VariableType != VariableTypes.Float64))
     {
       return;
     }
 
     var unit = configuredVariable.FmuVariableDefinition.TypeDefinition?.Unit;
-    if (unit != null && (unit.Factor.HasValue || unit.Offset.HasValue))
+    if ((unit != null) && (unit.Factor.HasValue || unit.Offset.HasValue))
     {
       ApplyLinearTransformation(
         ref deserializedData,
@@ -153,7 +128,7 @@ public static class Helpers
     ConfiguredVariable configuredVariable)
   {
     var transformation = configuredVariable.ImporterVariableConfiguration.Transformation;
-    if (transformation != null && (transformation.Factor.HasValue || transformation.Offset.HasValue))
+    if ((transformation != null) && (transformation.Factor.HasValue || transformation.Offset.HasValue))
     {
       ApplyLinearTransformation(
         ref deserializedData,
@@ -246,5 +221,124 @@ public static class Helpers
       nameof(type),
       type,
       $"The provided type '{type}' cannot be changed using a factor or offset");
+  }
+
+  private class TypeGenerator
+  {
+    private static readonly char[] delimiterChars = { '<', '>' };
+
+    private readonly string _typeString;
+
+    public TypeGenerator(string typeString)
+    {
+      _typeString = typeString;
+    }
+
+    public OptionalType GenerateType()
+    {
+      // Tokenize
+      var tokens = _typeString.Split(delimiterChars, StringSplitOptions.TrimEntries).ToList();
+      var type = TypeFromTokens(tokens);
+      return type;
+    }
+
+    private OptionalType TypeFromTokens(List<string> typeStringTokens)
+    {
+      if (typeStringTokens.Count == 1)
+      {
+        // token must be plain type -> parse & return type
+        return TypeFromToken(typeStringTokens[0]);
+      }
+      else
+      {
+        OptionalType type;
+        if (!typeStringTokens[0].StartsWith("List"))
+        {
+          throw new ArgumentException(
+            $"malformed type detected - contained unexpected token '{typeStringTokens[0]}'.",
+            nameof(typeStringTokens));
+        }
+
+        // store entry after list type closed and remove first "List" entry...
+        var lastEntry = typeStringTokens.Last();
+        typeStringTokens = typeStringTokens.Skip(1).SkipLast(1).ToList();
+        // Get result of type of list and declare type as array
+        type = TypeFromTokens(typeStringTokens);
+        var wrappedType = new OptionalType(lastEntry == "?", true, type);
+        return wrappedType;
+      }
+    }
+
+    private static string CanonizeTokenTypeName(string input)
+    {
+      switch (input.ToLowerInvariant())
+      {
+        case "bool" or "boolean":
+          return "Boolean";
+        case "sbyte" or "int8":
+          return "SByte";
+        case "short" or "int16":
+          return "Int16";
+        case "int" or "integer" or "int32":
+          return "Int32";
+        case "long" or "int64":
+          return "Int64";
+        case "byte" or "uint8":
+          return "Byte";
+        case "ushort" or "uint16":
+          return "UInt16";
+        case "uint" or "uint32":
+          return "UInt32";
+        case "ulong" or "uint64":
+          return "UInt64";
+        case "float" or "float32":
+          return "Single";
+        case "float64" or "real" or "double":
+          return "Double";
+        case "binary" or "byte[]":
+          return "Byte[]";
+      }
+
+      return input;
+    }
+
+    /// <summary>
+    ///   Converts the provided token to a data type and wraps it in an OptionalType
+    ///   If the token is not the string representation of a built-in type,
+    ///   the OptionalType will contain the type string in the CustomTypeName instead of providing an actual type,
+    /// </summary>
+    /// <param name="tokenString">
+    ///   The string representation of a type.
+    ///   May have a '?' as a suffix to indicate that it is nullable.
+    /// </param>
+    /// <returns>The parsed type representation as an OptionalType</returns>
+    private OptionalType TypeFromToken(string tokenString)
+    {
+      var isOptional = tokenString[tokenString.Length - 1] == '?';
+
+      var unaliasedTokenNoNullable = (isOptional)
+                                       ? tokenString.Substring(0, tokenString.Length - 1)
+                                       : tokenString;
+      var resolvedTypeName = CanonizeTokenTypeName(unaliasedTokenNoNullable.ToLowerInvariant());
+
+      try
+      {
+        var type = Type.GetType("System." + resolvedTypeName);
+        if (type == null)
+        {
+          // NB: Structs and enums cannot be resolved at this point - return their name instead of an actual type
+          // TODO improve custom data type handling
+          return new OptionalType(isOptional, false, unaliasedTokenNoNullable);
+        }
+        else
+        {
+          return new OptionalType(isOptional, false, type);
+        }
+      }
+      catch
+      {
+        throw;
+      }
+    }
   }
 }

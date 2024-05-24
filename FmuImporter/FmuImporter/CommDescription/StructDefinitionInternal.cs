@@ -19,13 +19,25 @@ public class StructDefinitionInternal : StructDefinition
       {
         if (_flattenedMembers != null)
         {
-          throw new InvalidCommunicationInterfaceException("Recursive call detected. This is not allowed.");
+          throw new InvalidCommunicationInterfaceException(
+            "Infinite recursion in structure definition detected. This is not allowed.");
         }
 
         _flattenedMembers = new List<StructMemberInternal>();
 
         foreach (var structMember in Members)
         {
+          // Lists cannot contain custom types -> add them assuming a built-in or enum type
+          if (structMember.ResolvedType.Type != null || structMember.ResolvedType.IsList)
+          {
+            var flatMember = new StructMemberInternal(structMember)
+            {
+              QualifiedName = $"{structMember.Name}"
+            };
+            _flattenedMembers.Add(flatMember);
+            continue;
+          }
+
           if (ExternalStructDefinitions != null)
           {
             var success = ExternalStructDefinitions.TryGetValue(
@@ -34,23 +46,38 @@ public class StructDefinitionInternal : StructDefinition
             if (success)
             {
               var substructMembers = externalStructDefinition!.FlattenedMembers;
-              foreach (var structMemberInternal in substructMembers)
+              foreach (var substructMember in substructMembers)
               {
-                structMemberInternal.QualifiedName = $"{structMember.Name}.{structMemberInternal.QualifiedName}";
+                var flatMember = new StructMemberInternal(substructMember)
+                {
+                  QualifiedName = $"{structMember.Name}.{substructMember.QualifiedName}"
+                };
+
+                _flattenedMembers.Add(flatMember);
               }
 
-              _flattenedMembers.AddRange(substructMembers);
+              continue;
             }
-            else
+          }
+
+          if (ExternalEnumDefinitions != null)
+          {
+            var success = ExternalEnumDefinitions.TryGetValue(
+              structMember.Type,
+              out var externalEnumDefinition);
+            if (success)
             {
-              // TODO / FIXME this assumes that the unknown type is a scalar - this may not always be the case
-              var memInternal = new StructMemberInternal(structMember)
+              var flatMember = new StructMemberInternal(structMember)
               {
                 QualifiedName = $"{structMember.Name}"
               };
-              _flattenedMembers.Add(memInternal);
+              _flattenedMembers.Add(flatMember);
+              continue;
             }
           }
+
+          throw new InvalidCommunicationInterfaceException(
+            $"Failed to process the member {structMember.Name} of structure definition '{Name}'.");
         }
 
         _membersFlattened = true;
@@ -61,4 +88,5 @@ public class StructDefinitionInternal : StructDefinition
   }
 
   public Dictionary<string, StructDefinitionInternal>? ExternalStructDefinitions { private get; set; }
+  public Dictionary<string, EnumDefinition>? ExternalEnumDefinitions { private get; set; }
 }

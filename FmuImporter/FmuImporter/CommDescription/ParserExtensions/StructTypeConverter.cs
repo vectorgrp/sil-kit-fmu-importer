@@ -13,7 +13,7 @@ public class StructTypeConverter : IYamlTypeConverter
 {
   public bool Accepts(Type type)
   {
-    return type == typeof(List<StructMember>);
+    return type == typeof(List<StructMemberInternal>);
   }
 
   public object? ReadYaml(IParser parser, Type type)
@@ -36,13 +36,13 @@ public class StructTypeConverter : IYamlTypeConverter
     throw new NotSupportedException();
   }
 
-  private List<StructMember> ProcessSequence(IParser parser)
+  private List<StructMemberInternal> ProcessSequence(IParser parser)
   {
-    var structMemberList = new List<StructMember>();
+    var structMemberList = new List<StructMemberInternal>();
 
     while (!parser.Accept<SequenceEnd>(out _))
     {
-      var structMember = new StructMember();
+      var structMember = new StructMemberInternal();
       if (!parser.TryConsume<MappingStart>(out _))
       {
         throw new InvalidCommunicationInterfaceException(

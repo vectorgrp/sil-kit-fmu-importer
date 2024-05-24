@@ -25,14 +25,14 @@ public class ConfiguredStructure
 
   public void AddMember(ConfiguredVariable configuredVariable)
   {
-    var exists = _structureMembers.ContainsKey(configuredVariable.StructuredPath!.PathWithoutInstanceName);
+    var exists = _structureMembers.ContainsKey(configuredVariable.StructuredPath!.PathWithInstanceName);
     if (!exists)
     {
       throw new ArgumentException(
-        $"Failed to map '{configuredVariable.StructuredPath.PathWithoutInstanceName}' as a structure member.");
+        $"Failed to map '{configuredVariable.StructuredPath.PathWithInstanceName}' as a structure member.");
     }
 
-    _structureMembers[configuredVariable.StructuredPath.PathWithoutInstanceName] = configuredVariable;
+    _structureMembers[configuredVariable.StructuredPath.PathWithInstanceName] = configuredVariable;
   }
 
   public IEnumerable<ConfiguredVariable?> StructureMembers

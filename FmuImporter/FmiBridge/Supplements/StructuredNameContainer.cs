@@ -15,12 +15,12 @@ public class StructuredNameContainer
 
     Path = structuredNameList;
     InstanceName = structuredNameList.First();
-    PathWithoutInstanceName = string.Join(".", structuredNameList.Skip(1));
+    PathWithInstanceName = string.Join(".", structuredNameList);
   }
 
   public string InstanceName { get; }
 
-  public string PathWithoutInstanceName { get; }
+  public string PathWithInstanceName { get; }
 
   public List<string> Path { get; }
 }

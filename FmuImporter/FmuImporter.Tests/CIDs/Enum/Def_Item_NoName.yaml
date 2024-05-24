@@ -3,5 +3,5 @@ Version: 1
 EnumDefinitions:
   - Name: EnumDef1
     Items:
-      - Name: 
+      - Name:
         Value: 1

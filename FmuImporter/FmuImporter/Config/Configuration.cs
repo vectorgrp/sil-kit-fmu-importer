@@ -87,7 +87,7 @@ public class Configuration : ConfigurationPublic
     do
     {
       var newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
-      if (newConfigs != null && newConfigs.Count > 0)
+      if (newConfigs != null)
       {
         foreach (var newConfig in newConfigs)
         {

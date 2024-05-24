@@ -1,0 +1,50 @@
+Version: 1
+
+EnumDefinitions:
+  - Name: EnumSample
+    IndexType: int32
+    Items:
+      - "EnumValue1" : 1
+      - EnumValue2 : 2
+      - '3' : 3
+
+StructDefinitions:
+  - Name: StructSample
+    Members:
+      - Member1: int
+      - Member2: double
+      - Member3: EnumSample
+      - Member4: StructSample2
+  - Name: StructSample2
+    Members:
+      - InnerMember1: int
+      - InnerMember2: int
+
+Publishers:
+# Scalar types with optional modifier
+  - PubBool       : Bool?
+  - PubBoolean    : Boolean?
+  - PubSByte      : SByte?
+  - PubInt8       : Int8?
+  - PubShort      : Short?
+  - PubInt16      : Int16?
+  - PubInt        : Int?
+  - PubInt32      : Int32?
+  - PubLong       : Long?
+  - PubInt64      : Int64?
+  - PubByte       : Byte?
+  - PubUInt8      : UInt8?
+  - PubUShort     : UShort?
+  - PubUInt16     : UInt16?
+  - PubUInt       : UInt?
+  - PubUInt32     : UInt32?
+  - PubULong      : ULong?
+  - PubUInt64     : UInt64?
+
+  - PubFloat      : Float?
+  - PubFloat32    : Float32?
+  - PubDouble     : Double?
+  - PubFloat64    : Float64?
+
+  - PubEnum : EnumSample?
+  - PubStruct : StructSample?

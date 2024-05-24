@@ -14,16 +14,20 @@ StructDefinitions:
       - Member1: int
       - Member2: double
       - Member3: EnumSample
-
+      - Member4: StructSample2
+  - Name: StructSample2
+    Members:
+      - InnerMember1: int
+      - InnerMember2: int
 
 Publishers:
   - PubInt : Int
-  - PubDouble : double  
+  - PubDouble : double
   - PubEnum : EnumSample
   - PubStruct : StructSample
-  
+
 Subscribers:
   - SubInt : Int
-  - SubDouble : double  
+  - SubDouble : double
   - SubEnum : EnumSample
   - SubStruct : StructSample

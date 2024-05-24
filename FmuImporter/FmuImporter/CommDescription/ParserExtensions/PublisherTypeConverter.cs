@@ -13,7 +13,7 @@ public class PublisherTypeConverter : IYamlTypeConverter
 {
   public bool Accepts(Type type)
   {
-    return type == typeof(List<Publisher>);
+    return type == typeof(List<PublisherInternal>);
   }
 
   public object? ReadYaml(IParser parser, Type type)
@@ -36,13 +36,13 @@ public class PublisherTypeConverter : IYamlTypeConverter
     throw new NotSupportedException();
   }
 
-  private List<Publisher> ProcessSequence(IParser parser)
+  private List<PublisherInternal> ProcessSequence(IParser parser)
   {
-    var publisherList = new List<Publisher>();
+    var publisherList = new List<PublisherInternal>();
 
     while (!parser.Accept<SequenceEnd>(out _))
     {
-      var publisher = new Publisher();
+      var publisher = new PublisherInternal();
       if (!parser.TryConsume<MappingStart>(out _))
       {
         throw new InvalidCommunicationInterfaceException(
