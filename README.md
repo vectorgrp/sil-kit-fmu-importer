@@ -14,9 +14,9 @@ Its behavior is configured by configuration files that are passed during launch.
         1. [FMU Importer](#fmu-importer)
         2. [vCDL Exporter](#vcdl-exporter)
 3. [Running the FMU Importer](#running-the-fmu-importer)
-4. [Data and Time Synchronization between SIL Kit and FMUs](#data-and-time-synchronization-between-sil-kit-and-fmus)
-    1. [Time](#time)
-    2. [Variable Representation](#variable-representation)
+4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
+    1. [Variable Representation](#variable-representation)
+    2. [Time and Lifecycle Management](#time-and-lifecycle-management)
     3. [Data Synchronization](#data-synchronization)
 5. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
     1. [Configuration Outline](#configuration-outline)
@@ -133,66 +133,77 @@ The FMU Importer uses the SIL Kit logger for its output.
 Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer.
 The FMU Importer prints most of its logs on the `Info` level, but in case an error occurs, there is one log message on the `Error` level that contains the error message and a log message on the `Debug` level that contains the error message including further information (such as a stack trace) to track the error's origin more easily.
 
+## **Data, Time, and Lifecycle Handling**
 
-## **Lifecycle and Time Synchronization Modes**
-
-The FMU Importer coordinates its lifecycle with other SIL Kit participants.
-This means that the FMU Importer will first wait until all required participants have joined the SIL Kit simulation and then coordinate the lifecycle state with them.
-As a result, all participants will start the actual simulation at the same time.
-Further, if any of the required participants stops the simulation, all other participants, including the FMU Importer, will stop as well.
-
->Please make sure to start a `sil-kit-system-controller` (part of SIL Kit) that comprises the FMU Importer's participant name as well as all other required participants.
-
-### **Time Synchronization Mode**
-
-In addition, the FMU Importer allows to configure the time synchronization mode.
-The time synchronization mode affects the interaction of the FMU Importer's SIL Kit component with other SIL Kit participants.
-The following gives a brief summary of how the different options affect the FMU Importer's behavior.
-For details about virtual time synchronization, refer to the [SIL Kit Documentation](https://vectorgrp.github.io/sil-kit-docs/).
-
-By default, the FMU Importer's simulation time will be `synchronized` with other SIL Kit participants through SIL Kit's `virtual time synchronization`.
-An active virtual time synchronization ensures that all data from previous points in virtual time were received before processing the next simulation step.
-A `synchronized` simulation will execute the FMU's simulation steps as soon as the SIL Kit component signals that a simulation step may be performed.
-
-If the FMU Importer does not use virtual time synchronization (`unsynchronized`), the simulation step execution will be artificially slowed down to to match the system's wall clock.
-For example, a one second simulation step would also take approximately one second in real time.
-It is important that the FMU Importer is not designed as a real-time application and cannot guarantee that the simulation steps will always have a perfect alignment with the real time, but it will stay as close as possible in the long run.
-In case it is not possible to execute the simulation step in time, the simulation will be executed as fast as possible.
-As an `unsynchronized` FMU Importer receives its SIL Kit data without a timestamp and therefore schedules all messages to be provided to the FMU in the next simulation step.
-
-> The time synchronization mode only affects how the FMU Importer interacts with SIL Kit, but it does not affect how the FMU Importer interacts with the FMU.
-
-## **Data and Time Synchronization between SIL Kit and FMUs**
-
-### **Time**
-
-The FMU's model description usually provides a simulation step size.
-The FMU Importer will align SIL Kit simulation's step size with the FMU's step size.
-It is possible to set the SIL Kit simulation step size via the FMU Importer's configuration file (see [Available Options](#available-options)).
-If neither the model description nor the FMU Importer configuration are not providing a step size, a default value of 1 ms is used.
+From an FMU's point of view, the FMU Importer acts as a master (FMI 2.0)/importer (FMI 3.0).
+As such, the Importer will handle the data exchange via SIL Kit, the time management, and the lifecycle of the FMU.
+The FMU Importer does not provide any numeric solvers or interpolation mechanisms.
+Therefore, it only supports FMUs that can run in `co-simulation` mode.
 
 ### **Variable Representation**
 
-The FMU Importer creates a data publisher for each output variable and parameter and use its the variable name as topic for the publisher.
-Respectively, input variables are represented as subscribers, also with their variable name as topic name.
-As a result, variables with the same name are 'connected' by the FMU Importer.
-See [Configuring the FMU Importer](#configuring-the-fmu-importer) for details how to change the topic of a variable.
+The FMU Importer exposes an FMU's variables as DataPublisher and DataSubscriber services to other SIL Kit simulation participants.
+By default, the variable's name is used as the topic name by the SIL Kit service.
+The FMU Importer maps the different kinds of variable types as follows:
+| Variable Type         | Created Service |
+|-----------------------|-----------------|
+| Input                 | DataSubscriber  |
+| Independent           | DataPublisher   |
+| Output                | DataPublisher   |
+| Parameter             | DataPublisher   |
+| Structural parameter  | DataPublisher   |
+
+It is also possible to change the default mapping.
+See [Configuring the FMU Importer](#configuring-the-fmu-importer) for details.
+
+### **Time and Lifecycle Management**
+The FMU Importer uses the simulation step size provided by the FMU's model description as simulation step size for the FMU, if it is available.
+In case the simulation step size is not available, the FMU Importer requires users to provide the simulation step size via the FMU Importer configuration file.
+If neither the FMU nor the configuration file provide a step size, the FMU Importer will exit and show an error message.
+
+The FMU Importer provides time synchronization modes that allows users to choose, how virtual time shall be handled by the FMU Importer:
+* `Synchronized` (default): The FMU Importer's simulation time will be synchronized with other SIL Kit participants through SIL Kit's _virtual time synchronization_.
+  If active, it ensures that all data from previous points in virtual time were received before processing the next simulation step.
+  An FMU Importer that uses virtual time synchronization will execute the FMU's simulation steps as soon as the SIL Kit component signals that a simulation step may be performed.
+  In addition, the FMU Importer coordinates its SIL Kit lifecycle with other SIL Kit participants.
+  This means that the FMU Importer will first wait until all required participants have joined the SIL Kit simulation and then coordinates the lifecycle state with them.
+  For details about SIL Kit's virtual time synchronization, refer to the [SIL Kit Documentation](https://vectorgrp.github.io/sil-kit-docs/).
+  Further, if any of the required participants stops the simulation, all other participants, including the FMU Importer, will stop as well.
+  >Please make sure to start a `sil-kit-system-controller` (part of SIL Kit) that comprises the FMU Importer's participant name as well as all other required participants.
+
+* `Unsynchronized`: If the FMU Importer does not use virtual time synchronization, the simulation step execution will be artificially slowed down to to match the system's wall clock.
+  For example, a one second simulation step would also take approximately one second in real time.
+  It is important to note that the FMU Importer is not designed as a real-time application and cannot guarantee that the simulation steps will always have a perfect alignment with the real time, but it will stay as close as possible in the long run.
+  In case it is not possible to execute the simulation step in time, the simulation will be executed as fast as possible.
+  As an unsynchronized SIL Kit participant, FMU Importer receives its SIL Kit data without a timestamp and therefore schedules all messages to be provided to the FMU in the next simulation step (see [below](#data-synchronization) for details).
+
+> The time synchronization mode only affects how the FMU Importer interacts with SIL Kit, but it does not affect how the FMU Importer interacts with the FMU.
+
 
 ### **Data Synchronization**
 
 As mentioned in [Variable Representation](#variable-representation), input variables with the same name as other FMUs' output variables are connected and therefore receive their data.
-When receiving data for a specific variable more than once in a simulation time step, the last received value is used ('last-is-best').
 
-Internally, the FMU Importer coordinates the simulation step advancement of the FMU with SIL Kit.
-The behavior depends on the time synchronization mode the Importer is set to (see [Running the FMU Importer](running-the-fmu-importer)):
-* If the FMU Importer is 'synchronized', it waits until the SIL Kit participant receives the permission to advance its simulation step.
-Once received, it transfers all received data with a due timestamp (-> data with a timestamp less than or equal to the last granted simulation time) and advances the simulation to the SIL Kit participant's current virtual time.
-* If the FMU Importer is 'unsynchronized', the system's wall clock is used as a timer instead of SIL Kit.
+The general procedure to synchronize the data between SIL Kit and the FMU is similar in `synchronized` and `unsynchronized` time synchronization mode (see [Time and Lifecycle Management](#time-and-lifecycle-management)):
 
-For details regarding the time synchronization behavior, see [Time Synchronization Mode](#time-synchronization-mode).
+1. Once SIL Kit grants the execution of the next simulation step, the FMU Importer provides all updated variable values to the FMU.
+When receiving data for a specific variable more than once before a simulation time step is executed, the last received value is used ("last-is-best").
+2. The simulation step of the FMU is executed.
+3. All output variables are read from the FMU and published via SIL Kit.
 
-Apart from mechanism how a simulation step advancement is triggered, the general procedure to synchronize the data between SIL Kit and the FMU is the same:
-![Time synchronization between an FMU and the Importer](./Docs/Images/TimeSynchronization.png)
+> (Structural) parameters are only published at the beginning of a simulation (t=0), because they are not meant to change after the simulation started.
+
+<details>
+  <summary>Sequence of a synchronized simulation step</summary>
+
+![Synchronization between an FMU and the Importer (synchronized)](./Docs/Images/SimStepSynchronized.png)
+</details>
+
+<details>
+  <summary>Sequence of an unsynchronized simulation step</summary>
+
+![Synchronization between an FMU and the Importer (unsynchronized)](./Docs/Images/SimStepUnsynchronized.png)
+</details>
 
 ---
 
@@ -238,7 +249,7 @@ For instance, if you use Visual Studio Code with the Red Hat YAML extension, you
 | [Parameters](#parameters)             | Array\<Object> | Used to override default values of parameters. |
 | [VariableMappings](#variablemappings) | Array\<Object> | Used to modify how a variable is represented in a SIL Kit simulation. |
 | IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
-| StepSize                              | Integer        | Simulation step size in ns. |
+| StepSize                              | Integer        | Simulation step size in ns. Overrides step size provided by FMU (if available). |
 
 #### **_Include_**
 
@@ -259,7 +270,7 @@ The paths to the included files can either absolute or relative to the including
 #### **_Parameters_**
 
 Used to override default values of parameters.
-Each entry of the list must have attributes:
+Each entry of the list must have the following attributes:
 
 | Attribute Name | Type   | Description |
 |----------------|--------|-------------|
