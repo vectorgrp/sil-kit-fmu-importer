@@ -28,7 +28,7 @@ public class StructDefinitionInternal : StructDefinition
         foreach (var structMember in Members)
         {
           // Lists cannot contain custom types -> add them assuming a built-in or enum type
-          if (structMember.ResolvedType.Type != null || structMember.ResolvedType.IsList)
+          if (structMember.ResolvedType.Type != null || structMember.ResolvedType.IsList == true)
           {
             var flatMember = new StructMemberInternal(structMember)
             {

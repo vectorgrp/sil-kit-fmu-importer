@@ -23,7 +23,7 @@ public class Configuration : ConfigurationPublic
       if (_resolvedParameters == null)
       {
         _resolvedParameters = new Dictionary<string, Parameter>();
-        UpdateParameterDictionary(ref _resolvedParameters);
+        UpdateParameterDictionary(_resolvedParameters);
       }
 
       return _resolvedParameters;
@@ -37,7 +37,7 @@ public class Configuration : ConfigurationPublic
       if (_resolvedVariableConfigurations == null)
       {
         _resolvedVariableConfigurations = new Dictionary<string, VariableConfiguration>();
-        UpdateVariablesDictionary(ref _resolvedVariableConfigurations);
+        UpdateVariablesDictionary(_resolvedVariableConfigurations);
       }
 
       return _resolvedVariableConfigurations;
@@ -86,7 +86,7 @@ public class Configuration : ConfigurationPublic
 
     do
     {
-      var newConfigs = currentNode.ValueRef.MergeIncludes(ref configHashes, currentNode.Value);
+      var newConfigs = currentNode.ValueRef.MergeIncludes(configHashes, currentNode.Value);
       if (newConfigs != null)
       {
         foreach (var newConfig in newConfigs)
@@ -99,7 +99,7 @@ public class Configuration : ConfigurationPublic
     } while (currentNode != null);
   }
 
-  private List<Configuration>? MergeIncludes(ref HashSet<string> configHashes, Configuration currentConfiguration)
+  private List<Configuration>? MergeIncludes(HashSet<string> configHashes, Configuration currentConfiguration)
   {
     var includes = currentConfiguration.Include;
     if (includes == null)
@@ -143,7 +143,7 @@ public class Configuration : ConfigurationPublic
     return ResolvedVariableConfigurations;
   }
 
-  private void UpdateParameterDictionary(ref Dictionary<string, Parameter> parameterDictionary)
+  private void UpdateParameterDictionary(Dictionary<string, Parameter> parameterDictionary)
   {
     if (AllConfigurations == null)
     {
@@ -183,7 +183,7 @@ public class Configuration : ConfigurationPublic
     } while (currentConfigNode != null);
   }
 
-  private void UpdateVariablesDictionary(ref Dictionary<string, VariableConfiguration> variableConfigurationDictionary)
+  private void UpdateVariablesDictionary(Dictionary<string, VariableConfiguration> variableConfigurationDictionary)
   {
     if (AllConfigurations == null)
     {

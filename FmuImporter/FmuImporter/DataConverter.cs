@@ -1,31 +1,38 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Runtime.InteropServices;
+using Fmi;
 using Fmi.Binding.Helper;
 using FmuImporter.Config;
+using FmuImporter.Exceptions;
+using FmuImporter.Helpers;
 using SilKit.Supplements;
 
 namespace FmuImporter;
 
 public class DataConverter
 {
-  public List<List<byte>> TransformSilKitToStructuredFmuData(
+#region SIL Kit -> FMU
+
+#region SIL Kit -> FMU (structured)
+
+  public List<byte[]?>? TransformSilKitToStructuredFmuData(
     ConfiguredStructure configuredStructure,
     List<byte> silKitData,
     out List<List<int>> binSizes)
   {
     binSizes = new List<List<int>>();
-    return TransformSilKitToStructuredFmuData(silKitData, configuredStructure, ref binSizes);
-  }
+    var result = new List<byte[]?>();
 
-  private List<List<byte>> TransformSilKitToStructuredFmuData(
-    List<byte> data,
-    ConfiguredStructure configuredStructure,
-    ref List<List<int>> binSizes)
-  {
-    var result = new List<List<byte>>();
+    var deserializer = new Deserializer(silKitData);
 
-    var deserializer = new Deserializer(data);
+    if (configuredStructure.IsOptional && !deserializer.BeginOptional())
+    {
+      // structure is optional and does not provide payload -> return null
+      return null;
+    }
+
     deserializer.BeginStruct();
 
     foreach (var structureMember in configuredStructure.StructureMembers)
@@ -37,163 +44,557 @@ public class DataConverter
       }
 
       var localBinSize = new List<int>();
-      var localFmuData = new List<byte>();
-
-      var isScalar = structureMember.FmuVariableDefinition.IsScalar;
-
-      if (isScalar)
-      {
-        localFmuData.AddRange(ProcessDataEntity(ref deserializer, structureMember, ref localBinSize));
-      }
-      else
-      {
-        var byteArray = new List<byte>();
-        var arrayLength = deserializer.BeginArray();
-        for (var i = 0; i < arrayLength; i++)
-        {
-          var dataElement = ProcessDataEntity(ref deserializer, structureMember, ref localBinSize);
-          byteArray.AddRange(dataElement);
-        }
-
-        deserializer.EndArray();
-        localFmuData.AddRange(byteArray.ToArray());
-      }
-
-      binSizes.Add(localBinSize);
+      // direct inner call skips deserializer initialization (because it's already available)
+      var localFmuData = TransformSilKitToFmuData(deserializer, structureMember, localBinSize);
       result.Add(localFmuData);
+      binSizes.Add(localBinSize);
     }
 
     deserializer.EndStruct();
     return result;
   }
 
-  public List<byte> TransformSilKitToFmuData(
+#endregion SIL Kit -> FMU (structured)
+
+#region SIL Kit -> FMU (plain)
+
+  public byte[]? TransformSilKitToFmuData(
     ConfiguredVariable configuredVariable,
     List<byte> silKitData,
     out List<int> binSizes)
   {
     binSizes = new List<int>();
-    return TransformSilKitToFmuData(silKitData, configuredVariable, ref binSizes);
+    var deserializer = new Deserializer(silKitData);
+    return TransformSilKitToFmuData(deserializer, configuredVariable, binSizes);
   }
 
-  private List<byte> TransformSilKitToFmuData(
-    List<byte> data,
+  private byte[]? TransformSilKitToFmuData(
+    Deserializer deserializer,
     ConfiguredVariable configuredVariable,
-    ref List<int> binSizes)
+    List<int> binSizes)
   {
-    var isScalar = configuredVariable.FmuVariableDefinition!.IsScalar;
-
-    var deserializer = new Deserializer(data);
-    if (isScalar)
+    var deserializedEntites = ProcessDataEntity(deserializer, configuredVariable, binSizes);
+    if (deserializedEntites == null || deserializedEntites.Count == 0)
     {
-      return ProcessDataEntity(ref deserializer, configuredVariable, ref binSizes).ToList();
+      return null;
     }
 
-    var bytes = new List<byte>();
-    var arrayLength = deserializer.BeginArray();
-    for (var i = 0; i < arrayLength; i++)
+    var buffer = new byte[deserializedEntites.Sum(byteArray => byteArray.Length)];
+    using var stream = new MemoryStream(buffer);
+    foreach (var bytes in deserializedEntites)
     {
-      var dataElement = ProcessDataEntity(ref deserializer, configuredVariable, ref binSizes);
-      bytes.AddRange(dataElement);
+      stream.Write(bytes, 0, bytes.Length);
     }
 
-    deserializer.EndArray();
+    return buffer;
+  }
+
+  private List<byte[]>? ProcessDataEntity(
+    Deserializer deserializer,
+    ConfiguredVariable configuredVariable,
+    List<int> binSizes)
+  {
+    var bytes = new List<byte[]>();
+    var deserializedObjects = DeserializeFromSilKit(deserializer, configuredVariable);
+    if (deserializedObjects == null)
+    {
+      return null;
+    }
+
+    for (var i = 0; i < deserializedObjects.Count; i++)
+    {
+      var deserializedObject = deserializedObjects[i];
+      if (deserializedObject != null)
+      {
+        Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref deserializedObject, configuredVariable);
+        Helpers.Helpers.ApplyLinearTransformationFmi(ref deserializedObject, configuredVariable);
+        var fmiData = Fmi.Supplements.Serializer.Serialize(
+          deserializedObject,
+          configuredVariable.FmuVariableDefinition!,
+          binSizes);
+        bytes.Add(fmiData);
+      }
+      else
+      {
+        // NB: currently, lists must be fully populated
+        throw new InvalidOperationException(
+          $"The list of deserialized objects for variable '{configuredVariable.TopicName}' is not fully populated.");
+      }
+    }
+
     return bytes;
   }
 
-  private byte[] ProcessDataEntity(
-    ref Deserializer deserializer,
-    ConfiguredVariable configuredVariable,
-    ref List<int> binSizes)
+#endregion SIL Kit -> FMU (plain)
+
+  private List<object?>? DeserializeFromSilKit(
+    Deserializer deserializer, ConfiguredVariable configuredVariable)
   {
-    var deserializedData = TransformReceivedDataType(deserializer, configuredVariable);
-    Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref deserializedData, configuredVariable);
-    Helpers.Helpers.ApplyLinearTransformationFmi(ref deserializedData, configuredVariable);
-
-    return Fmi.Supplements.Serializer.Serialize(
-      deserializedData,
-      configuredVariable.FmuVariableDefinition!,
-      ref binSizes);
-  }
-
-  private object TransformReceivedDataType(Deserializer deserializer, ConfiguredVariable configuredVariable)
-  {
-    var fmuType = Helpers.Helpers.VariableTypeToType(configuredVariable.FmuVariableDefinition!.VariableType);
-
-    // apply type conversion if required
-    if (configuredVariable.ImporterVariableConfiguration.Transformation?.TransmissionType != null)
+    var targetType = configuredVariable.FmuVariableDefinition!.VariableType;
+    var att = configuredVariable.ImporterVariableConfiguration.Transformation?.ResolvedTransmissionType;
+    if (att != null)
     {
-      var receivedType =
-        Helpers.Helpers.StringToType(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType);
-      var deserializedData = deserializer.Deserialize(receivedType.Type); // TODO fixme
-      // change data type to type expected by FMU
-      return Convert.ChangeType(deserializedData, fmuType);
+      return DeserializeFromSilKit(deserializer, att, targetType);
     }
 
-    return deserializer.Deserialize(fmuType);
+    var type = Helpers.Helpers.VariableTypeToType(targetType);
+    // regular deserialization
+    if (configuredVariable.FmuVariableDefinition.IsScalar)
+    {
+      return new List<object?>
+      {
+        DeserializeFromSilKit(deserializer, type, type)
+      };
+    }
+
+    var result = new List<object?>();
+    var objectCount = deserializer.BeginArray();
+    for (var i = 0; i < objectCount; i++)
+    {
+      result.Add(DeserializeFromSilKit(deserializer, type, type));
+    }
+
+    deserializer.EndArray();
+
+    return result;
   }
 
-  public byte[] TransformToSilKitData(
-    ReturnVariable.Variable variable,
-    ConfiguredVariable configuredVariable)
+  private List<object?>? DeserializeFromSilKit(
+    Deserializer deserializer,
+    OptionalType att,
+    VariableTypes targetVariableType)
   {
-    Type transmissionType;
-    if ((configuredVariable.ImporterVariableConfiguration.Transformation != null) &&
-        !string.IsNullOrEmpty(configuredVariable.ImporterVariableConfiguration.Transformation.TransmissionType))
+    if (!string.IsNullOrEmpty(att.CustomTypeName))
     {
-      transmissionType =
-        configuredVariable.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType.Type; // TODO fixme
+      throw new NotSupportedException("The direct deserialization of custom data types is not supported.");
+    }
+
+    if (att.IsOptional && !deserializer.BeginOptional())
+    {
+      deserializer.EndOptional();
+      // Optional data without content -> return null
+      return null;
+    }
+
+    var targetType = Helpers.Helpers.VariableTypeToType(targetVariableType);
+
+    if (att.IsList == true)
+    {
+      if (att.InnerType == null)
+      {
+        throw new InvalidCommunicationInterfaceException(
+          "Warning: The parsed object contained a list without a type. This is not allowed.");
+      }
+
+      if (!string.IsNullOrEmpty(att.InnerType.CustomTypeName))
+      {
+        throw new NotSupportedException("The direct deserialization of lists of custom data types is not supported.");
+      }
+
+      var l = new List<object?>();
+      var entryCount = deserializer.BeginArray();
+
+      // NB: We currently do not support nested lists
+      if (att.InnerType.IsList == true)
+      {
+        // TODO use call below when introducing nested list support
+        //var result = DeserializeFromSilKit(deserializer, att.InnerType, targetType);
+        throw new NotSupportedException("Nested lists are currently not supported.");
+      }
+
+      for (var i = 0; i < entryCount; i++)
+      {
+        l.Add(DeserializeFromSilKit(deserializer, att.InnerType.Type, targetType));
+      }
+
+      if (att.IsOptional)
+      {
+        deserializer.EndOptional();
+      }
+
+      return l;
     }
     else
     {
-      transmissionType = Helpers.Helpers.VariableTypeToType(variable.Type);
+      // deserialize scalar
+      var scalar = DeserializeFromSilKit(deserializer, att.Type, targetType);
+      deserializer.EndOptional();
+      return new List<object?>
+      {
+        scalar
+      };
     }
-
-    var serializer = new Serializer();
-    SerDes.Serialize(
-      variable.Values,
-      variable.IsScalar,
-      transmissionType,
-      Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
-      ref serializer);
-
-    return serializer.ReleaseBuffer().ToArray();
   }
 
-  public byte[] TransformToSilKitData(
+  // Deserialization without transformation
+  private object? DeserializeFromSilKit(
+    Deserializer deserializer, Type? t, Type targetType)
+  {
+    if (t == null)
+    {
+      throw new InvalidCommunicationInterfaceException("Deserialized data must be a built-in data type.");
+    }
+
+    var deserializedData = deserializer.Deserialize(t);
+
+    if (targetType == typeof(Enum))
+    {
+      return Convert.ChangeType(
+        deserializedData,
+        typeof(long));
+    }
+    else
+    {
+      return Convert.ChangeType(
+        deserializedData,
+        targetType);
+    }
+  }
+
+#endregion SIL Kit -> FMU
+
+#region FMU -> SIL Kit
+
+#region FMU -> SIL Kit (structured)
+
+  public byte[] TransformFmuToSilKitData(
     List<ReturnVariable.Variable> variables,
     ConfiguredStructure configuredStructure)
   {
     var serializer = new Serializer();
+    if (configuredStructure.IsOptional)
+    {
+      serializer.BeginOptional(true);
+    }
+
     serializer.BeginStruct();
     var index = 0;
     foreach (var structureMember in configuredStructure.StructureMembers)
     {
       var variable = variables[index];
 
-      Type transmissionType;
-      if ((structureMember!.ImporterVariableConfiguration.Transformation != null) &&
-          !string.IsNullOrEmpty(structureMember.ImporterVariableConfiguration.Transformation.TransmissionType))
-      {
-        transmissionType =
-          structureMember.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType.Type; // TODO FIXME
-      }
-      else
-      {
-        transmissionType = Helpers.Helpers.VariableTypeToType(variable.Type);
-      }
-
-      SerDes.Serialize(
-        variable.Values,
-        variable.IsScalar,
-        transmissionType,
-        Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
-        ref serializer);
+      // add member to serializer
+      TransformFmuToSilKitData(variable, structureMember!, serializer);
       index++;
     }
 
     serializer.EndStruct();
+    if (configuredStructure.IsOptional)
+    {
+      serializer.EndOptional();
+    }
 
     return serializer.ReleaseBuffer().ToArray();
   }
+
+#endregion FMU -> SIL Kit (structured)
+
+#region FMU -> SIL Kit (plain)
+
+  // NB: This method currently flattens multidimensional FMI 3.0 array data - this is a known limitation
+  public byte[] TransformFmuToSilKitData(
+    ReturnVariable.Variable variable,
+    ConfiguredVariable configuredVariable)
+  {
+    var serializer = new Serializer();
+    TransformFmuToSilKitData(variable, configuredVariable, serializer);
+    return serializer.ReleaseBuffer().ToArray();
+  }
+
+  private void TransformFmuToSilKitData(
+    ReturnVariable.Variable variable,
+    ConfiguredVariable configuredVariable,
+    Serializer serializer)
+  {
+    if ((configuredVariable.ImporterVariableConfiguration.Transformation != null) &&
+        (configuredVariable.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType != null))
+    {
+      SerializeToSilKit(
+        variable.Values,
+        configuredVariable.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType,
+        Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
+        serializer);
+    }
+    else
+    {
+      SerializeToSilKit(
+        variable.Values,
+        variable.IsScalar,
+        Helpers.Helpers.VariableTypeToType(variable.Type),
+        Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
+        serializer);
+    }
+  }
+
+#endregion FMU -> SIL Kit (plain)
+
+  // serialization with type conversion
+  private void SerializeToSilKit(
+    object[] objectArray,
+    OptionalType targetType,
+    int[]? valueSizes,
+    Serializer serializer)
+  {
+    // begin optional
+
+    if (targetType.IsOptional)
+    {
+      serializer.BeginOptional(true);
+    }
+
+    if (targetType.IsList == true)
+    {
+      // check for multi-dimensional/nested data type
+      if (targetType.InnerType == null || targetType.InnerType.Type == null)
+      {
+        throw new NotSupportedException(
+          "Warning: detected nested list in communication interface. This is currently not supported.");
+      }
+
+      // if list -> add array header
+      serializer.BeginArray(objectArray.Length);
+      // serialize object array
+      foreach (var o in objectArray)
+      {
+        var entry = new object[] { o };
+        SerializeToSilKit(entry, targetType.InnerType!, valueSizes, serializer);
+      }
+
+      // if list -> end list
+      serializer.EndArray();
+    }
+    else
+    {
+      // Custom types must be handled before serialization
+      // -> Throw an exception is this case
+      if (targetType.Type == null)
+      {
+        throw new NotSupportedException("The serialization of non-built-in types is currently not supported.");
+      }
+
+      SerializeToSilKit(objectArray, true, targetType.Type, valueSizes, serializer);
+    }
+
+    // end optional
+    if (targetType.IsOptional)
+    {
+      serializer.EndOptional();
+    }
+  }
+
+
+  private void SerializeToSilKit(
+    object[] objectArray,
+    bool isScalar,
+    Type sourceType,
+    int[]? valueSizes,
+    Serializer serializer)
+  {
+    if (isScalar && objectArray.Length > 1)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(objectArray),
+        "the encoded data was supposed to be scalar, but had more than one entry to encode.");
+    }
+
+    if (sourceType != typeof(IntPtr) && sourceType != typeof(byte[]))
+    {
+      SerializeToSilKit(objectArray, isScalar, sourceType, serializer);
+      return;
+    }
+
+    if (valueSizes == null || valueSizes.Length != objectArray.Length)
+    {
+      throw new ArgumentException("valueSizes was either null or did not match the size of objectArray");
+    }
+
+    // Binaries and binary arrays are special as they need additional information regarding their size
+    if (!isScalar)
+    {
+      serializer.BeginArray(objectArray.Length);
+    }
+
+    for (var i = 0; i < objectArray.Length; i++)
+    {
+      var binDataPtr = (IntPtr)objectArray[i];
+      var rawDataLength = valueSizes[i];
+      var binData = new byte[rawDataLength];
+      Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
+
+      serializer.Serialize(binData);
+    }
+
+    if (!isScalar)
+    {
+      serializer.EndArray();
+    }
+  }
+
+  private void SerializeToSilKit(
+    object[] objectArray, bool isScalar, Type sourceType, Serializer serializer)
+  {
+    if (!isScalar)
+    {
+      serializer.BeginArray(objectArray.Length);
+    }
+
+    SerializeToSilKit(objectArray, sourceType, serializer);
+    if (!isScalar)
+    {
+      serializer.EndArray();
+    }
+  }
+
+  private void SerializeToSilKit(
+    object[] objectArray, Type sourceType, Serializer serializer)
+  {
+    if (sourceType == typeof(float))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToSingle);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(double))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToDouble);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(sbyte))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToSByte);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(short))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt16);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(int))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt32);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(long) || sourceType == typeof(Enum))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToInt64);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(byte))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToByte);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(ushort))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt16);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(uint))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt32);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(ulong))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToUInt64);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(bool))
+    {
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToBoolean);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i]);
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(string))
+    {
+      // NB: It is sufficient to check the first element, as all elements of the array are of the same type
+      // (it's an list of a specific type not of object as the code may suggest)
+      if (objectArray[0].GetType() != typeof(string))
+      {
+        throw new NotSupportedException("Strings cannot be converted to or from other types");
+      }
+
+      // strings cannot be convert
+      var convertedArray = Array.ConvertAll(objectArray, Convert.ToString);
+      for (var i = 0; i < convertedArray.Length; i++)
+      {
+        serializer.Serialize(convertedArray[i] ?? "");
+      }
+
+      return;
+    }
+
+    if (sourceType == typeof(IntPtr))
+    {
+      throw new NotSupportedException("Binaries cannot be converted to or from other types.");
+    }
+
+    throw new NotSupportedException($"Unknown data type ('{sourceType.Name}').");
+  }
+
+#endregion FMU -> SIL Kit
 }

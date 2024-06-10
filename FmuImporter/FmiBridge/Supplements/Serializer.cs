@@ -9,7 +9,7 @@ namespace Fmi.Supplements;
 
 public class Serializer
 {
-  public static byte[] Serialize(object data, Variable variable, ref List<int> binSizes)
+  public static byte[] Serialize(object data, Variable variable, List<int> binSizes)
   {
     // there are no binSizes by default
     switch (variable.VariableType)
@@ -355,12 +355,12 @@ public class Serializer
     // The case of enumValuesFound > 1 would still possible if the user deviated for the standard
   }
 
-  public static byte[] Serialize(List<object> list, Variable variable, ref List<int> binSizes)
+  public static byte[] Serialize(List<object> list, Variable variable, List<int> binSizes)
   {
     var result = new List<byte>();
     foreach (var entry in list)
     {
-      result.AddRange(Serialize(entry, variable, ref binSizes));
+      result.AddRange(Serialize(entry, variable, binSizes));
     }
 
     return result.ToArray();

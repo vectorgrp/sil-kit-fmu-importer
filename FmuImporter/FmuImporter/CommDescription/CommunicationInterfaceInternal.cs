@@ -87,7 +87,7 @@ public class CommunicationInterfaceInternal : CommunicationInterface
           }
           // TODO this assumes that there are no nested classes
           // this must be fixed if this ever changes
-          else if (publisher.ResolvedType.IsList &&
+          else if (publisher.ResolvedType.IsList == true &&
                    publisher.ResolvedType.InnerType!.Type == null &&
                    !string.IsNullOrEmpty(publisher.ResolvedType.InnerType!.CustomTypeName))
           {
@@ -107,7 +107,7 @@ public class CommunicationInterfaceInternal : CommunicationInterface
               out var externalStructDefinition);
             if (success)
             {
-              if (publisher.ResolvedType.IsList)
+              if (publisher.ResolvedType.IsList == true)
               {
                 publisher.ResolvedType.InnerType!.CustomType = externalStructDefinition;
               }
@@ -129,7 +129,7 @@ public class CommunicationInterfaceInternal : CommunicationInterface
             if (success)
             {
               //publisher.ResolvedType.CustomType = externalEnumDefinition;
-              if (publisher.ResolvedType.IsList)
+              if (publisher.ResolvedType.IsList == true)
               {
                 publisher.ResolvedType.InnerType!.CustomType = externalEnumDefinition;
               }
@@ -164,7 +164,7 @@ public class CommunicationInterfaceInternal : CommunicationInterface
               out var externalStructDefinition);
             if (success)
             {
-              if (subscriber.ResolvedType.IsList)
+              if (subscriber.ResolvedType.IsList == true)
               {
                 subscriber.ResolvedType.InnerType!.CustomType = externalStructDefinition;
               }
@@ -185,7 +185,7 @@ public class CommunicationInterfaceInternal : CommunicationInterface
               out var externalEnumDefinition);
             if (success)
             {
-              if (subscriber.ResolvedType.IsList)
+              if (subscriber.ResolvedType.IsList == true)
               {
                 subscriber.ResolvedType.InnerType!.CustomType = externalEnumDefinition;
               }

@@ -8,6 +8,7 @@ using Fmi.Supplements;
 using FmuImporter.CommDescription;
 using FmuImporter.Config;
 using FmuImporter.Exceptions;
+using FmuImporter.Helpers;
 
 namespace FmuImporter.Fmu;
 
@@ -153,15 +154,15 @@ public class FmuDataManager
     {
       // use structure handling for data processing
       var structName = configuredVariable.StructuredPath.InstanceName;
-      var structType = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == structName)?.Type;
+      var structType = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == structName)?.ResolvedType;
       if (structType == null)
       {
-        structType = commInterface.Subscribers?.FirstOrDefault(sub => sub.Name == structName)?.Type;
+        structType = commInterface.Subscribers?.FirstOrDefault(sub => sub.Name == structName)?.ResolvedType;
       }
 
-      if (!string.IsNullOrEmpty(structType))
+      if (structType!.Type == null)
       {
-        AddConfiguredDictionaryEntry(
+        AddOrCreateConfiguredStructureMember(
           configuredVariable,
           commInterface,
           structName,
@@ -170,6 +171,8 @@ public class FmuDataManager
     }
     else
     {
+      // NB: If users provide a communication interface file, but no structured naming convention is used,
+      // the Importer will currently !not! automatically fix missing transformations to optional types!
       AddConfiguredVariable(configuredVariable);
     }
   }
@@ -191,11 +194,11 @@ public class FmuDataManager
     }
   }
 
-  private void AddConfiguredDictionaryEntry(
+  private void AddOrCreateConfiguredStructureMember(
     ConfiguredVariable configuredVariable,
     CommunicationInterfaceInternal commInterface,
     string structName,
-    string structType)
+    OptionalType structType)
   {
     Dictionary<string, ConfiguredStructure> targetStructureInternal;
     Dictionary<long, ConfiguredStructure> targetStructure;
@@ -226,7 +229,8 @@ public class FmuDataManager
       out var configuredStructure);
     if (!configStructFound)
     {
-      var structDefinitionOfPubSubType = commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == structType);
+      var structDefinitionOfPubSubType =
+        commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == structType.CustomTypeName);
       if (structDefinitionOfPubSubType == null)
       {
         throw new InvalidConfigurationException("A service has a type that is not defined!");
@@ -235,7 +239,8 @@ public class FmuDataManager
       var flattenedMembers = structDefinitionOfPubSubType.FlattenedMembers;
       configuredStructure = new ConfiguredStructure(
         structName,
-        flattenedMembers.Select(fm => structName + "." + fm.QualifiedName));
+        flattenedMembers.Select(fm => structName + "." + fm.QualifiedName),
+        structType.IsOptional);
       targetStructureInternal.Add(structName, configuredStructure);
       targetStructure.Add(configuredStructure.StructureId, configuredStructure);
     }
@@ -332,7 +337,9 @@ public class FmuDataManager
         Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], configuredVariable);
 
         var dc = new DataConverter();
-        var byteArray = dc.TransformToSilKitData(variable, configuredVariable);
+        // NB: Currently, this method transforms the FMI variable as a whole, making it impossible to have optional members
+        // Further, this prevents the data from being serialized as nested lists
+        var byteArray = dc.TransformFmuToSilKitData(variable, configuredVariable);
         returnData.Add(Tuple.Create((long)configuredVariable.FmuVariableDefinition.ValueReference, byteArray));
       }
     }
@@ -407,25 +414,13 @@ public class FmuDataManager
 
       // serialize structure as a whole
       var dc = new DataConverter();
-      var byteArray = dc.TransformToSilKitData(memberData, configuredStructure);
+      var byteArray = dc.TransformFmuToSilKitData(memberData, configuredStructure);
       returnData.Add(Tuple.Create(configuredStructure.StructureId, byteArray));
     }
 
     return returnData;
   }
 
-  public void SetData(uint refValue, byte[] data)
-  {
-    var fmuData = TransformSilKitToFmuData(refValue, data.ToList(), out var binSizes).ToArray();
-    if (binSizes.Count == 0)
-    {
-      Binding.SetValue(refValue, fmuData);
-    }
-    else
-    {
-      Binding.SetValue(refValue, fmuData, binSizes.ToArray());
-    }
-  }
 
   public void SetData(Dictionary<long, byte[]> silKitDataMap)
   {
@@ -434,13 +429,20 @@ public class FmuDataManager
       if (dataKvp.Key <= uint.MaxValue)
       {
         // key is refValue
-        SetData((uint)dataKvp.Key, dataKvp.Value);
+        SetVariable((uint)dataKvp.Key, dataKvp.Value);
       }
       else
       {
         SetStructure(dataKvp.Key, dataKvp.Value);
       }
     }
+  }
+
+  public void SetVariable(uint refValue, byte[] data)
+  {
+    var fmuData = TransformSilKitToFmuData(refValue, data.ToList(), out var binSizes);
+
+    SetBinding(refValue, fmuData, binSizes);
   }
 
   public void SetStructure(long structureId, byte[] silKitData)
@@ -454,6 +456,11 @@ public class FmuDataManager
     }
 
     var fmuData = TransformSilKitToStructuredFmuData(structureId, silKitData, out var binSizes);
+    if (fmuData == null)
+    {
+      // struct was optional and did not provide payload -> skip struct update
+      return;
+    }
 
     var index = 0;
     foreach (var structureMember in configuredStructure!.StructureMembers)
@@ -464,23 +471,33 @@ public class FmuDataManager
           $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
       }
 
+      var data = fmuData[index];
       var refValue = structureMember.FmuVariableDefinition.ValueReference;
 
-      if (binSizes[index].Count == 0)
-      {
-        Binding.SetValue(refValue, fmuData[index].ToArray());
-      }
-      else
-      {
-        Binding.SetValue(refValue, fmuData[index].ToArray(), binSizes[index].ToArray());
-      }
+      SetBinding(refValue, data, binSizes[index]);
 
       index++;
     }
   }
 
+  public void SetBinding(uint refValue, byte[]? fmuData, List<int>? binSizes)
+  {
+    if (fmuData == null)
+    {
+      return;
+    }
 
-  private List<List<byte>> TransformSilKitToStructuredFmuData(
+    if (binSizes?.Count > 0)
+    {
+      Binding.SetValue(refValue, fmuData, binSizes.ToArray());
+    }
+    else
+    {
+      Binding.SetValue(refValue, fmuData);
+    }
+  }
+
+  private List<byte[]?>? TransformSilKitToStructuredFmuData(
     long refValue,
     byte[] silKitData,
     out List<List<int>> binSizes)
@@ -496,7 +513,7 @@ public class FmuDataManager
       $"Failed to transform received SIL Kit data. The target variable's reference value was {refValue}");
   }
 
-  private List<byte> TransformSilKitToFmuData(long refValue, List<byte> silKitData, out List<int> binSizes)
+  private byte[]? TransformSilKitToFmuData(long refValue, List<byte> silKitData, out List<int> binSizes)
   {
     var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
     if (success && (configuredVariable != null))

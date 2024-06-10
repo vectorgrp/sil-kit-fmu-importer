@@ -224,7 +224,7 @@ public class FmuImporter
           v.Start = objectList.ToArray();
         }
 
-        data = Fmi.Supplements.Serializer.Serialize(objectList, v, ref binSizes);
+        data = Fmi.Supplements.Serializer.Serialize(objectList, v, binSizes);
       }
       else
       {
@@ -234,7 +234,7 @@ public class FmuImporter
           v.Start = new[] { configuredParameter.Value.Value };
         }
 
-        data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value.Value, v, ref binSizes);
+        data = Fmi.Supplements.Serializer.Serialize(configuredParameter.Value.Value, v, binSizes);
       }
 
       if (v.VariableType != VariableTypes.Binary)
@@ -500,10 +500,11 @@ public class FmuImporter
       return;
     }
 
-    // Publish non-structured variables
+    // Retrieve and publish non-structured variables
     var currentOutputData = FmuDataManager.GetVariableOutputData(false);
     SilKitDataManager.PublishAll(currentOutputData);
 
+    // Retrieve and publish structures
     var currentStructureOutputData = FmuDataManager.GetStructureOutputData(false);
     SilKitDataManager.PublishAll(currentStructureOutputData);
 

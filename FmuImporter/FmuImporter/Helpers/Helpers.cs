@@ -295,6 +295,8 @@ public static class Helpers
           return "Single";
         case "float64" or "real" or "double":
           return "Double";
+        case "string":
+          return "String";
         case "binary" or "byte[]":
           return "Byte[]";
       }
@@ -327,7 +329,6 @@ public static class Helpers
         if (type == null)
         {
           // NB: Structs and enums cannot be resolved at this point - return their name instead of an actual type
-          // TODO improve custom data type handling
           return new OptionalType(isOptional, false, unaliasedTokenNoNullable);
         }
         else

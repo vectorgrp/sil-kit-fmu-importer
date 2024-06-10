@@ -129,7 +129,7 @@ public class FmuEntity : IDisposable
 
     foreach (var arrayVar in ModelDescription.ArrayVariables.Values)
     {
-      arrayVar.InitializeArrayLength(ref ModelDescription.Variables);
+      arrayVar.InitializeArrayLength(ModelDescription.Variables);
     }
 
     fmi3Binding.SetDebugLogging(true, 0, null);

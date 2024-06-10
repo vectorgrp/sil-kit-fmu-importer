@@ -69,7 +69,7 @@ public class DataSubscriber : IDataSubscriber
     IntPtr subscriber,
     ref DataMessageEventInternal dataMessageEvent)
   {
-    // double check if this is the correct lifecycle service
+    // double check if this is the correct service
     if (subscriber != DataSubscriberPtr)
     {
       return;

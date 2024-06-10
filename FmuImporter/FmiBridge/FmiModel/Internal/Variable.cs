@@ -409,7 +409,7 @@ public class Variable
     return typeDefinitions.ContainsKey(declaredType);
   }
 
-  public void InitializeArrayLength(ref Dictionary<uint /* ValueReference */, Variable> variables)
+  public void InitializeArrayLength(Dictionary<uint /* ValueReference */, Variable> variables)
   {
     if (_originalVariable == null)
     {
@@ -430,7 +430,7 @@ public class Variable
 
       if (dimensions is fmi3ArrayableVariableDimension[] dims)
       {
-        Dimensions = GetDimensionSizeArray(dims, ref variables);
+        Dimensions = GetDimensionSizeArray(dims, variables);
       }
       else
       {
@@ -447,7 +447,7 @@ public class Variable
 
   private ulong[] GetDimensionSizeArray(
     fmi3ArrayableVariableDimension[] originalDimensions,
-    ref Dictionary<uint /* ValueReference */, Variable> variables)
+    Dictionary<uint /* ValueReference */, Variable> variables)
   {
     var res = new ulong[originalDimensions.Length];
     for (var i = 0; i < originalDimensions.Length; i++)

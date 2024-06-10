@@ -10,11 +10,11 @@ public static class StructuredVariableParser
   public static StructuredNameContainer Parse(string variableName)
   {
     var result = new List<string>();
-    Parse(variableName.AsSpan(), ref result);
+    Parse(variableName.AsSpan(), result);
     return new StructuredNameContainer(result);
   }
 
-  private static void Parse(ReadOnlySpan<char> input, ref List<string> path)
+  private static void Parse(ReadOnlySpan<char> input, List<string> path)
   {
     if (input.IsEmpty)
     {
@@ -24,7 +24,7 @@ public static class StructuredVariableParser
     if (input[0] == '.')
     {
       // skip separator character
-      Parse(input.Slice(1), ref path);
+      Parse(input.Slice(1), path);
       return;
     }
 
@@ -33,7 +33,7 @@ public static class StructuredVariableParser
     if (nextIndex == -1)
     {
       // no quoted variables - process input completely
-      ProcessUnquotedStructuredVariable(input, ref path);
+      ProcessUnquotedStructuredVariable(input, path);
       return;
     }
 
@@ -45,14 +45,14 @@ public static class StructuredVariableParser
       path.Add(input.Slice(1, nextIndex).ToString());
       // ... and continue recursively with the remaining input
       // skip both quotes
-      Parse(input.Slice(nextIndex + 2), ref path);
+      Parse(input.Slice(nextIndex + 2), path);
       return;
     }
 
     // process input up to the next quoted variable...
-    ProcessUnquotedStructuredVariable(input.Slice(0, nextIndex), ref path);
+    ProcessUnquotedStructuredVariable(input.Slice(0, nextIndex), path);
     // ... and continue recursively with the remaining input
-    Parse(input.Slice(nextIndex), ref path);
+    Parse(input.Slice(nextIndex), path);
   }
 
   private static int FindEndOfQuoteName(ReadOnlySpan<char> input)
@@ -77,7 +77,7 @@ public static class StructuredVariableParser
     return scanIndex;
   }
 
-  private static void ProcessUnquotedStructuredVariable(ReadOnlySpan<char> input, ref List<string> path)
+  private static void ProcessUnquotedStructuredVariable(ReadOnlySpan<char> input, List<string> path)
   {
     var nextIndex = 0;
     // no more quoted variables - process input completely
