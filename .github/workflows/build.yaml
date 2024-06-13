@@ -92,6 +92,17 @@ jobs:
     - if: always()
       run: rm -rfv * .??*
 
+  run-integration-tests:
+    env:
+        GH_ENTERPRISE_TOKEN: ${{ secrets.PAT }}
+        GH_HOST: ${{ vars.GHE_HOST }}
+    runs-on: windows
+    needs: [build-windows, build-linux]
+    steps: 
+      - name: Trigger integration tests
+        run: |
+          gh workflow run testAutomation.yaml -R ${{ vars.SUPPLEMENTS_LOC }} -F fmu-importer-run-id=${{ github.run_id }} -F branch-name=${{ github.ref_name }} -F commit-full-sha=${{ github.sha }}
+
   # Prune any dangling docker images
   cleanup-linux:
     runs-on: [Linux, Docker, self-hosted, ska-runner]
