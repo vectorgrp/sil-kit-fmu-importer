@@ -9,9 +9,61 @@ public static class StructuredVariableParser
 {
   public static StructuredNameContainer Parse(string variableName)
   {
-    var result = new List<string>();
-    Parse(variableName.AsSpan(), result);
-    return new StructuredNameContainer(result);
+    try
+    {
+      var result = new List<string>();
+
+      if (string.IsNullOrEmpty(variableName))
+      {
+        throw new ParserException("variable names must not be empty.");
+      }
+
+      if (variableName[0] == '.')
+      {
+        throw new ParserException("variable names must not start with the separator character (.)");
+      }
+
+      Parse(variableName.AsSpan(), result);
+
+      return new StructuredNameContainer(result);
+    }
+    catch (ParserException e)
+    {
+      throw new ParserException($"Encountered parser exception while parsing variable '{variableName}'.", e);
+    }
+  }
+
+  private static void CheckIndexAndContinue(ReadOnlySpan<char> input, int lastProcessedIndex, List<string> path)
+  {
+    // lastProcessedIndex     = index of the last character of the processed substring
+    // lastProcessedIndex + 1 = separator or end of input
+    // lastProcessedIndex + 2 = any character other than another separator
+
+    if (lastProcessedIndex == input.Length - 1)
+    {
+      // reached end of input
+      return;
+    }
+
+    if (input[lastProcessedIndex + 1] != '.')
+    {
+      // Check for existence of separator character
+      throw new ParserException($"Missing separator character detected.");
+    }
+
+    if (lastProcessedIndex + 1 == input.Length - 1)
+    {
+      // trailing separator character is forbidden
+      throw new ParserException($"Trailing separator character detected.");
+    }
+
+    if (input[lastProcessedIndex + 2] == '.')
+    {
+      // leading separator character is forbidden
+      throw new ParserException("Two consecutive separator characters detected.");
+    }
+
+    Parse(input.Slice(lastProcessedIndex + 2), path);
   }
 
   private static void Parse(ReadOnlySpan<char> input, List<string> path)
@@ -21,38 +73,36 @@ public static class StructuredVariableParser
       return;
     }
 
-    if (input[0] == '.')
-    {
-      // skip separator character
-      Parse(input.Slice(1), path);
-      return;
-    }
-
     // FMI supports any variable name (even with blanks, escapes, ...) as long as it is escaped via apostrophes
-    var nextIndex = input.IndexOf("'");
-    if (nextIndex == -1)
+    var nextQuoteIndex = input.IndexOf("'");
+    if (nextQuoteIndex == -1)
     {
       // no quoted variables - process input completely
       ProcessUnquotedStructuredVariable(input, path);
       return;
     }
 
-    if (nextIndex == 0)
+    int nextParseIndex;
+
+    if (nextQuoteIndex == 0)
     {
       // first character is an apostrophe -> find index of end of quoted name
-      nextIndex = FindEndOfQuoteName(input.Slice(1));
+      var endOfQuotedNameIndex = FindEndOfQuoteName(input.Slice(1));
       // add the quoted variable without apostrophes... 
-      path.Add(input.Slice(1, nextIndex).ToString());
+      path.Add(input.Slice(1, endOfQuotedNameIndex).ToString());
       // ... and continue recursively with the remaining input
-      // skip both quotes
-      Parse(input.Slice(nextIndex + 2), path);
-      return;
+      // provide index of last quote as index
+      nextParseIndex = endOfQuotedNameIndex + 1;
+    }
+    else
+    {
+      nextParseIndex = nextQuoteIndex - 2;
+      ProcessUnquotedStructuredVariable(input.Slice(0, nextQuoteIndex - 1), path);
     }
 
     // process input up to the next quoted variable...
-    ProcessUnquotedStructuredVariable(input.Slice(0, nextIndex), path);
     // ... and continue recursively with the remaining input
-    Parse(input.Slice(nextIndex), path);
+    CheckIndexAndContinue(input, nextParseIndex, path);
   }
 
   private static int FindEndOfQuoteName(ReadOnlySpan<char> input)
@@ -84,15 +134,24 @@ public static class StructuredVariableParser
     while (!input.IsEmpty && nextIndex != -1)
     {
       nextIndex = input.IndexOf('.');
+      if (nextIndex == input.Length - 1)
+      {
+        throw new ParserException("Trailing separator detected.");
+      }
+
       if (nextIndex == -1)
       {
         path.Add(input.ToString());
+        continue;
       }
-      else
+
+      if (nextIndex == 0)
       {
-        path.Add(input.Slice(0, nextIndex).ToString());
-        input = input.Slice(nextIndex + 1);
+        throw new ParserException("Two consecutive separators detected.");
       }
+
+      path.Add(input.Slice(0, nextIndex).ToString());
+      input = input.Slice(nextIndex + 1);
     }
   }
 }
