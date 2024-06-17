@@ -1,14 +1,16 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System;
 using System.ComponentModel.DataAnnotations;
-using FmuImporter.CommDescription.ParserExtensions;
-using FmuImporter.Exceptions;
+using System.IO;
+using FmuImporter.Models.CommDescription.ParserExtensions;
+using FmuImporter.Models.Exceptions;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NodeDeserializers;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
 public static class CommunicationInterfaceDescriptionParser
 {

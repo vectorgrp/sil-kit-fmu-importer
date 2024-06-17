@@ -1,0 +1,16 @@
+﻿<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\build.props" />
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="13.0.2" />
+  </ItemGroup>
+
+</Project>

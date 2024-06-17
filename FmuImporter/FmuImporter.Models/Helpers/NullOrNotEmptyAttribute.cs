@@ -1,10 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System;
 using System.Collections;
 using System.ComponentModel.DataAnnotations;
 
-namespace FmuImporter.Helpers;
+namespace FmuImporter.Models.Helpers;
 
 [AttributeUsage(
   AttributeTargets.Property |

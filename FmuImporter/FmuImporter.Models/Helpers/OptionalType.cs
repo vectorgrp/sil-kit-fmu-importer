@@ -1,9 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using FmuImporter.CommDescription;
+using System;
+using FmuImporter.Models.CommDescription;
 
-namespace FmuImporter.Helpers;
+namespace FmuImporter.Models.Helpers;
 
 public class OptionalType
 {

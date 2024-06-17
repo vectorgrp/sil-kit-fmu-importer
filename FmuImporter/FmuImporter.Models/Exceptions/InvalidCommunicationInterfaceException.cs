@@ -1,7 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-namespace FmuImporter.Exceptions;
+using System;
+
+namespace FmuImporter.Models.Exceptions;
 
 public class InvalidCommunicationInterfaceException : Exception
 {

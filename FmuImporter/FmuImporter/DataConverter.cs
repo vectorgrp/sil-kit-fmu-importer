@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 using Fmi;
 using Fmi.Binding.Helper;
 using FmuImporter.Config;
-using FmuImporter.Exceptions;
-using FmuImporter.Helpers;
+using FmuImporter.Models.Exceptions;
+using FmuImporter.Models.Helpers;
 using SilKit.Supplements;
 
 namespace FmuImporter;

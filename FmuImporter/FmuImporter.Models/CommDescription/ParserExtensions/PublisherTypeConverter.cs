@@ -1,15 +1,17 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using FmuImporter.Exceptions;
+using FmuImporter.Models.Exceptions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace FmuImporter.CommDescription.ParserExtensions;
+namespace FmuImporter.Models.CommDescription.ParserExtensions;
 
-public class PublisherTypeConverter : IYamlTypeConverter
+internal class PublisherTypeConverter : IYamlTypeConverter
 {
   public bool Accepts(Type type)
   {

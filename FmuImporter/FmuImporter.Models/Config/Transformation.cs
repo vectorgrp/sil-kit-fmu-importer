@@ -1,9 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using FmuImporter.Helpers;
+using FmuImporter.Models.Helpers;
 
-namespace FmuImporter.Config;
+namespace FmuImporter.Models.Config;
 
 public class Transformation : TransformationPublic
 {

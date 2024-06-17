@@ -3,7 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
 public class Subscriber
 {

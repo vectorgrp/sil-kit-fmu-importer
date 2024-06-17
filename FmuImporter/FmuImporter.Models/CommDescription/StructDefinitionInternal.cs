@@ -1,9 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using FmuImporter.Exceptions;
+using System.Collections.Generic;
+using FmuImporter.Models.Exceptions;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
 public class StructDefinitionInternal : StructDefinition
 {

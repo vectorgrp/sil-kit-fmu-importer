@@ -3,13 +3,13 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
-public class StructMember
+public class EnumItem
 {
   [Required]
   public string Name { get; set; } = default!;
 
   [Required]
-  public string Type { get; set; } = default!;
+  public long? Value { get; set; }
 }

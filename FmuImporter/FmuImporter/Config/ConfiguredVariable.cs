@@ -3,6 +3,7 @@
 
 using Fmi.FmiModel.Internal;
 using Fmi.Supplements;
+using FmuImporter.Models.Config;
 
 namespace FmuImporter.Config;
 

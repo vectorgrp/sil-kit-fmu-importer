@@ -18,6 +18,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
+        <ProjectReference Include="..\FmuImporter.Models\FmuImporter.Models.csproj" />
         <ProjectReference Include="..\SilKitBridge\SilKitBridge.csproj" />
     </ItemGroup>
 

@@ -3,7 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace FmuImporter.Config;
+namespace FmuImporter.Models.Config;
 
 public class ParameterValue
 {

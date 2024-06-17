@@ -1,11 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using FmuImporter.Helpers;
+using FmuImporter.Models.Helpers;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
-public class PublisherInternal : Publisher
+public class SubscriberInternal : Subscriber
 {
   public new string Type
   {

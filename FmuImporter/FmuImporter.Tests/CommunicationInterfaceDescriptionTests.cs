@@ -2,9 +2,9 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Diagnostics;
-using FmuImporter.CommDescription;
-using FmuImporter.Exceptions;
-using FmuImporter.Helpers;
+using FmuImporter.Models.CommDescription;
+using FmuImporter.Models.Exceptions;
+using FmuImporter.Models.Helpers;
 
 namespace FmuImporter.Tests;
 

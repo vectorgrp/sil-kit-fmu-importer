@@ -3,15 +3,13 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace FmuImporter.CommDescription;
+namespace FmuImporter.Models.CommDescription;
 
-public class EnumDefinition
+public class Publisher
 {
   [Required]
   public string Name { get; set; } = default!;
 
-  public string? IndexType { get; set; }
-
-  [Required, MinLength(1)]
-  public List<EnumItem> Items { get; set; } = default!;
+  [Required]
+  public string Type { get; set; } = default!;
 }

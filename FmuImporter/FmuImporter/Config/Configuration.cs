@@ -2,7 +2,8 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Security.Cryptography;
-using FmuImporter.Exceptions;
+using FmuImporter.Models.Config;
+using FmuImporter.Models.Exceptions;
 using SilKit.Services.Logger;
 
 namespace FmuImporter.Config;

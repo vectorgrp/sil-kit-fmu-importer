@@ -5,10 +5,11 @@ using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
 using Fmi.Supplements;
-using FmuImporter.CommDescription;
 using FmuImporter.Config;
-using FmuImporter.Exceptions;
-using FmuImporter.Helpers;
+using FmuImporter.Models.CommDescription;
+using FmuImporter.Models.Config;
+using FmuImporter.Models.Exceptions;
+using FmuImporter.Models.Helpers;
 
 namespace FmuImporter.Fmu;
 

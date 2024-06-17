@@ -3,7 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using FmuImporter.Config.ParserExtensions;
-using FmuImporter.Exceptions;
+using FmuImporter.Models.Exceptions;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NodeDeserializers;

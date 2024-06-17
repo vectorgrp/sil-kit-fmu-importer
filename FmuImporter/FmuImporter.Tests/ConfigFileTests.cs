@@ -2,7 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using FmuImporter.Config;
-using FmuImporter.Exceptions;
+using FmuImporter.Models.Exceptions;
 
 namespace FmuImporter.Tests;
 
