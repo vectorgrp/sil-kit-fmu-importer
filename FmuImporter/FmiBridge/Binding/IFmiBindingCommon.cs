@@ -26,6 +26,4 @@ public interface IFmiBindingCommon : IDisposable
   public void FreeInstance();
 
   public FmiVersions GetFmiVersion();
-
-  public void SetLoggerCallback(Action<LogSeverity, string> callback);
 }

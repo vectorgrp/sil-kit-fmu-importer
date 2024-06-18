@@ -114,7 +114,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   private static readonly AutoResetEvent WaitForDoStepEvent = new AutoResetEvent(false);
 
-  public Fmi2Binding(string fmuPath) : base(fmuPath, OsPath)
+  public Fmi2Binding(string fmuPath, Action<LogSeverity, string> logCallback) : base(fmuPath, OsPath, logCallback)
   {
     // Common Functions
     SetDelegate(out _fmi2SetDebugLogging);

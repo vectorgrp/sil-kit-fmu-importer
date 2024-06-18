@@ -10,7 +10,7 @@ namespace Fmi.FmiModel;
 
 public class ModelLoader
 {
-  internal static string ExtractFmu(string fmuPath)
+  internal static void ExtractFmu(string fmuPath, out string extractedPath, out bool isTemporary)
   {
     // check if the directory exists
     var targetFolderPath =
@@ -21,23 +21,34 @@ public class ModelLoader
     //  $"SilKitImporter_{Path.GetFileNameWithoutExtension(fmuPath)}");
     if (Directory.Exists(targetFolderPath) && Directory.EnumerateFileSystemEntries(targetFolderPath).Any())
     {
+      isTemporary = false;
+      extractedPath = targetFolderPath;
       // directory exists and has entries -> skip extraction
-      return targetFolderPath;
+      return;
     }
 
+    var tempDirectory = CreateTempDirectory();
+
     var dir = Directory.CreateDirectory(
-      $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}");
+      $"{tempDirectory}/{Path.GetFileNameWithoutExtension(fmuPath)}");
 
     ZipFile.ExtractToDirectory(fmuPath, dir.FullName);
-    return dir.FullName;
+    isTemporary = true;
+    extractedPath = dir.FullName;
   }
 
-  internal static void RemoveExtractedFmu(string fmuPath)
+  private static string CreateTempDirectory()
   {
-    var dir = $"{Path.GetDirectoryName(fmuPath)}/{Path.GetFileNameWithoutExtension(fmuPath)}";
-    if (Directory.Exists(dir))
+    var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    if (File.Exists(tempDirectory))
     {
-      Directory.Delete(dir, true);
+      // try again
+      return CreateTempDirectory();
+    }
+    else
+    {
+      Directory.CreateDirectory(tempDirectory);
+      return tempDirectory;
     }
   }
 

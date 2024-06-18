@@ -23,15 +23,43 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   public ModelDescription ModelDescription { get; }
 
-  public string ExtractedFolderPath { get; }
+  private readonly string _extractedFolderPath;
+
+  public string ExtractedFolderPath
+  {
+    get
+    {
+      return _extractedFolderPath;
+    }
+  }
+
   public string FullFmuLibPath { get; }
 
   private IntPtr DllPtr { set; get; }
 
-  // ctor
-  protected FmiBindingBase(string fmuPath, string osDependentPath)
+  private bool _isTemporary;
+
+  internal bool IsTemporary
   {
-    ExtractedFolderPath = ModelLoader.ExtractFmu(fmuPath);
+    get
+    {
+      return _isTemporary;
+    }
+    set
+    {
+      _isTemporary = value;
+    }
+  }
+
+  // ctor
+  protected FmiBindingBase(string fmuPath, string osDependentPath, Action<LogSeverity, string> logCallback)
+  {
+    _loggerAction = logCallback;
+    ModelLoader.ExtractFmu(fmuPath, out _extractedFolderPath, out _isTemporary);
+    if (IsTemporary)
+    {
+      Log(LogSeverity.Debug, $"Temporarily extracted the FMU to '{_extractedFolderPath}'.");
+    }
 
     ModelDescription = InitializeModelDescription(ExtractedFolderPath);
 
@@ -49,6 +77,32 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   private void ReleaseUnmanagedResources()
   {
+    var failCounter = 10;
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+      while (NativeMethods.FreeLibrary(DllPtr) && failCounter > 0)
+      {
+        --failCounter;
+      }
+    }
+    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+      while (NativeMethods.dlclose(DllPtr) != 0 && failCounter > 0)
+      {
+        --failCounter;
+      }
+    }
+    else
+    {
+      throw new NotSupportedException();
+    }
+
+    // if DLL was freed successfully and FMU was extracted to temporary folder, delete that folder and its content
+    if (failCounter > 0 && IsTemporary)
+    {
+      var dir = Directory.GetParent(ExtractedFolderPath) ?? new DirectoryInfo(ExtractedFolderPath);
+      dir.Delete(true);
+    }
   }
 
   private bool _disposedValue;
@@ -235,10 +289,5 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     _loggerAction?.Invoke(severity, message);
   }
 
-  private Action<LogSeverity, string>? _loggerAction;
-
-  public void SetLoggerCallback(Action<LogSeverity, string> callback)
-  {
-    _loggerAction = callback;
-  }
+  private readonly Action<LogSeverity, string>? _loggerAction;
 }

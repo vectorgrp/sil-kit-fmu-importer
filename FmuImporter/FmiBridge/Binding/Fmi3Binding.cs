@@ -48,7 +48,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
   }
 
-  public Fmi3Binding(string fmuPath) : base(fmuPath, OsPath)
+  public Fmi3Binding(string fmuPath, Action<LogSeverity, string> logCallback) : base(fmuPath, OsPath, logCallback)
   {
     // Common functions
     SetDelegate(out _fmi3InstantiateCoSimulation);

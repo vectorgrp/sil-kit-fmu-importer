@@ -9,6 +9,9 @@ The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <
 ### Changed
 
 * If the value of an enumeration-typed variable is set, strings are now considered referring to an enumerator's name, whereas integers refer to an enumerators' value.
+* Temporarily extracted FMUs are now deleted by default
+    * If there is a folder with the extracted FMU in the same directory as the FMU, this extracted content will be used and remains there after the FMU Importer stops.
+    * Otherwise, the FMU is now extracted to a temporary directory. This directory and its contents are deleted after the simulation run.
 
 ## [1.2.0] - 2024-03-28
 

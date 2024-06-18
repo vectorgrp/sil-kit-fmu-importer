@@ -98,7 +98,7 @@ public class FmuImporter
       throw;
     }
 
-    FmuEntity = new FmuEntity(fmuPath);
+    FmuEntity = new FmuEntity(fmuPath, FmuEntity_OnFmuLog);
 
     try
     {
@@ -118,9 +118,6 @@ public class FmuImporter
 
         _configuredStructuralParameters.Add(myStructParam, param!);
       }
-
-      // Register logger callback
-      FmuEntity.OnFmuLog += FmuEntity_OnFmuLog;
 
       // Initialize FMU
       FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
