@@ -24,6 +24,9 @@ Optional data types can be defined in the communication interface description an
     * If there is a folder with the extracted FMU in the same directory as the FMU, this extracted content will be used and remains there after the FMU Importer stops.
     * Otherwise, the FMU is now extracted to a temporary directory. This directory and its contents are deleted after the simulation run.
 
+### Fixed
+* If an error occurred while an FMU is loaded, its error will now be handled like other errors (was printed to console before)
+
 ---
 
 ## [1.2.0] - 2024-03-28

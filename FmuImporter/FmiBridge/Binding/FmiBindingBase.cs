@@ -172,7 +172,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     if (res == IntPtr.Zero)
     {
       throw new FileLoadException(
-        $"Failed to retrieve a pointer from the provided FMU library. Path was '{libraryPath}'.");
+        $"Failed to retrieve a pointer from the provided FMU library. The expected path was '{libraryPath}'.");
     }
 
     return res;

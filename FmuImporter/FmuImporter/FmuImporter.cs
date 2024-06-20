@@ -116,10 +116,10 @@ public class FmuImporter
       throw;
     }
 
-    FmuEntity = new FmuEntity(fmuPath, FmuEntity_OnFmuLog);
-
     try
     {
+      FmuEntity = new FmuEntity(fmuPath, FmuEntity_OnFmuLog);
+
       _configuredParameters = _fmuImporterConfig.GetParameters();
       _configuredStructuralParameters = new Dictionary<string, Parameter>();
 
