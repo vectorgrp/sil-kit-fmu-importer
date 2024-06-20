@@ -28,6 +28,10 @@ These labels allow to limit the communication between services with the same nam
 * Temporarily extracted FMUs are now deleted by default
     * If there is a folder with the extracted FMU in the same directory as the FMU, this extracted content will be used and remains there after the FMU Importer stops.
     * Otherwise, the FMU is now extracted to a temporary directory. This directory and its contents are deleted after the simulation run.
+* Reworked the vCDL Exporter
+    * New CLI (see documentation for details, or use the --help argument when calling the exporter)
+    * Now supports exporting vCDL files based on an FMU or on a communication interface description
+    * Removed the option to export multiple FMUs to a single vCDL
 
 ### Fixed
 * If an error occurred while an FMU is loaded, its error will now be handled like other errors (was printed to console before)

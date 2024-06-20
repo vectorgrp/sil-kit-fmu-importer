@@ -12,6 +12,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Version>2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,7 +20,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="$(FmuImporterSolutionDir)/FmiBridge/FmiBridge.csproj" />
+        <ProjectReference Include="..\..\FmuImporter\FmuImporter.Models\FmuImporter.Models.csproj" />
     </ItemGroup>
 
 </Project>
