@@ -13,9 +13,13 @@ This version introduces a new feature to bundle several variables to structures 
 * Added an option 'AlwaysUseStructuredNamingConvention' to the configuration's root level (default: false).
   If set, it activate the structured naming convention detection (and therefore the variable aggregation feature) even if it is not set in the FMU's model description.
 * Added a new communication interface description format that must be provided via ``-i `` or ``--fmu-importer-communication-interface-file`` if variables shall be aggregated to structures.
-* Added support for optional data types.
+* Added support for optional data types.  
 Optional data types are used in SIL Kit to indicate if the provided data (e.g., a structure member) contains a payload or not.
 Optional data types can be defined in the communication interface description and in the configuration file by appending a question mark at the end of the data type that should be optional.
+* Added label support.  
+By default, the FMU Importer does not use any labels when creating Publish / Subscribe services.
+The `Instance` and `Namespace` labels can be set by configuring PublisherInstance, SubscriberInstance, and Namespace in the root of the configuration file.
+These labels allow to limit the communication between services with the same namespace / instance name (e.g., if multiple instances of the same FMU are participating in a simulation).
 
 ### Changed
 

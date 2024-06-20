@@ -7,6 +7,9 @@ namespace SilKit.Services.PubSub;
 
 public class PubSubSpec
 {
+  public const string InstanceKey = "Instance";
+  public const string NamespaceKey = "Namespace";
+
   public struct MatchingLabel
   {
     public enum Kinds : uint
@@ -25,6 +28,13 @@ public class PubSubSpec
     Topic = topic;
     MediaType = mediaType;
     Labels = new List<MatchingLabel>();
+  }
+
+  public PubSubSpec(string topic, string mediaType, List<MatchingLabel> labels)
+  {
+    Topic = topic;
+    MediaType = mediaType;
+    Labels = labels;
   }
 
   public string Topic { get; }

@@ -21,4 +21,8 @@ public class ConfigurationPublic
   public bool IgnoreUnmappedVariables { get; set; } = false;
 
   public bool AlwaysUseStructuredNamingConvention { get; set; } = false;
+
+  public string? PublisherInstance { get; set; }
+  public string? SubscriberInstance { get; set; }
+  public string? Namespace { get; set; }
 }

@@ -68,9 +68,37 @@ public class SilKitEntity : IDisposable
 
 #region service creation
 
-  public IDataPublisher CreateDataPublisher(string serviceName, string topicName, byte historySize)
+  public IDataPublisher CreateDataPublisher(
+    string serviceName,
+    string topicName,
+    string? instanceName,
+    string? namespaceName,
+    byte historySize)
   {
-    var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData);
+    var labels = new List<PubSubSpec.MatchingLabel>();
+    if (!string.IsNullOrEmpty(instanceName))
+    {
+      labels.Add(
+        new PubSubSpec.MatchingLabel()
+        {
+          Key = PubSubSpec.InstanceKey,
+          Value = instanceName,
+          Kind = PubSubSpec.MatchingLabel.Kinds.Optional
+        });
+    }
+
+    if (!string.IsNullOrEmpty(namespaceName))
+    {
+      labels.Add(
+        new PubSubSpec.MatchingLabel()
+        {
+          Key = PubSubSpec.NamespaceKey,
+          Value = namespaceName,
+          Kind = PubSubSpec.MatchingLabel.Kinds.Optional
+        });
+    }
+
+    var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData, labels);
 
     return _participant.CreateDataPublisher(serviceName, dataSpec, historySize);
   }
@@ -78,10 +106,36 @@ public class SilKitEntity : IDisposable
   public IDataSubscriber CreateDataSubscriber(
     string serviceName,
     string topicName,
+    string? instanceName,
+    string? namespaceName,
     IntPtr context,
     DataMessageHandler handler)
   {
-    var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData);
+    var labels = new List<PubSubSpec.MatchingLabel>();
+
+    if (!string.IsNullOrEmpty(instanceName))
+    {
+      labels.Add(
+        new PubSubSpec.MatchingLabel()
+        {
+          Key = PubSubSpec.InstanceKey,
+          Value = instanceName,
+          Kind = PubSubSpec.MatchingLabel.Kinds.Optional
+        });
+    }
+
+    if (!string.IsNullOrEmpty(namespaceName))
+    {
+      labels.Add(
+        new PubSubSpec.MatchingLabel()
+        {
+          Key = PubSubSpec.NamespaceKey,
+          Value = namespaceName,
+          Kind = PubSubSpec.MatchingLabel.Kinds.Optional
+        });
+    }
+
+    var dataSpec = new PubSubSpec(topicName, Vector.MediaTypeData, labels);
 
     return _participant.CreateDataSubscriber(
       serviceName,

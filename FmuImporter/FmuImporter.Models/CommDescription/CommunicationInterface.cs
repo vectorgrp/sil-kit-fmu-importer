@@ -26,6 +26,7 @@ public class CommunicationInterface
   [NullOrNotEmpty]
   public List<SubscriberInternal>? Subscribers { get; set; }
 
-  public string? InstanceName { get; set; }
+  public string? PublisherInstance { get; set; }
+  public string? SubscriberInstance { get; set; }
   public string? Namespace { get; set; }
 }

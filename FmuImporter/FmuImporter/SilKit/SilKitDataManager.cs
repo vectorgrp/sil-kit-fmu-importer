@@ -29,23 +29,39 @@ public class SilKitDataManager : IDisposable
   public Dictionary<long, IDataPublisher> ValueRefToPublisher { get; }
   public Dictionary<long, IDataSubscriber> ValueRefToSubscriber { get; }
 
-  // Create publisher for regular FMU variable
-  public bool CreatePublisher(string serviceName, string topicName, IntPtr context, byte historySize)
+  // Create labeled publisher for regular FMU variable
+  public bool CreatePublisher(
+    string serviceName,
+    string topicName,
+    string? instanceName,
+    string? namespaceName,
+    IntPtr context,
+    byte historySize)
   {
+    var pub = _silKitEntity.CreateDataPublisher(
+      serviceName,
+      topicName,
+      instanceName,
+      namespaceName,
+      historySize);
     return ValueRefToPublisher.TryAdd(
       (long)context,
-      _silKitEntity.CreateDataPublisher(serviceName, topicName, historySize));
+      pub);
   }
 
-  // Create subscriber for regular FMU variable
+  // Create labeled subscriber for regular FMU variable
   public bool CreateSubscriber(
     string serviceName,
     string topicName,
+    string? labelInstanceName,
+    string? labelNamespace,
     IntPtr context)
   {
     var sub = _silKitEntity.CreateDataSubscriber(
       serviceName,
       topicName,
+      labelInstanceName,
+      labelNamespace,
       context,
       DataMessageHandler);
 
