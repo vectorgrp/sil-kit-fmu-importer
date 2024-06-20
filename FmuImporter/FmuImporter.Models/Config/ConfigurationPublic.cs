@@ -9,7 +9,7 @@ namespace FmuImporter.Models.Config;
 
 public class ConfigurationPublic
 {
-  private const int MaxConfigVersion = 1;
+  private const int MaxConfigVersion = 2;
 
   [Required(ErrorMessage = "Version is a required attribute."), Range(1, MaxConfigVersion)]
   public int Version { get; set; } = default!;

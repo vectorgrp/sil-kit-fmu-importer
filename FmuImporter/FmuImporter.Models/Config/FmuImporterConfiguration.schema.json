@@ -2,152 +2,377 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "SIL Kit FMU Importer Configuration",
   "description": "A configuration for FMU Importer (https://github.com/vectorgrp/sil-kit-fmu-importer)",
-  "type": "object",
-  "definitions": {
-    "ScalarTransmissionTypes": {
-      "type": "string",
-      "enum": [
-        "Float",   "float",
-        "Float32", "float32",
-        "Double",  "double",
-        "Float64", "float64",
-        "Int8",    "int8",
-        "Int16",   "int16",
-        "Int32",   "int32",
-        "Int64",   "int64",
-        "UInt8",   "uint8",
-        "UInt16",  "uint16",
-        "UInt32",  "uint32",
-        "UInt64",  "uint64"
+
+  "allOf": [
+    { "$ref": "#/$defs/root" },
+    {
+      "oneOf": [
+        { "$ref": "#/$defs/v1" },
+        { "$ref": "#/$defs/v2" }
       ]
-    },
-    "Transformation": {
+    }
+  ],
+
+  "$defs": {
+    "root": {
       "type": "object",
-      "description": "Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit.",
       "properties": {
-        "Offset": {
-          "type": "number",
-          "description": "Offset applied (with an addition) in a linear transformation to the variables before being transmitted. Applied after Factor. Defaults to 0."
-        },
-        "Factor": {
-          "type": "number",
-          "description": "Factor applied (with a multiplication) in a linear transformation to the variables before being transmitted. Applied before Offset. Defaults to 1."
-        },
-        "TransmissionType": {
-          "$ref": "#/definitions/ScalarTransmissionTypes",
-          "description": "Type used during SIL Kit transmission of the variable from/to the FMU. Only numerical scalar types are allowed. By default, no data conversion is done. For FMI 2.0, 'Real's are 'Float64' or 'Double,' and 'Integer's are 'Int32'."
-        },
-        "ReverseTransform": {
-          "type": "boolean",
-          "description": "Set to 'true' to inverse the linear transformation. Use this to reverse a transformation for which the parameters (factor and offset) are already known. No performance impact beyond initialization."
+        "Version": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2,
+          "maximum": 2,
+          "description": "Version of the schema used to validate this document. Current version : 2."
         }
       },
-      "additionalProperties": false,
-      "required": [],
-      "minProperties": 1
+      "additionalProperties": true,
+      "required": [ "Version" ]
     },
-    "VariableMapping": {
+    "v1": {
       "type": "object",
-      "properties": {
-        "VariableName": {
-          "type": "string",
-          "description": "Name of the variable in the model description."
+      "definitions": {
+        "Parameter": {
+          "type": "object",
+          "properties": {
+            "VariableName": {
+              "type": "string",
+              "description": "Name of the parameter. Must be unique and present in the FMI model description."
+            },
+            "Value": {
+              "description": "The new start value of this parameter variable.",
+              "oneOf": [
+                {
+                  "type": [ "string", "number", "boolean" ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "boolean"
+                  }
+                }
+              ]
+            }
+          },
+            "additionalProperties": false,
+            "required": [ "VariableName", "Value" ]
         },
-        "TopicName": {
+        "ScalarTransmissionTypes": {
           "type": "string",
-          "description": "The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. Defaults to the name in the model description."
+          "enum": [
+            "Float",   "float",
+            "Float32", "float32",
+            "Double",  "double",
+            "Float64", "float64",
+            "Int8",    "int8",
+            "Int16",   "int16",
+            "Int32",   "int32",
+            "Int64",   "int64",
+            "UInt8",   "uint8",
+            "UInt16",  "uint16",
+            "UInt32",  "uint32",
+            "UInt64",  "uint64"
+          ]
+        },
+        "TransmissionTypes": {
+          "type": "string",
+          "$ref": "#/$defs/v1/definitions/ScalarTransmissionTypes"
         },
         "Transformation": {
-          "$ref": "#/definitions/Transformation"
+          "type": "object",
+          "description": "Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit.",
+          "properties": {
+            "Offset": {
+              "type": "number",
+              "description": "Offset applied (with an addition) in a linear transformation to the variables before being transmitted. Applied after Factor. Defaults to 0."
+            },
+            "Factor": {
+              "type": "number",
+              "description": "Factor applied (with a multiplication) in a linear transformation to the variables before being transmitted. Applied before Offset. Defaults to 1."
+            },
+            "TransmissionType": {
+              "$ref": "#/$defs/v1/definitions/TransmissionTypes",
+              "description": "Type used during SIL Kit transmission of the variable from/to the FMU. Only numerical scalar types and lists thereof are allowed. Types may be optional by appending a '?'. See documentation for details and restrictions. By default, no data conversion is done. For FMI 2.0, 'Real's are 'Float64' or 'Double,' and 'Integer's are 'Int32'."
+            },
+            "ReverseTransform": {
+              "type": "boolean",
+              "description": "Set to 'true' to inverse the linear transformation. Use this to reverse a transformation for which the parameters (factor and offset) are already known. No performance impact beyond initialization."
+            }
+          },
+          "additionalProperties": false,
+          "required": [],
+          "minProperties": 1
+        },
+        "VariableMapping": {
+          "type": "object",
+          "properties": {
+            "VariableName": {
+              "type": "string",
+              "description": "Name of the variable in the model description."
+            },
+            "TopicName": {
+              "type": "string",
+              "description": "The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. Defaults to the name in the model description."
+            },
+            "Transformation": {
+              "$ref": "#/$defs/v1/definitions/Transformation"
+            }
+          },
+          "additionalProperties": false,
+          "required": [ "VariableName" ]
         }
       },
-      "additionalProperties": false,
-      "required": [ "VariableName" ]
-    },
-    "Parameter": {
-      "type": "object",
       "properties": {
-        "VariableName": {
-          "type": "string",
-          "description": "Name of the parameter. Must be unique and present in the FMI model description."
+        "Version": { "const": 1 },
+        "Include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Used to include contents of other valid FMU Importer configuration files."
         },
-        "Value": {
-          "description": "The new start value of this parameter variable.",
+        "Parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/definitions/Parameter"
+          },
+          "minItems": 1,
+          "description": "Used to override default values of parameters."
+        },
+        "IgnoreUnmappedVariables": {
+          "type": "boolean",
+          "description": "If 'true', prevent synchronization of variables that are not listed in VariableMappings (including parameters).",
+          "default": false
+        },
+        "StepSize": {
+          "type": "integer",
+          "description": "Amount of time in nanoseconds between two simulation time steps. Defaults to the step size defined inside the FMU's model description if present, or 1 ms if not.",
+          "minimum": 1,
+          "default" : 1000000
+        },
+        "VariableMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/definitions/VariableMapping"
+          },
+          "minItems": 1,
+          "description": "Used to modify how a variable is represented in a SIL Kit simulation."
+        }
+      },
+      "additionalProperties": false
+    },
+    "v2": {
+      "type": "object",
+      "definitions": {
+        "Parameter": {
+          "type": "object",
+          "properties": {
+            "VariableName": {
+              "type": "string",
+              "description": "Name of the parameter. Must be unique and present in the FMI model description."
+            },
+            "Value": {
+              "description": "The new start value of this parameter variable.",
+              "oneOf": [
+                {
+                  "type": [ "string", "number", "boolean" ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "boolean"
+                  }
+                }
+              ]
+            }
+          },
+            "additionalProperties": false,
+            "required": [ "VariableName", "Value" ]
+        },
+        "ScalarTransmissionTypes": {
+          "type": "string",
+          "enum": [
+            "Float",   "float",
+            "Float32", "float32",
+            "Double",  "double",
+            "Float64", "float64",
+            "Real",    "real",
+            "Int8",    "int8",
+            "SByte",   "sbyte",
+            "Int16",   "int16",
+            "Short",   "short",
+            "Int32",   "int32",
+            "Integer", "integer",
+            "Int64",   "int64",
+            "Long",    "long",
+            "UInt8",   "uint8",
+            "Byte",    "byte",
+            "UInt16",  "uint16",
+            "UShort",  "ushort",
+            "UInt32",  "uint32",
+            "UInt64",  "uint64",
+            "ULong",   "ulong",
+            "Bool",   "bool",
+            "Boolean",   "boolean",
+            "Binary",   "binary",
+            "String",   "string"
+          ]
+        },
+        "OptionalScalarTransmissionTypes": {
+          "type": "string",
+          "pattern": "^((i|I|UI|ui)nt(8|16|32|64|eger)|(f|F)loat(32|64)?|(R|r)eal|(D|d)ouble|(B|b|SB|sb)yte|(l|L|UL|ul)on|(s|S|US|us)hort)\\?$"
+        },
+        "ListsAndOptionalTypesNumerics": {
+          "type": "string",
+          "pattern": "^List<((i|I|UI|ui)nt(8|16|32|64|eger)|(f|F)loat(32|64)?|(R|r)eal|(D|d)ouble|(B|b|SB|sb)yte|(l|L|UL|ul)on|(s|S|US|us)hort)>(\\?)?$"
+        },
+        "ListsAndOptionalTypesOther": {
+          "type": "string",
+          "pattern": "^(List<((S|s)tring|(B|b)yte\\[]|(B|b)inary|(B|b)ool(ean)?)>)(\\?)?|(((S|s)tring|(B|b)yte\\[]|(B|b)inary|(B|b)ool(ean)?))\\?$"
+        },
+        "ExtendedTransmissionTypes": {
+          "type": "string",
           "oneOf": [
             {
-              "type": [ "string", "number", "boolean" ]
+              "$ref": "#/$defs/v2/definitions/ScalarTransmissionTypes"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+              "$ref": "#/$defs/v2/definitions/OptionalScalarTransmissionTypes"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "number"
-              }
+              "$ref": "#/$defs/v2/definitions/ListsAndOptionalTypesNumerics"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "boolean"
-              }
+              "$ref": "#/$defs/v2/definitions/ListsAndOptionalTypesOther"
             }
           ]
+        },
+        "Transformation": {
+          "type": "object",
+          "description": "Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit.",
+          "properties": {
+            "Offset": {
+              "type": "number",
+              "description": "Offset applied (with an addition) in a linear transformation to the variables before being transmitted. Applied after Factor. Defaults to 0."
+            },
+            "Factor": {
+              "type": "number",
+              "description": "Factor applied (with a multiplication) in a linear transformation to the variables before being transmitted. Applied before Offset. Defaults to 1."
+            },
+            "TransmissionType": {
+              "$ref": "#/$defs/v2/definitions/ExtendedTransmissionTypes",
+              "note": "This definition does not prevent users from applying lists of extended types and offset/factor at the same time, although it is not supported.",
+              "description": "Type used during SIL Kit transmission of the variable from/to the FMU. See documentation for details and restrictions. By default, no data conversion is done."
+            },
+            "ReverseTransform": {
+              "type": "boolean",
+              "description": "Set to 'true' to inverse the linear transformation. Use this to reverse a transformation for which the parameters (factor and offset) are already known. No performance impact beyond initialization."
+            }
+          },
+          "additionalProperties": false,
+          "required": [],
+          "minProperties": 1
+        },
+        "VariableMapping": {
+          "type": "object",
+          "properties": {
+            "VariableName": {
+              "type": "string",
+              "description": "Name of the variable in the model description."
+            },
+            "TopicName": {
+              "type": "string",
+              "description": "The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. Defaults to the name in the model description."
+            },
+            "Transformation": {
+              "$ref": "#/$defs/v2/definitions/Transformation"
+            }
+          },
+          "additionalProperties": false,
+          "required": [ "VariableName" ]
         }
       },
-        "additionalProperties": false,
-        "required": [ "VariableName", "Value" ]
-      }
-  },
-
-  "properties": {
-    "Version": {
-      "type": "integer",
-      "minimum": 1,
-      "default": 1,
-      "maximum": 1,
-      "description": "Version of the schema used to validate this document. Current version : 1."
-    },
-    "StepSize": {
-      "type": "integer",
-      "description": "Amount of time in nanoseconds between two simulation time steps. Defaults to the step size defined inside the FMU's model description if present, or 1 ms if not.",
-      "minimum": 1,
-      "default" : 1000000
-    },
-    "Parameters": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Parameter"
+      "properties": {
+        "Version": { "const": 2 },
+        "Include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Used to include contents of other valid FMU Importer configuration files."
+        },
+        "Parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v2/definitions/Parameter"
+          },
+          "minItems": 1,
+          "description": "Used to override default values of parameters."
+        },
+        "AlwaysUseStructuredNamingConvention": {
+          "type": "boolean",
+          "description": "If 'true', the FMI structured naming convention detection is turned on, even if the FMU does not specify it.",
+          "default": false
+        },
+        "IgnoreUnmappedVariables": {
+          "type": "boolean",
+          "description": "If 'true', prevent synchronization of variables that are not listed in VariableMappings (including parameters).",
+          "default": false
+        },
+        "Namespace": {
+          "type": "string",
+          "description": "Namespace for all publishers and subscribers (only use for disambiguation - do not use if not necessary)."
+        },
+        "PublisherInstance": {
+          "type": "string",
+          "description": "Instance name for all publishers (only use to disambiguate publishers with the same name - do not use if not necessary)."
+        },
+        "StepSize": {
+          "type": "integer",
+          "description": "Amount of time in nanoseconds between two simulation time steps. Defaults to the step size defined inside the FMU's model description if present, or 1 ms if not.",
+          "minimum": 1,
+          "default" : 1000000
+        },
+        "SubscriberInstance": {
+          "type": "string",
+          "description": "Instance name for all subscribers (only use to disambiguate publishers with the same name - do not use if not necessary)."
+        },
+        "VariableMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v2/definitions/VariableMapping"
+          },
+          "minItems": 1,
+          "description": "Used to modify how a variable is represented in a SIL Kit simulation."
+        }
       },
-      "minItems": 1,
-      "description": "Used to override default values of parameters."
-    },
-    "IgnoreUnmappedVariables": {
-      "type": "boolean",
-      "description": "If 'true', prevent synchronization of variables that are not listed in VariableMappings (including parameters).",
-      "default": false
-    },
-    "Include": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "description": "Used to include contents of other valid FMU Importer configuration files."
-    },
-    "VariableMappings": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/VariableMapping"
-      },
-      "minItems": 1,
-      "description": "Used to modify how a variable is represented in a SIL Kit simulation."
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false,
-  "required": [ "Version" ]
+  }
 }
 
