@@ -154,7 +154,7 @@ public class FmuDataManager
         (configuredVariable.StructuredPath.Path.Count > 1))
     {
       // use structure handling for data processing
-      var structName = configuredVariable.StructuredPath.InstanceName;
+      var structName = configuredVariable.StructuredPath.RootName;
       var structType = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == structName)?.ResolvedType;
       if (structType == null)
       {

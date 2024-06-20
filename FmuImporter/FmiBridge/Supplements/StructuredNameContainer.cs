@@ -14,13 +14,13 @@ public class StructuredNameContainer
     }
 
     Path = structuredNameList;
-    InstanceName = structuredNameList.First();
-    PathWithInstanceName = string.Join(".", structuredNameList);
+    RootName = structuredNameList.First();
+    PathWithRootName = string.Join(".", structuredNameList);
   }
 
-  public string InstanceName { get; }
+  public string RootName { get; }
 
-  public string PathWithInstanceName { get; }
+  public string PathWithRootName { get; }
 
   public List<string> Path { get; }
 }

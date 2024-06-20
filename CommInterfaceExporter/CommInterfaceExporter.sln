@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34525.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommInterfaceExporter", "CommInterfaceExporter\CommInterfaceExporter.csproj", "{D2417DB4-FEEF-4F74-9B79-F9AA1BB49752}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmiBridge", "..\FmuImporter\FmiBridge\FmiBridge.csproj", "{0EE8A098-89FC-4199-9E05-47C555261DE5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D2417DB4-FEEF-4F74-9B79-F9AA1BB49752}.Debug|x64.ActiveCfg = Debug|x64
+		{D2417DB4-FEEF-4F74-9B79-F9AA1BB49752}.Debug|x64.Build.0 = Debug|x64
+		{D2417DB4-FEEF-4F74-9B79-F9AA1BB49752}.Release|x64.ActiveCfg = Release|x64
+		{D2417DB4-FEEF-4F74-9B79-F9AA1BB49752}.Release|x64.Build.0 = Release|x64
+		{0EE8A098-89FC-4199-9E05-47C555261DE5}.Debug|x64.ActiveCfg = Debug|x64
+		{0EE8A098-89FC-4199-9E05-47C555261DE5}.Debug|x64.Build.0 = Debug|x64
+		{0EE8A098-89FC-4199-9E05-47C555261DE5}.Release|x64.ActiveCfg = Release|x64
+		{0EE8A098-89FC-4199-9E05-47C555261DE5}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A8A8A03-CB06-4B1C-8CDC-33A20F8B8AF7}
+	EndGlobalSection
+EndGlobal

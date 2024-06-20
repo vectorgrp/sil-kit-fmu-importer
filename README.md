@@ -13,6 +13,7 @@ Its behavior is configured by configuration files that are passed during launch.
     2. [Build Instructions](#build-instructions)
         1. [FMU Importer](#fmu-importer)
         2. [vCDL Exporter](#vcdl-exporter)
+        3. [Communication Interface Exporter](#communication-interface-exporter)
 3. [Running the FMU Importer](#running-the-fmu-importer)
 4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
     1. [Variable Representation](#variable-representation)
@@ -101,6 +102,30 @@ To export a vCDL you can run the following command from the folder where your vC
 `VcdlExporter <Path/To/Exported/vCDL> [<Path/To/FMU>]*`
 
 You must provide the path to the vCDL output file (including its file extension) as the first argument and then the paths to your FMUs (including their file extension).
+> Only FMU containers are supported (not already extracted FMUs).
+
+---
+
+#### **Communication Interface Exporter**
+
+This tool allows you to export the model descriptions of FMUs as a communication interface description file that can be provided to the FMU Importer.
+The order it will give to the members of structures is arbitrary.
+The structure types are based on the variables' names following FMI's structured naming convention, and the members are assigned to the correct structures.
+
+To build it, open a terminal in the CommInterfaceExporter directory (the one that contains CommInterfaceExporter.sln) and run the .NET build command
+
+- Windows: `dotnet build ./CommInterfaceExporter/CommInterfaceExporter.csproj -c Debug --no-self-contained -r win-x64`
+
+- Linux: `dotnet build ./CommInterfaceExporter/CommInterfaceExporter.csproj -c Debug --no-self-contained -r linux-x64`
+
+Alternatively, you can open the solution file in Visual Studio and build the Communication Interface Exporter from there.
+
+>Note: The Communication Interface Exporter is currently a tool for internal debugging purposes and does not have any quality assurance.
+You may encounter crashes while using it.
+
+To export a communication interface description you can run the following command from the folder where your Communication Interface Exporter binary resides:
+`CommInterfaceExporter --input-path <Path/To/FMU> --output-path <Path/To/Exported/CommItf>`
+
 > Only FMU containers are supported (not already extracted FMUs).
 
 ---

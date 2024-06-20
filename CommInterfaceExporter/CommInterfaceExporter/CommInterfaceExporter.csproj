@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <FmuImporterSolutionDir>../../FmuImporter</FmuImporterSolutionDir>
+    </PropertyGroup>
+
+    <Import Project="$(FmuImporterSolutionDir)/build.props" />
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <FileVersion>1.0</FileVersion>
+        <Version>1.0</Version>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="$(FmuImporterSolutionDir)/FmiBridge/FmiBridge.csproj" />
+    </ItemGroup>
+
+</Project>
