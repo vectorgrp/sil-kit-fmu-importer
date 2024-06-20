@@ -38,12 +38,14 @@ internal class Program
       "--fmu-importer-config-file",
       "Set the path to the FMU Importer configuration file.");
     fmuImporterConfigFileOption.AddAlias("-c");
+    fmuImporterConfigFileOption.ArgumentHelpName = "config-file";
     rootCommand.AddOption(fmuImporterConfigFileOption);
 
     var fmuImporterCommInterfaceFileOption = new Option<string?>(
       "--fmu-importer-communication-interface-file",
-      "Set the path to the FMU Importer configuration file.");
+      "Set the path to the FMU Importer communication interface file.");
     fmuImporterCommInterfaceFileOption.AddAlias("-i");
+    fmuImporterCommInterfaceFileOption.ArgumentHelpName = "communication-interface-file";
     rootCommand.AddOption(fmuImporterCommInterfaceFileOption);
 
     var participantNameOption = new Option<string>(

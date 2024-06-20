@@ -19,14 +19,20 @@ Its behavior is configured by configuration files that are passed during launch.
     1. [Variable Representation](#variable-representation)
     2. [Time and Lifecycle Management](#time-and-lifecycle-management)
     3. [Data Synchronization](#data-synchronization)
-5. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
+5. [Integration in SIL Kit Setups With Complex Data Structures](#integration-in-sil-kit-setups-with-complex-data-structures)
+    1. [Structures in SIL Kit](#structures-in-sil-kit)
+    2. [The Communication Interface Description](#the-communication-interface-description)
+    2. [Available Options in Communication Interface Description](#available-options-in-communication-interface-description)
+    3. [Optional Data Types](#optional-data-types)
+    4. [Variable Naming Convention in FMI and the FMU Importer](#variable-naming-convention-in-fmi-and-the-fmu-importer)
+6. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
     1. [Configuration Outline](#configuration-outline)
-    2. [Available Options](#available-options)
+    2. [Available Options in Configuration](#available-options-in-configuration)
         1. [Include](#include)
         2. [Parameters](#parameters)
         3. [VariableMappings](#variablemappings)
         4. [VariableMappings.Transformation](#variablemappingstransformation)
-6. [Error Handling](#error-handling)
+7. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
 
@@ -98,11 +104,16 @@ Alternatively, you can open the solution file in Visual Studio and build the vCD
 >Note: The vCDL exporter is currently a tool for internal debugging purposes and does not have any quality assurance.
 You may encounter crashes while using it.
 
-To export a vCDL you can run the following command from the folder where your vCDL Exporter binary resides:
-`VcdlExporter <Path/To/Exported/vCDL> [<Path/To/FMU>]*`
+The vCDL exporter can either export a vCDL file based on an FMU or based on a [communication interface description](#the-communication-interface-description).
 
-You must provide the path to the vCDL output file (including its file extension) as the first argument and then the paths to your FMUs (including their file extension).
+To export a vCDL based on an FMU, you can run the following command from the folder where your vCDL Exporter binary resides:
+`VcdlExporter fmu --input-path <Path/To/FMU> --output-path <Path/To/Exported/vCDL>`
 > Only FMU containers are supported (not already extracted FMUs).
+
+To export a vCDL based on a communication interface description, you can run the following command from the folder where your vCDL Exporter binary resides:
+`VcdlExporter communicationInterface --input-path <Path/To/Comm-Interface> --output-path <Path/To/Exported/vCDL> --interface-name Default`
+
+All provided paths must include the file's extensions (e.g., .vcdl, .fmu, .yaml).
 
 ---
 
@@ -142,15 +153,16 @@ To run the FMU Importer, you need to run the following command from the director
 
 Available options are:
 
-| Option                                                      | Description |
-|-------------------------------------------------------------|-------------|
-| -f, --fmu-path \<fmu-path> (REQUIRED)                       | Set the path to the FMU file (.fmu). **This is mandatory.** |
-| -s, --sil-kit-config-file \<sil-kit-config-file>            | Set the path to the SIL Kit configuration file. |
-| -c, --fmu-importer-config-file \<fmu-importer-config-file>  | Set the path to the FMU Importer configuration file. |
-| -p, --participant-name \<participant-name>                  | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
-| --time-sync-mode \<synchronized \| unsynchronized>          | Choose the time synchronization mode. [default: synchronized] |
-| --version                                                   | Show version information |
-| -?, -h, --help                                              | Show help and usage information |
+| Option                                                                           | Description |
+|----------------------------------------------------------------------------------|-------------|
+| -f, --fmu-path \<fmu-path> (REQUIRED)                                            | Set the path to the FMU file (.fmu). **This is mandatory.** |
+| -s, --sil-kit-config-file \<sil-kit-config-file>                                 | Set the path to the SIL Kit configuration file. |
+| -c, --fmu-importer-config-file \<config-file>                                    | Set the path to the FMU Importer configuration file. |
+| -i, --fmu-importer-communication-interface-file \<communication-interface-file>  | Set the path to the FMU Importer configuration file. |
+| -p, --participant-name \<participant-name>                                       | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
+| --time-sync-mode \<synchronized \| unsynchronized>                               | Choose the time synchronization mode. [default: synchronized] |
+| --version                                                                        | Show version information |
+| -?, -h, --help                                                                   | Show help and usage information |
 
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
 If no configuration was provided or if it did not specify a registry URI, the default URI `silkit://localhost:8500` will be used.
@@ -230,6 +242,154 @@ When receiving data for a specific variable more than once before a simulation t
 ![Synchronization between an FMU and the Importer (unsynchronized)](./Docs/Images/SimStepUnsynchronized.png)
 </details>
 
+## Integration in SIL Kit Setups With Complex Data Structures
+
+In FMI, a variable's data type is limited to a scalar data type or an array thereof.
+However, SIL Kit's (de-)serialization classes do not have this restriction, and they may aggregate data in complex arrangements (structures).
+The following subsections explain how variables can be aggregated to structures in SIL Kit.
+
+### Structures in SIL Kit
+
+The SIL Kit serialization classes allow to (de)serialize structured data.
+Structures may contain simple data types, enumerations, and other structures.
+Further, structure members can be optional (see [Optional Data Types](#optional-data-types)).
+Such members may not have a payload and are therefore "skipped" when processing a structure.
+The order and the data type of structure members are important to serialize and deserialize structures correctly and must therefore match between all SIL Kit participants.
+
+### The Communication Interface Description
+
+The communication interface description defines the FMU Importer's communication interface toward other SIL Kit participants.
+It is described via a YAML file that can be provided via the command line interface of the FMU Importer (see [Running the FMU Importer]((#running-the-fmu-importer))).
+Providing a communication interface description file is mandatory if structures are used, because it defines the order in which structure members are serialized.
+
+```yaml
+    Version: 1
+
+    EnumDefinitions:
+    - ...
+
+    StructDefinitions:
+    - ...
+
+    Publishers:
+    - ...
+
+    Subscribers:
+    - ...
+```
+### **Available Options in Communication Interface Description**
+
+| Name                                        | Type           | Description |
+|---------------------------------------------|----------------|-------------|
+| Version                                     | Integer        | The version of the config format (mandatory). |
+| [EnumDefinitions](#enumeration-definitions) | Array\<Object> | Used to define enumerations and their items. |
+| [StructDefinitions](#structure-definitions) | Array\<Object> | Used to define structures. |
+| [Publishers](#publishers-and-subscribers)   | Array\<Object> | Used to declare publisher services. This could be a scalar (including enums), list, or structure. |
+| [Subscribers](#publishers-and-subscribers)  | Array\<Object> | Used to declare subscriber services. This could be a scalar (including enums), list, or structure. |
+
+#### Enumeration Definitions
+
+| Name         | Type           | Description |
+|--------------|----------------|-------------|
+| Name         | String         | Name of the enumeration definition. |
+| IndexType    | String         | Type of the items' values. Defaults to Int64. |
+| Items        | Array\<Object> | List of items that belong to the enumeration. |
+
+Each element of the `Item` list is of the form `Name : Value`.
+
+Example:  
+```yaml
+EnumDefinitions:
+  - Name: EnumSample
+    Items:
+      - "FirstEnumItem" : 1
+      - "SecondEnumItem" : 7
+```
+
+#### Structure Definitions
+
+| Name         | Type           | Description |
+|--------------|----------------|-------------|
+| Name         | String         | Name of the structure definition. |
+| Members      | Array\<Object> | List of members that belong to the structure. |
+
+Each element of the `Members` list must be in the form `Name : Type` where `Type` is a [Supported Data Type](#supported-data-types), or a structure / enumeration defined in this file.
+Example:  
+```yaml
+StructDefinitions:
+  - Name: StructSample
+    Members:
+      - Member1: int
+      - Member2: double
+      - Member3: EnumSample # reference to the enum defined in the example above
+```
+
+#### Publishers and Subscribers
+
+Publishers and Subscribers are lists of `Name : Type` elements, identical to struct members.
+See [Supported Data Types](#supported-data-types) for a list of valid types.
+Example:  
+```yaml
+Publishers:
+  - PubInt : Int
+  - PubDouble : double
+  - PubEnum : EnumSample
+  - PubStruct : StructSample
+  
+Subscribers:
+  - SubInt : Int
+  - SubDouble : double
+  - SubEnum : EnumSample
+  - SubStruct : StructSample
+```
+
+### Optional Data Types
+
+In SIL Kit, variables (including structures) and structure members may be optional.
+Optional members provide information if their payload is available.
+Optional and non-optional data types are not compatible.
+In the configuration and the communication interface description, an optional data type is indicated by adding a question mark at the end of the type description.
+For example, a communication interface description may specify the following publishers:
+
+```yaml
+Publishers:
+   NonOptionalIntArray : List<Int32> #non-optional list of 32-bit integers
+   OptionalIntArray : List<Int32>? #Optional list of non-optional 32-bit integers
+```
+
+The FMU Importer does not support optional data types within a list, since in FMI 3.0, arrays must be provided without missing entries.
+However, lists themselves may be optional (as shown in the example).
+Optional data types can be declared in the communication interface description and in the FMU Importer configuration file.
+> Note: Variables must have the same type in the FMU and comm. interface description.  
+If the types deviate, an explicit variables transformation must be defined via the FMU Importer configuration file.
+
+### Variable Naming Convention in FMI and the FMU Importer
+
+With a few exceptions (e.g., string, binary), the FMI standard does not define any non-scalar data types.
+To indicate, that a group of variables (or other groups) belongs together, the FMI standard defines a variable naming convention.
+Essentially, a variable's name is separated through periods (`.`) to indicate its structure.
+For example, the structure of the three variables
+```
+gps.timecode
+gps.position.latitude
+gps.position.longitude
+```
+corresponds to the following structure:
+```
+gps
+  timecode
+  position
+    latitude
+    longitude
+```
+
+More details about FMI's naming convention can be found in the FMI standard ([link to corresponding section in FMI 3.0](https://fmi-standard.org/docs/3.0.1/#namingSection)).
+
+If the FMU defines its naming convention to be 'structured', the FMU Importer uses it to automatically map FMU variables to SIL Kit structures defined in the [Communication Interface Description](#the-communication-interface-description).
+If an FMU does not explicitly use the structured naming convention, users can activate the detection of the naming convention by setting `AlwaysUseStructuredNamingConvention` in the FMU Importer configuration file to `true` (see [Available Options in Configuration](#available-options-in-configuration)).
+
+> Note: It is possible to manually 'map' a variable, which is not named like a structure member, by assigning it a topic name that corresponds to the name it should have based on the structured naming convention.
+
 ---
 
 ## **Configuring the FMU and the FMU Importer**
@@ -242,7 +402,7 @@ Further, it allows to override the default values of parameter variables.
 The configuration file is expected to be a valid YAML file with the following outline:
 
 ```yaml
-    Version: 1
+    Version: 2
 
     Include:
     - ...
@@ -253,9 +413,17 @@ The configuration file is expected to be a valid YAML file with the following ou
     VariableMappings:
     - ...
 
+    AlwaysUseStructuredNamingConvention: False
+
     IgnoreUnmappedVariables: False
 
     StepSize: 1000000
+
+    Namespace: MyNamespace
+
+    PublisherInstance: OneInstance
+
+    SubscriberInstance: AnotherInstance
 ```
 
 To help write this file, you may use the schema named `FmuImporterConfiguration.schema.json` in the root directory of the release package.
@@ -265,17 +433,25 @@ For instance, if you use Visual Studio Code with the Red Hat YAML extension, you
 # yaml-language-server: $schema=</path/to/FmuImporter>/FmuImporterConfiguration.schema.json
 ```
 
-### **Available Options**
+### **Available Options in Configuration**
 
-| Setting Name                          | Type           | Description |
+| Name                                  | Type           | Description |
 |---------------------------------------|----------------|-------------|
 | Version                               | Integer        | The version of the config format (mandatory). |
 | [Include](#include)                   | Array\<String> | Used to include contents of other valid FMU Importer configuration files. |
 | [Parameters](#parameters)             | Array\<Object> | Used to override default values of parameters. |
 | [VariableMappings](#variablemappings) | Array\<Object> | Used to modify how a variable is represented in a SIL Kit simulation. |
+| AlwaysUseStructuredNamingConvention   | Boolean        | Force usage of variable naming convention for automatic structure mapping (see [Variable Naming Convention in FMI and the FMU Importer](#variable-naming-convention-in-fmi-and-the-fmu-importer)). |
 | IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
 | StepSize                              | Integer        | Simulation step size in ns. Overrides step size provided by FMU (if available). |
+| Namespace                             | String         | Namespace for all SIL Kit publishers and subscribers (only used for disambiguation - do not use if not necessary). |
+| PublisherInstance                     | String         | Instance name for all SIL Kit publishers (only use to disambiguate publishers with the same name - do not use if not necessary). |
+| SubscriberInstance                    | String         | Instance name for all SIL Kit subscribers (only use to disambiguate publishers with the same name - do not use if not necessary). |
 
+The options `Namespace`, `PublisherInstance`, and `SubscriberInstance` help to disambiguate if multiple SIL Kit participants provide data with the same topic name.
+Only Publishers / Subscribers with the same instance name and namespace will exchange data.
+If the options are not set, all data will be received, and sent data will not be discernible.
+> These options may negatively impact the performance of the SIL Kit simulation. If possible, disambiguation should be done by renaming the topic names via [transformations](#variablemappingstransformation)
 #### **_Include_**
 
 Used to include contents of other valid FMU Importer configuration files.
@@ -297,7 +473,7 @@ The paths to the included files can either absolute or relative to the including
 Used to override default values of parameters.
 Each entry of the list must have the following attributes:
 
-| Attribute Name | Type   | Description |
+| Name           | Type   | Description |
 |----------------|--------|-------------|
 | VariableName   | String | Name of the variable in the model description. |
 | Value          | Object | Value of the parameter. Type must match the definition in the model description. |
@@ -331,7 +507,7 @@ Parameters:
 Used to modify how a variable is represented in a SIL Kit simulation.
 The following properties of a variable can be modified:
 
-| Attribute Name                                    | Type   | Description |
+| Name                                              | Type   | Description |
 |---------------------------------------------------|--------|-------------|
 | VariableName                                      | String | Name of the variable in the model description (mandatory). |
 | TopicName                                         | String | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
@@ -359,11 +535,11 @@ At last, the FMU's unit transformation is applied.
 
 The following properties of a variable can be modified:
 
-| Attribute Name   | Type    | Description |
+| Name             | Type    | Description |
 |------------------|---------|-------------|
 | Factor           | Double  | First order part of the linear transformation. Applied before the offset. |
 | Offset           | Double  | Constant offset of the linear transformation. Applied after the factor. |
-| TransmissionType | String  | Data encoding in SIL Kit. If necessary, the data is converted between the SIL Kit and the FMU components. Allowed values: "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64", "Float", "Float32", "Double", "Float64" |
+| TransmissionType | String  | Data encoding in SIL Kit. If necessary, the data is converted between the SIL Kit and the FMU components. See [Supported Data Types](#supported-data-types) for details |
 | ReverseTransform | Boolean | Allows to reverse transformation if original factor and offset are known. |
 
 Syntax:
@@ -374,10 +550,48 @@ VariableMapping:
     Transformation: 
       Factor: <factor-of-linear-transform>
       Offset: <offset-of-linear-transform>
-      TransmissionType: {"Int8"|"Int16"|"Int32"|"Int64"|"UInt8"|"UInt16"|"UInt32"|"UInt64"|"Float"|"Float32"|"Double"|"Float64"}
+      TransmissionType: <see Supported Data Types below>
       ReverseTransform: {true|false}
   - ...
 ```
+#### Supported Data Types
+
+The FMU Importer supports the data type notation of FMI 2.0, 3.0, and their corresponding C# built-in data types.
+
+| FMI 3.0 | FMI 2.0 | C# type | IsConvertible | Description |
+|---------|---------|---------|---------------|--------------|
+| Float32 | -       | float   | &check;       | Floating point number 32 with bits. |
+| Float64 | Real    | double  | &check;       | Floating point number 64 with bits. |
+| Int8    | -       | sbyte   | &check;       | Signed integer with 8 bits. |
+| Int16   | -       | short   | &check;       | Signed integer with 16 bits. |
+| Int32   | Integer | int     | &check;       | Signed integer with 32 bits. |
+| Int64   | -       | long    | &check;       | Signed integer with 64 bits. |
+| UInt8   | -       | byte    | &check;       | Unsigned integer with 8 bits.  |
+| UInt16  | -       | ushort  | &check;       | Unsigned integer with 16 bits. |
+| UInt32  | -       | uint    | &check;       | Unsigned integer with 32 bits. |
+| UInt64  | -       | ulong   | &check;       | Unsigned integer with 64 bits. |
+| Boolean | Boolean | bool    | &cross;       | Boolean with the values `true` or `false` (serialized as 8 bit) |
+| String  | String  | string  | &cross;       | Concatenation of characters. Internally serialized as a list of bytes. |
+| Binary  | -       | byte[]  | &cross;       | byte array or arbitrary length. Internally serialized as a list of bytes. |
+
+Notes:
+* All built-in data types are case-independent.
+* Enumerators are also supported.
+* Convertible data types can be converted into each other (as good as possible).
+Enumerators are not convertible.
+* In FMI 3.0, variables may also be (multi-dimensional) arrays.
+These are declared as lists in the FMU Importer (e.g., `List<Double>`).
+* Non-convertible data types cannot be used in type transformations.
+
+>Note: Currently, the FMU Importer does not support nested lists.
+Therefore, multi-dimensional FMI arrays are handled as their flattened counterparts as defined in [the FMI 3.0 standard](https://fmi-standard.org/docs/3.0.1/#serialization-of-variables).
+This information is primarily important for other SIL Kit applications that want to exchange array data with the FMU Importer.
+
+Members of structures that are not always available when the structure is distributed must be declared to be `optional`.
+This is done by appending a question mark (`?`) at the end of the data type.
+
+> The FMU Importer will never skip optional data when distributing structures.
+However, it is still important to declare the structure's data types correctly, as this impacts the serialization of the structure.
 
 ---
 
