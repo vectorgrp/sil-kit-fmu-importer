@@ -4,7 +4,7 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
-## [1.3.0] - TBD
+## [1.3.0] - 2024-06-27
 
 This version introduces a new feature to bundle several variables to structures and exchange them through one service via SIL Kit.
 
