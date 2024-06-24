@@ -32,6 +32,7 @@ These labels allow to limit the communication between services with the same nam
     * New CLI (see documentation for details, or use the --help argument when calling the exporter)
     * Now supports exporting vCDL files based on an FMU or on a communication interface description
     * Removed the option to export multiple FMUs to a single vCDL
+* Updated SIL Kit to version 4.0.50
 
 ### Fixed
 * If an error occurred while an FMU is loaded, its error will now be handled like other errors (was printed to console before)
