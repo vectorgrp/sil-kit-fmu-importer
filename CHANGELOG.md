@@ -12,21 +12,21 @@ This version introduces a new feature to bundle several variables to structures 
 
 * Added an option 'AlwaysUseStructuredNamingConvention' to the configuration's root level (default: false).
   If set, it activate the structured naming convention detection (and therefore the variable aggregation feature) even if it is not set in the FMU's model description.
-* Added a new communication interface description format that must be provided via ``-i `` or ``--fmu-importer-communication-interface-file`` if variables shall be aggregated to structures.
+* Added a new communication interface description format that must be provided via ``-i `` or ``--fmu-importer-communication-interface-file`` if variables shall be aggregated to structures
 * Added support for optional data types.  
 Optional data types are used in SIL Kit to indicate if the provided data (e.g., a structure member) contains a payload or not.
 Optional data types can be defined in the communication interface description and in the configuration file by appending a question mark at the end of the data type that should be optional.
 * Added label support.  
-By default, the FMU Importer does not use any labels when creating Publish / Subscribe services.
-The `Instance` and `Namespace` labels can be set by configuring PublisherInstance, SubscriberInstance, and Namespace in the root of the configuration file.
-These labels allow to limit the communication between services with the same namespace / instance name (e.g., if multiple instances of the same FMU are participating in a simulation).
-* Added a new tool (Communication Interface Exporter) to generate a communication interface from an FMU (see documentation for details, or use the --help argument when calling the exporter).
+By default, the FMU Importer does not use any labels when creating publish / subscribe services
+The `Instance` and `Namespace` labels can be set by configuring PublisherInstance, SubscriberInstance, and Namespace in the root of the configuration file
+These labels allow to limit the communication between services with the same namespace / instance name (e.g., if multiple instances of the same FMU are participating in a simulation)
+* Added a new tool (Communication Interface Exporter) to generate a communication interface from an FMU (see documentation for details, or use the --help argument when calling the exporter)
 
 ### Changed
 
-* If the value of an enumeration-typed variable is set, strings are now considered referring to an enumerator's name, whereas integers refer to an enumerators' value.
+* If the value of an enumeration-typed variable is set, strings are now considered referring to an enumerator's name, whereas integers refer to an enumerators' value
 * Temporarily extracted FMUs are now deleted by default
-    * If there is a folder with the extracted FMU in the same directory as the FMU, this extracted content will be used and remains there after the FMU Importer stops.
+    * If there is a folder with the extracted FMU in the same directory as the FMU, this extracted content will be used and remains there after the FMU Importer stops
     * Otherwise, the FMU is now extracted to a temporary directory. This directory and its contents are deleted after the simulation run.
 * Reworked the vCDL Exporter
     * New CLI (see documentation for details, or use the --help argument when calling the exporter)
@@ -36,6 +36,7 @@ These labels allow to limit the communication between services with the same nam
 
 ### Fixed
 * If an error occurred while an FMU is loaded, its error will now be handled like other errors (was printed to console before)
+* Fixed incorrect export of array variables by the vCDL Exporter (did not detect array variables correctly and exported them as scalars before)
 
 ---
 

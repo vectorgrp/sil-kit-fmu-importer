@@ -147,6 +147,11 @@ public class FmuExporter : BaseExporter
 
     AddEnumerationDefinitions(modelDescription, interfaceSb);
 
+    foreach (var arrayVar in modelDescription.ArrayVariables.Values)
+    {
+      arrayVar.InitializeArrayLength(modelDescription.Variables);
+    }
+
     foreach (var variable in modelDescription.Variables)
     {
       var vValue = variable.Value;
@@ -154,22 +159,16 @@ public class FmuExporter : BaseExporter
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
       string typeString;
-      if (vValue.Dimensions == null || vValue.Dimensions.Length == 0)
-      {
-        // assume scalar
-        if (vValue.VariableType is VariableTypes.EnumFmi3)
-        {
-          typeString = vValue.TypeDefinition!.Name;
-        }
-        else
-        {
-          typeString = GetVarTypeString(vValue.VariableType);
-        }
-      }
-      else
+      // assume scalar
+      typeString = vValue.VariableType is VariableTypes.EnumFmi3
+                     ? vValue.TypeDefinition!.Name
+                     : GetVarTypeString(vValue.VariableType);
+
+      // surround with list if more than one dimension is detected
+      if (vValue.Dimensions != null && vValue.Dimensions.Length > 0)
       {
         // assume array of scalar
-        typeString = $"list<{GetVarTypeString(vValue.VariableType)}> ";
+        typeString = $"list<{typeString}>";
       }
 
       var v = new VcdlVariable()
@@ -177,6 +176,7 @@ public class FmuExporter : BaseExporter
         Name = vValue.Name,
         Type = typeString
       };
+
       switch (vValue.Causality)
       {
         case Variable.Causalities.Input:
