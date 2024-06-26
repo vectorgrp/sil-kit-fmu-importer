@@ -344,23 +344,19 @@
           "description": "If 'true', prevent synchronization of variables that are not listed in VariableMappings (including parameters).",
           "default": false
         },
+        "Instance": {
+          "type": "string",
+          "description": "Instance name for all publishers and subscribers (only use for disambiguation - do not use if not necessary)."
+        },
         "Namespace": {
           "type": "string",
           "description": "Namespace for all publishers and subscribers (only use for disambiguation - do not use if not necessary)."
-        },
-        "PublisherInstance": {
-          "type": "string",
-          "description": "Instance name for all publishers (only use to disambiguate publishers with the same name - do not use if not necessary)."
         },
         "StepSize": {
           "type": "integer",
           "description": "Amount of time in nanoseconds between two simulation time steps. Defaults to the step size defined inside the FMU's model description if present, or 1 ms if not.",
           "minimum": 1,
-          "default" : 1000000
-        },
-        "SubscriberInstance": {
-          "type": "string",
-          "description": "Instance name for all subscribers (only use to disambiguate publishers with the same name - do not use if not necessary)."
+          "default": 1000000
         },
         "VariableMappings": {
           "type": "array",

@@ -421,9 +421,7 @@ The configuration file is expected to be a valid YAML file with the following ou
 
     Namespace: MyNamespace
 
-    PublisherInstance: OneInstance
-
-    SubscriberInstance: AnotherInstance
+    Instance: MyInstanceName
 ```
 
 To help write this file, you may use the schema named `FmuImporterConfiguration.schema.json` in the root directory of the release package.
@@ -445,10 +443,9 @@ For instance, if you use Visual Studio Code with the Red Hat YAML extension, you
 | IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
 | StepSize                              | Integer        | Simulation step size in ns. Overrides step size provided by FMU (if available). |
 | Namespace                             | String         | Namespace for all SIL Kit publishers and subscribers (only used for disambiguation - do not use if not necessary). |
-| PublisherInstance                     | String         | Instance name for all SIL Kit publishers (only use to disambiguate publishers with the same name - do not use if not necessary). |
-| SubscriberInstance                    | String         | Instance name for all SIL Kit subscribers (only use to disambiguate publishers with the same name - do not use if not necessary). |
+| Instance                              | String         | Instance name for all SIL Kit publishers and subscribers (only used for disambiguation - do not use if not necessary). |
 
-The options `Namespace`, `PublisherInstance`, and `SubscriberInstance` help to disambiguate if multiple SIL Kit participants provide data with the same topic name.
+The options `Namespace` and `Instance` help to disambiguate if multiple SIL Kit participants provide data with the same topic name.
 Only Publishers / Subscribers with the same instance name and namespace will exchange data.
 If the options are not set, all data will be received, and sent data will not be discernible.
 > These options may negatively impact the performance of the SIL Kit simulation. If possible, disambiguation should be done by renaming the topic names via [transformations](#variablemappingstransformation)

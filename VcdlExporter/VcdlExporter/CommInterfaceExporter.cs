@@ -72,32 +72,14 @@ public class CommInterfaceExporter : BaseExporter
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
     vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
 
-    var pubSubSameInstance = commInterface.PublisherInstance == commInterface.SubscriberInstance;
-
     // Add interface for providers
-    if (pubSubSameInstance)
-    {
-      AddInterfaceHeader(_interfaceName, null, sb);
-    }
-    else
-    {
-      AddInterfaceHeader(_interfaceName, VcdlCausality.Provider, sb);
-    }
+    AddInterfaceHeader(_interfaceName, null, sb);
 
     AddInterfaceBody(vcdlProviderVariables, VcdlCausality.Provider, sb);
 
-    if (pubSubSameInstance)
+    if (vcdlProviderVariables.Count > 0 && vcdlConsumerVariables.Count > 0)
     {
-      if (vcdlProviderVariables.Count > 0 && vcdlConsumerVariables.Count > 0)
-      {
-        sb.AppendLine();
-      }
-    }
-    else
-    {
-      AddInterfaceFooter(sb);
-
-      AddInterfaceHeader(_interfaceName, VcdlCausality.Consumer, sb);
+      sb.AppendLine();
     }
 
     AddInterfaceBody(vcdlConsumerVariables, VcdlCausality.Consumer, sb);
@@ -105,21 +87,7 @@ public class CommInterfaceExporter : BaseExporter
     AddInterfaceFooter(sb);
 
     // Add object instances
-    if (pubSubSameInstance)
-    {
-      AddObjectInstance(_interfaceName, commInterface.PublisherInstance ?? _defaultInstanceName, sb);
-    }
-    else
-    {
-      AddObjectInstance(
-        _interfaceName + "_Provider",
-        commInterface.PublisherInstance ?? _defaultInstanceName,
-        sb);
-      AddObjectInstance(
-        _interfaceName + "_Consumer",
-        commInterface.SubscriberInstance ?? _defaultInstanceName,
-        sb);
-    }
+    AddObjectInstance(_interfaceName, commInterface.Instance ?? _defaultInstanceName, sb);
 
     // Add vCDL footer
     AddVcdlFooter(sb);

@@ -279,7 +279,7 @@ public class FmuImporter
       SilKitDataManager.CreateSubscriber(
         configuredVariable.FmuVariableDefinition.Name,
         configuredVariable.TopicName,
-        _fmuImporterConfig.SubscriberInstance,
+        _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
     }
@@ -290,7 +290,7 @@ public class FmuImporter
       SilKitDataManager.CreateSubscriber(
         configuredStructure.Name,
         configuredStructure.Name,
-        _fmuImporterConfig.SubscriberInstance,
+        _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredStructure.StructureId));
     }
@@ -312,7 +312,7 @@ public class FmuImporter
       SilKitDataManager.CreatePublisher(
         configuredVariable.FmuVariableDefinition.Name,
         configuredVariable.TopicName,
-        _fmuImporterConfig.PublisherInstance,
+        _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
         0);
@@ -324,7 +324,7 @@ public class FmuImporter
       SilKitDataManager.CreatePublisher(
         configuredStructure.Name,
         configuredStructure.Name,
-        _fmuImporterConfig.PublisherInstance,
+        _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredStructure.StructureId),
         0);
@@ -347,7 +347,7 @@ public class FmuImporter
       SilKitDataManager.CreatePublisher(
         configuredVariable.FmuVariableDefinition.Name,
         configuredVariable.TopicName,
-        _fmuImporterConfig.PublisherInstance,
+        _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
         0);

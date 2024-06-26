@@ -18,7 +18,7 @@ Optional data types are used in SIL Kit to indicate if the provided data (e.g., 
 Optional data types can be defined in the communication interface description and in the configuration file by appending a question mark at the end of the data type that should be optional.
 * Added label support.  
 By default, the FMU Importer does not use any labels when creating publish / subscribe services
-The `Instance` and `Namespace` labels can be set by configuring PublisherInstance, SubscriberInstance, and Namespace in the root of the configuration file
+The "Instance" and "Namespace" labels can be set by configuring `Instance` and `Namespace` in the root of the configuration file
 These labels allow to limit the communication between services with the same namespace / instance name (e.g., if multiple instances of the same FMU are participating in a simulation)
 * Added a new tool (Communication Interface Exporter) to generate a communication interface from an FMU (see documentation for details, or use the --help argument when calling the exporter)
 
