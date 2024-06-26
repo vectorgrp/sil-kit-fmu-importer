@@ -9,6 +9,11 @@ public static class StructuredVariableParser
 {
   public static StructuredNameContainer Parse(string variableName)
   {
+    return Parse(variableName, null);
+  }
+
+  public static StructuredNameContainer Parse(string variableName, Action<LogSeverity, string>? logCallback)
+  {
     try
     {
       var result = new List<string>();
@@ -23,7 +28,7 @@ public static class StructuredVariableParser
         throw new ParserException("variable names must not start with the separator character (.)");
       }
 
-      Parse(variableName.AsSpan(), result);
+      Parse(variableName.AsSpan(), result, logCallback);
 
       return new StructuredNameContainer(result);
     }
@@ -33,7 +38,10 @@ public static class StructuredVariableParser
     }
   }
 
-  private static void CheckIndexAndContinue(ReadOnlySpan<char> input, int lastProcessedIndex, List<string> path)
+  private static bool sQuotedPartsWarningIssuedOnce = false;
+
+  private static void CheckIndexAndContinue(
+    ReadOnlySpan<char> input, int lastProcessedIndex, List<string> path, Action<LogSeverity, string>? logCallback)
   {
     // lastProcessedIndex     = index of the last character of the processed substring
     // lastProcessedIndex + 1 = separator or end of input
@@ -63,10 +71,10 @@ public static class StructuredVariableParser
       throw new ParserException("Two consecutive separator characters detected.");
     }
 
-    Parse(input.Slice(lastProcessedIndex + 2), path);
+    Parse(input.Slice(lastProcessedIndex + 2), path, logCallback);
   }
 
-  private static void Parse(ReadOnlySpan<char> input, List<string> path)
+  private static void Parse(ReadOnlySpan<char> input, List<string> path, Action<LogSeverity, string>? logCallback)
   {
     if (input.IsEmpty)
     {
@@ -86,13 +94,21 @@ public static class StructuredVariableParser
 
     if (nextQuoteIndex == 0)
     {
+      if (!sQuotedPartsWarningIssuedOnce)
+      {
+        logCallback?.Invoke(
+          LogSeverity.Warning,
+          "FMUs with quotes in variable names may cause problems or unexpected behavior in other applications.");
+        sQuotedPartsWarningIssuedOnce = true;
+      }
+
       // first character is an apostrophe -> find index of end of quoted name
-      var endOfQuotedNameIndex = FindEndOfQuoteName(input.Slice(1));
-      // add the quoted variable without apostrophes... 
-      path.Add(input.Slice(1, endOfQuotedNameIndex).ToString());
+      var endOfQuotedNameIndex = FindEndOfQuoteName(input.Slice(1)) + 1;
+      // add the quoted variable with its apostrophes... 
+      path.Add(input.Slice(0, endOfQuotedNameIndex + 1).ToString());
       // ... and continue recursively with the remaining input
       // provide index of last quote as index
-      nextParseIndex = endOfQuotedNameIndex + 1;
+      nextParseIndex = endOfQuotedNameIndex;
     }
     else
     {
@@ -102,7 +118,7 @@ public static class StructuredVariableParser
 
     // process input up to the next quoted variable...
     // ... and continue recursively with the remaining input
-    CheckIndexAndContinue(input, nextParseIndex, path);
+    CheckIndexAndContinue(input, nextParseIndex, path, logCallback);
   }
 
   private static int FindEndOfQuoteName(ReadOnlySpan<char> input)

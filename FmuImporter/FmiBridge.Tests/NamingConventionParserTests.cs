@@ -49,8 +49,8 @@ public class NamingConventionParserTests
 
     var structuredNameList = new List<string>
     {
-      "qtest1",
-      "qtest2"
+      "'qtest1'",
+      "'qtest2'"
     };
 
     Assert.That(() => StructuredVariableParser.Parse(variableName).Path, Is.EqualTo(structuredNameList));
@@ -64,7 +64,7 @@ public class NamingConventionParserTests
     var structuredNameList = new List<string>
     {
       "test1",
-      "qtest1"
+      "'qtest1'"
     };
 
     Assert.That(() => StructuredVariableParser.Parse(variableName).Path, Is.EqualTo(structuredNameList));
@@ -77,7 +77,7 @@ public class NamingConventionParserTests
 
     var structuredNameList = new List<string>
     {
-      "qtest1",
+      "'qtest1'",
       "test1"
     };
 
@@ -91,7 +91,7 @@ public class NamingConventionParserTests
 
     var structuredNameList = new List<string>
     {
-      "qtest1.qtestX"
+      "'qtest1.qtestX'"
     };
 
     Assert.That(() => StructuredVariableParser.Parse(variableName).Path, Is.EqualTo(structuredNameList));
@@ -104,7 +104,7 @@ public class NamingConventionParserTests
 
     var structuredNameList = new List<string>
     {
-      "qtest1\\'qtestX"
+      "'qtest1\\'qtestX'"
     };
 
     Assert.That(() => StructuredVariableParser.Parse(variableName).Path, Is.EqualTo(structuredNameList));

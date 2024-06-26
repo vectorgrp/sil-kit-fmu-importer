@@ -30,12 +30,16 @@ public class FmuDataManager
   public Dictionary<long, ConfiguredStructure> OutputConfiguredStructures { get; }
   private readonly Dictionary<string, ConfiguredStructure> _outputConfiguredStructureByName;
 
+  private readonly Action<LogSeverity, string> _logCallback;
+
   public FmuDataManager(
     IFmiBindingCommon binding,
-    ModelDescription modelDescription)
+    ModelDescription modelDescription,
+    Action<LogSeverity, string> logCallback)
   {
     Binding = binding;
     ModelDescription = modelDescription;
+    _logCallback = logCallback;
 
     ParameterConfiguredVariables = new List<ConfiguredVariable>();
     ParameterConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
@@ -126,7 +130,7 @@ public class FmuDataManager
       if (useStructuredNamingConvention)
       {
         var topic = configuredVariable.TopicName;
-        configuredVariable.StructuredPath = StructuredVariableParser.Parse(topic);
+        configuredVariable.StructuredPath = StructuredVariableParser.Parse(topic, _logCallback);
       }
       else
       {

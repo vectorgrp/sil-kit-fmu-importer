@@ -141,7 +141,7 @@ public class FmuImporter
       FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
 
       // Initialize FmuDataManager
-      FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription);
+      FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog);
 
       PrepareConfiguredVariables();
     }
