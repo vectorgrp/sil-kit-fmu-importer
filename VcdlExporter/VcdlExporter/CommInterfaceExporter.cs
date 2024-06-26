@@ -13,7 +13,8 @@ public class CommInterfaceExporter : BaseExporter
   public string VcdlPath { get; }
 
   private readonly string _interfaceName;
-  private readonly string _defaultInstanceName = "Default";
+  private readonly string _defaultInstanceName = "FmuInstance";
+  private readonly string _defaultNamespace = "FMU";
 
   public CommInterfaceExporter(string communicationInterfaceDescriptionPath, string vcdlPath, string interfaceName)
   {
@@ -30,7 +31,7 @@ public class CommInterfaceExporter : BaseExporter
     var sb = new StringBuilder();
 
     // Add vCDL header
-    AddVcdlHeader(sb, commInterface.Namespace ?? "DefaultNamespace");
+    AddVcdlHeader(sb, commInterface.Namespace ?? _defaultNamespace);
 
     // Add enum definitions
     AddEnumerationDefinitions(commInterface, sb);
