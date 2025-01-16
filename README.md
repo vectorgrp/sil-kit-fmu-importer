@@ -52,7 +52,7 @@ The SIL Kit FMU Importer has two roles
 ## **Setup**
 
 The SIL Kit FMU Importer ships as prebuilt portable packages.
-This means that the FMU Importer requires an installed .NET 6 Runtime on the target machine.
+This means that the FMU Importer requires an installed .NET Runtime on the target machine.
 The package itself provides executables for Windows and Linux.
 The Linux distributables are tested on Ubuntu 22.04, but they should also run on other similar distributions.
 
@@ -60,9 +60,9 @@ Please refer to the section [Build Instructions](#build-instructions) if you wan
 
 ### **Requirements**
 
-- .NET 6
-  - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) has guides on how to get .NET 6 for your OS
-  - May also be installed as part of a Visual Studio (v17.2+ / 2022) installation
+- .NET 8
+  - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) has guides on how to get .NET 8 for your OS
+  - May also be installed as part of a Visual Studio (v17.8+ / 2022) installation
 - SIL Kit* (only needed to run the FMU Importer; not required for build step)
   - Package can be downloaded from [GitHub (SIL Kit)](https://github.com/vectorgrp/sil-kit/releases)
   - The FMU Importer was tested with SIL Kit 4.0.50 and prebuilt packages ship with this SIL Kit version
@@ -85,7 +85,7 @@ To build the FMU Importer itself, open a terminal in the project's root director
 
 - Linux: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64`
 
-This builds the FMU Importer with a `Debug` configuration (`-c Debug`) and the Importer will need an installed DotNet 6.0 (`--no-self-contained`).
+This builds the FMU Importer with a `Debug` configuration (`-c Debug`) and the Importer will need an installed DotNet 8.0 (`--no-self-contained`).
 
 You can find a separate section below on how to use the importer.
 

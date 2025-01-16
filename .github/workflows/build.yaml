@@ -1,4 +1,4 @@
-name: Build the SIL Kit FMU Importer (.NET 6) (internal)
+name: Build the SIL Kit FMU Importer (internal)
 
 # Define the triggers for this workflow
 on:
@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
     - name: Build Tests
@@ -62,7 +62,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
     - name: Build Tests
