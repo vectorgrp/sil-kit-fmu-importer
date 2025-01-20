@@ -59,7 +59,9 @@ public class Variable
   public ulong FlattenedArrayLength { get; private set; } = 1;
   public bool IsScalar { get; set; } = true;
 
-  public Variable(fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
+  public Variable(
+    fmi3AbstractVariable input, Dictionary<string, TypeDefinition> typeDefinitions,
+    Action<LogSeverity, string> logCallback)
   {
     _originalVariable = input;
 
@@ -131,8 +133,14 @@ public class Variable
         }
 
         break;
+      case fmi3Clock:
+        logCallback.Invoke(
+          LogSeverity.Warning,
+          $"Type 'Clock' of variable '{Name}' is not supported yet. Discarding variable.");
+        VariableType = VariableTypes.Clock;
+        break;
       default:
-        throw new InvalidDataException("The FMI 3 datatype is unknown.");
+        throw new InvalidDataException($"The FMI 3 datatype of variable {Name} is unknown.");
     }
 
     switch (input.causality)

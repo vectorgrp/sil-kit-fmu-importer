@@ -133,7 +133,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   {
     try
     {
-      return ModelLoader.LoadModelFromExtractedPath(extractedFolderPath);
+      return ModelLoader.LoadModelFromExtractedPath(extractedFolderPath, _loggerAction!);
     }
     catch (Exception e)
     {

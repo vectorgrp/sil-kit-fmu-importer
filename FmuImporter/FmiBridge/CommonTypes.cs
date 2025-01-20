@@ -27,5 +27,6 @@ public enum VariableTypes
   String,
   Binary,
   EnumFmi2,
-  EnumFmi3
+  EnumFmi3,
+  Clock
 }

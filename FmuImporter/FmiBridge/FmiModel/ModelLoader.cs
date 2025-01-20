@@ -52,7 +52,8 @@ public class ModelLoader
     }
   }
 
-  internal static ModelDescription LoadModelFromExtractedPath(string extractedFmuPath)
+  internal static ModelDescription LoadModelFromExtractedPath(
+    string extractedFmuPath, Action<LogSeverity, string> logCallback)
   {
     var modelDescriptionPath = $"{extractedFmuPath}/modelDescription.xml";
     if (!File.Exists(modelDescriptionPath))
@@ -74,7 +75,7 @@ public class ModelLoader
         var fmiModelDescription = ser.Deserialize(fileStream) as Fmi2.fmiModelDescription;
         if (fmiModelDescription != null)
         {
-          commonDescription = new ModelDescription(fmiModelDescription);
+          commonDescription = new ModelDescription(fmiModelDescription, logCallback);
         }
 
         break;
@@ -85,7 +86,7 @@ public class ModelLoader
         var fmiModelDescription = ser.Deserialize(fileStream) as Fmi3.fmiModelDescription;
         if (fmiModelDescription != null)
         {
-          commonDescription = new ModelDescription(fmiModelDescription);
+          commonDescription = new ModelDescription(fmiModelDescription, logCallback);
         }
 
         break;

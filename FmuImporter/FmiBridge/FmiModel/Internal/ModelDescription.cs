@@ -42,7 +42,7 @@ public class ModelDescription
 
   public ModelStructure ModelStructure { get; set; }
 
-  public ModelDescription(Fmi3.fmiModelDescription input)
+  public ModelDescription(Fmi3.fmiModelDescription input, Action<LogSeverity, string> logCallback)
   {
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
@@ -77,13 +77,13 @@ public class ModelDescription
 
     if (input.ModelVariables != null)
     {
-      InitVariableMap(input.ModelVariables);
+      InitVariableMap(input.ModelVariables, logCallback);
     }
 
     ModelStructure = new ModelStructure(input.ModelStructure);
   }
 
-  public ModelDescription(Fmi2.fmiModelDescription input)
+  public ModelDescription(Fmi2.fmiModelDescription input, Action<LogSeverity, string> logCallback)
   {
     // init of local fields & properties
     UnitDefinitions = new Dictionary<string, UnitDefinition>();
@@ -123,7 +123,7 @@ public class ModelDescription
 
     if (input.ModelVariables != null)
     {
-      InitVariableMap(input.ModelVariables);
+      InitVariableMap(input.ModelVariables, logCallback);
     }
 
     ModelStructure = new ModelStructure(input.ModelStructure, input.ModelVariables!);
@@ -280,7 +280,7 @@ public class ModelDescription
     return UnitDefinitions.ContainsKey(unitName);
   }
 
-  private void InitVariableMap(Fmi3.fmiModelDescriptionModelVariables input)
+  private void InitVariableMap(Fmi3.fmiModelDescriptionModelVariables input, Action<LogSeverity, string> logCallback)
   {
     if (input.Items == null)
     {
@@ -289,12 +289,18 @@ public class ModelDescription
 
     foreach (var fmiModelDescriptionModelVariable in input.Items)
     {
-      var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions);
+      var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions, logCallback);
+      if (v.VariableType == VariableTypes.Clock)
+      {
+        continue;
+      }
+
       var result = Variables.TryAdd(v.ValueReference, v);
       if (!result)
       {
-        throw new ArgumentException(
-          "Failed to parse model description: multiple variables have the same value reference.");
+        logCallback.Invoke(
+          LogSeverity.Warning,
+          $"Variable {v.Name} has the same value reference ({v.ValueReference}) than a previous variable entry. Discarding duplicate.");
       }
 
       if (!v.IsScalar)
@@ -311,7 +317,7 @@ public class ModelDescription
     }
   }
 
-  private void InitVariableMap(Fmi2.fmiModelDescriptionModelVariables input)
+  private void InitVariableMap(Fmi2.fmiModelDescriptionModelVariables input, Action<LogSeverity, string> logCallback)
   {
     if (input.ScalarVariable == null)
     {
@@ -324,8 +330,9 @@ public class ModelDescription
       var result = Variables.TryAdd(v.ValueReference, v);
       if (!result)
       {
-        throw new ModelDescriptionException(
-          "Failed to parse model description: multiple variables have the same valueReference.");
+        logCallback.Invoke(
+          LogSeverity.Warning,
+          $"Variable {v.Name} has the same value reference ({v.ValueReference}) than a previous variable entry. Discarding duplicate.");
       }
 
       result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
