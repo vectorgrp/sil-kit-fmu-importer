@@ -181,7 +181,7 @@ Therefore, it only supports FMUs that can run in `co-simulation` mode.
 
 The FMU Importer exposes an FMU's variables as DataPublisher and DataSubscriber services to other SIL Kit simulation participants.
 By default, the variable's name is used as the topic name by the SIL Kit service.
-The FMU Importer maps the different kinds of variable types as follows:
+The FMU Importer will always map the different kinds of variable types as follows:
 | Variable Type         | Created Service |
 |-----------------------|-----------------|
 | Input                 | DataSubscriber  |
@@ -190,8 +190,8 @@ The FMU Importer maps the different kinds of variable types as follows:
 | Parameter             | DataPublisher   |
 | Structural parameter  | DataPublisher   |
 
-It is also possible to change the default mapping.
-See [Configuring the FMU Importer](#configuring-the-fmu-importer) for details.
+It is also possible to change the default name and type mapping.
+See [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer) for details.
 
 ### **Time and Lifecycle Management**
 The FMU Importer uses the simulation step size provided by the FMU's model description as simulation step size for the FMU, if it is available.
