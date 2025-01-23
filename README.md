@@ -176,6 +176,7 @@ From an FMU's point of view, the FMU Importer acts as a master (FMI 2.0)/importe
 As such, the Importer will handle the data exchange via SIL Kit, the time management, and the lifecycle of the FMU.
 The FMU Importer does not provide any numeric solvers or interpolation mechanisms.
 Therefore, it only supports FMUs that can run in `co-simulation` mode.
+In addition, the FMU Importer does not support `Event Mode`. As a result `Clocks` are currently also not supported. That means, if your FMU is defining `hasEventMode="true"` (but is not defining `Clocks`) you must take care of the events in your FMU internally.
 
 ### **Variable Representation**
 

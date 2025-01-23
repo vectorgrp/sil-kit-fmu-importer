@@ -64,6 +64,11 @@ public class ModelDescription
 
     // Node init
     CoSimulation = new CoSimulation(input.CoSimulation);
+    if (input.CoSimulation.hasEventMode)
+    {
+      logCallback.Invoke(LogSeverity.Information, "Event Mode is not yet supported.");
+    }
+
     DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
     if (input.UnitDefinitions != null)
     {
