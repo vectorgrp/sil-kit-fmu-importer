@@ -1,4 +1,13 @@
 # SIL Kit FMU Importer
+[![Vector Informatik](https://img.shields.io/badge/Vector%20Informatik-rgb(180,0,50))](https://www.vector.com/int/en/)
+[![SocialNetwork](https://img.shields.io/badge/vectorgrp%20LinkedIn®-rgb(0,113,176))](https://www.linkedin.com/company/vectorgrp/)\
+[![ReleaseBadge](https://img.shields.io/github/v/release/vectorgrp/sil-kit-fmu-importer.svg)](https://github.com/vectorgrp/sil-kit-fmu-importer/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/vectorgrp/sil-kit-fmu-importer/blob/main/LICENSE)
+[![SIL Kit](https://img.shields.io/badge/SIL%20Kit-353b42?logo=github&logoColor=969da4)](https://github.com/vectorgrp/sil-kit)
+[![FMIStandard](https://img.shields.io/badge/FMI%20Standard-353b42)](https://fmi-standard.org/)\
+[![Build&Test](https://github.com/vectorgrp/sil-kit-fmu-importer/actions/workflows/build-public.yaml/badge.svg)](https://github.com/vectorgrp/sil-kit-fmu-importer/actions/workflows/build-public.yaml)
+[![Build&Release](https://github.com/vectorgrp/sil-kit-fmu-importer/actions/workflows/release-public.yaml/badge.svg)](https://github.com/vectorgrp/sil-kit-fmu-importer/actions/workflows/release-public.yaml)
+
 
 The SIL Kit FMU Importer is an extension for SIL Kit (downloadable on [GitHub](https://github.com/vectorgrp/sil-kit); documentation on [github.io](https://vectorgrp.github.io/sil-kit-docs/)) that allows to import Functional Mockup Units (FMUs, see [https://fmi-standard.org](https://fmi-standard.org/)) as SIL Kit participants and run them together with other participants (which may be other FMUs or other SIL Kit participants).
 
@@ -6,33 +15,36 @@ The FMU Importer is designed as a headless tool that does not need any user inte
 Its behavior is configured by configuration files that are passed during launch.
 
 ## Table of Contents
-
-1. [Overview of FMI](#overview-of-fmi)
-2. [Setup](#setup)
-    1. [Requirements](#requirements)
-    2. [Build Instructions](#build-instructions)
-        1. [FMU Importer](#fmu-importer)
-        2. [vCDL Exporter](#vcdl-exporter)
-        3. [Communication Interface Exporter](#communication-interface-exporter)
-3. [Running the FMU Importer](#running-the-fmu-importer)
-4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
-    1. [Variable Representation](#variable-representation)
-    2. [Time and Lifecycle Management](#time-and-lifecycle-management)
-    3. [Data Synchronization](#data-synchronization)
-5. [Integration in SIL Kit Setups With Complex Data Structures](#integration-in-sil-kit-setups-with-complex-data-structures)
-    1. [Structures in SIL Kit](#structures-in-sil-kit)
-    2. [The Communication Interface Description](#the-communication-interface-description)
-    2. [Available Options in Communication Interface Description](#available-options-in-communication-interface-description)
-    3. [Optional Data Types](#optional-data-types)
-    4. [Variable Naming Convention in FMI and the FMU Importer](#variable-naming-convention-in-fmi-and-the-fmu-importer)
-6. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
-    1. [Configuration Outline](#configuration-outline)
-    2. [Available Options in Configuration](#available-options-in-configuration)
+  1. [Overview of FMI](#overview-of-fmi)
+  2. [Setup](#setup)
+     1. [Requirements](#requirements)
+     2. [Build Instructions](#build-instructions)
+          1. [FMU Importer](#fmu-importer)
+          2. [vCDL Exporter](#vcdl-exporter)
+          3. [Communication Interface Exporter](#communication-interface-exporter)*
+  3. [Running the FMU Importer](#running-the-fmu-importer)
+  4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
+     1. [Variable Representation](#variable-representation)
+     2. [Time and Lifecycle Management](#time-and-lifecycle-management)
+     3. [Data Synchronization](#data-synchronization)
+  5. [Integration in SIL Kit Setups With Complex Data Structures](#integration-in-sil-kit-setups-with-complex-data-structures)
+     1. [Structures in SIL Kit](#structures-in-sil-kit)
+     2. [The Communication Interface Description](#the-communication-interface-description)
+     3. [Available Options in Communication Interface Description](#available-options-in-communication-interface-description)
+     4. [Enumeration Definitions](#enumeration-definitions)
+     5. [Structure Definitions](#structure-definitions)
+     6. [Publishers and Subscribers](#publishers-and-subscribers)
+     7. [Optional Data Types](#optional-data-types)
+     8. [Variable Naming Convention in FMI and the FMU Importer](#variable-naming-convention-in-fmi-and-the-fmu-importer)
+  6. [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer)
+     1. [Configuration Outline](#configuration-outline)
+     2. [Available Options in Configuration](#available-options-in-configuration)
         1. [Include](#include)
         2. [Parameters](#parameters)
         3. [VariableMappings](#variablemappings)
         4. [VariableMappings.Transformation](#variablemappingstransformation)
-7. [Error Handling](#error-handling)
+        5. [Supported Data Types](#supported-data-types)
+  7. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
 
@@ -450,7 +462,7 @@ The options `Namespace` and `Instance` help to disambiguate if multiple SIL Kit 
 Only Publishers / Subscribers with the same instance name and namespace will exchange data.
 If the options are not set, all data will be received, and sent data will not be discernible.
 > These options may negatively impact the performance of the SIL Kit simulation. If possible, disambiguation should be done by renaming the topic names via [transformations](#variablemappingstransformation)
-#### **_Include_**
+#### *Include_**
 
 Used to include contents of other valid FMU Importer configuration files.
 Imported configuration files are evaluated before local definitions (e.g., parameters or variable mappings) are applied.
