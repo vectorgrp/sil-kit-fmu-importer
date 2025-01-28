@@ -4,6 +4,20 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.4.0] - Unreleased
+
+This version introduces .NET 8 support and improves error handling for unsupported features.
+
+### Changed
+
+* The FMU Importer now supports and requires .NET version 8.0
+* An information will be issued if, inside the Model Description, the "CoSimulation" element has "hasEventMode" set to true.
+
+### Fixed
+
+* Fixed a crash that occurred if an FMU's model description included a Clock variable. They are not supported yet.
+* Fixed a crash that occurred if an FMU's model description had variables with duplicate 'valueRef's. The successive entries are ignored.
+
 ## [1.3.0] - 2024-06-27
 
 This version introduces a new feature to bundle several variables to structures and exchange them through one service via SIL Kit.
