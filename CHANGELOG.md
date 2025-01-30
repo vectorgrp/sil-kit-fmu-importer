@@ -4,7 +4,7 @@ All notable changes to the Vector SIL Kit FMU Importer project shall be document
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
-## [1.4.0] - Unreleased
+## [1.4.0] - 2025-01-30
 
 This version introduces .NET 8 support and improves error handling for unsupported features.
 
