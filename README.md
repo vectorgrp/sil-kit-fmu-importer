@@ -122,6 +122,8 @@ To export a vCDL based on an FMU, you can run the following command from the fol
 `VcdlExporter fmu --input-path <Path/To/FMU> --output-path <Path/To/Exported/vCDL>`
 > Only FMU containers are supported (not already extracted FMUs).
 
+> Note: An FMU with a model description that includes variables named according to the structured naming convention (i.e. containing a `.`) will generate an incorrect vCDL file. To generate a proper one, use a matching communication interface description (e.g. generated with the [Communication Interface Exporter](#communication-interface-exporter) below) and use the following feature to generate the vCDL from it:
+
 To export a vCDL based on a communication interface description, you can run the following command from the folder where your vCDL Exporter binary resides:
 `VcdlExporter communicationInterface --input-path <Path/To/Comm-Interface> --output-path <Path/To/Exported/vCDL> --interface-name Default`
 
