@@ -15,6 +15,8 @@ public class CoSimulation
   public double? FixedInternalStepSize { get; set; }
   public uint MaxOutputDerivativeOrder { get; set; }
 
+  public bool hasEventMode { get; set; }
+
   public CoSimulation(Fmi3.fmi3CoSimulation input)
   {
     ModelIdentifier = input.modelIdentifier;
@@ -24,6 +26,8 @@ public class CoSimulation
     CanHandleVariableCommunicationStepSize = input.canHandleVariableCommunicationStepSize;
     FixedInternalStepSize = (input.fixedInternalStepSizeSpecified) ? input.fixedInternalStepSize : null;
     MaxOutputDerivativeOrder = input.maxOutputDerivativeOrder;
+
+    hasEventMode = input.hasEventMode;
   }
 
   public CoSimulation(Fmi2.fmiModelDescriptionCoSimulation input)
@@ -34,5 +38,6 @@ public class CoSimulation
 
     CanHandleVariableCommunicationStepSize = input.canHandleVariableCommunicationStepSize;
     MaxOutputDerivativeOrder = input.maxOutputDerivativeOrder;
+    hasEventMode = false;
   }
 }

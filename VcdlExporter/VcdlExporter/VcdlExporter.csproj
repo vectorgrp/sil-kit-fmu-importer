@@ -16,10 +16,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="..\..\FmuImporter\FmuImporter\Fmu\FmuEntity.cs" Link="FmuEntity.cs" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     </ItemGroup>
 

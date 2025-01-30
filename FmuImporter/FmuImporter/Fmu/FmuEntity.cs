@@ -36,6 +36,11 @@ public class FmuEntity : IDisposable
 
     Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, RaiseOnFmuLogEvent);
     ModelDescription = Binding.ModelDescription;
+
+    if (ModelDescription.CoSimulation.hasEventMode)
+    {
+      fmiLogCallback.Invoke(LogSeverity.Information, "Event Mode is not yet supported.");
+    }
   }
 
   protected virtual void RaiseOnFmuLogEvent(LogSeverity severity, string message)

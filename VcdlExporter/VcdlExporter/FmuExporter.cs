@@ -4,8 +4,8 @@
 using System.Text;
 using Fmi;
 using Fmi.Binding;
+using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
-using FmuImporter.Fmu;
 
 namespace VcdlExporter;
 
@@ -26,18 +26,20 @@ public class FmuExporter : BaseExporter
     var interfaceSb = new StringBuilder();
     var objectsSb = new StringBuilder();
 
-    var fmuEntity = new FmuEntity(FmuPath, FmiLogCallback);
+    var FmiVersion = ModelLoader.FindFmiVersion(FmuPath);
+
+    var Binding = BindingFactory.CreateBinding(FmiVersion, FmuPath, FmiLogCallback);
 
     ModelDescription modelDescription;
-    switch (fmuEntity.FmiVersion)
+    switch (FmiVersion)
     {
       case FmiVersions.Fmi2:
-        modelDescription = ((IFmi2Binding)fmuEntity.Binding).ModelDescription;
+        modelDescription = ((IFmi2Binding)Binding).ModelDescription;
         AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
         ParseFmi2(modelDescription, interfaceSb, objectsSb);
         break;
       case FmiVersions.Fmi3:
-        modelDescription = ((IFmi3Binding)fmuEntity.Binding).ModelDescription;
+        modelDescription = ((IFmi3Binding)Binding).ModelDescription;
         AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
         ParseFmi3(modelDescription, interfaceSb, objectsSb);
         break;
