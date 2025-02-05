@@ -21,7 +21,7 @@ Its behavior is configured by configuration files that are passed during launch.
      2. [Build Instructions](#build-instructions)
           1. [FMU Importer](#fmu-importer)
           2. [vCDL Exporter](#vcdl-exporter)
-          3. [Communication Interface Exporter](#communication-interface-exporter)*
+          3. [Communication Interface Exporter](#communication-interface-exporter)
   3. [Running the FMU Importer](#running-the-fmu-importer)
   4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
      1. [Variable Representation](#variable-representation)
@@ -136,6 +136,7 @@ All provided paths must include the file's extensions (e.g., .vcdl, .fmu, .yaml)
 This tool allows you to export the model descriptions of FMUs as a communication interface description file that can be provided to the FMU Importer.
 The order it will give to the members of structures is arbitrary.
 The structure types are based on the variables' names following FMI's structured naming convention, and the members are assigned to the correct structures.
+See [Integration in SIL Kit Setups With Complex Data Structures](#integration-in-sil-kit-setups-with-complex-data-structures) for more details why you may want to use this tool.
 
 To build it, open a terminal in the CommInterfaceExporter directory (the one that contains CommInterfaceExporter.sln) and run the .NET build command
 
@@ -274,7 +275,7 @@ The order and the data type of structure members are important to serialize and 
 ### The Communication Interface Description
 
 The communication interface description defines the FMU Importer's communication interface toward other SIL Kit participants.
-It is described via a YAML file that can be provided via the command line interface of the FMU Importer (see [Running the FMU Importer]((#running-the-fmu-importer))).
+It is described via a YAML file that can be provided via the command line interface of the FMU Importer (see [Running the FMU Importer](#running-the-fmu-importer)).
 Providing a communication interface description file is mandatory if structures are used, because it defines the order in which structure members are serialized.
 
 ```yaml
