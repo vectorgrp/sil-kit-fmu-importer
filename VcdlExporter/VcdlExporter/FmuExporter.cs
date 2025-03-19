@@ -106,11 +106,11 @@ public class FmuExporter : BaseExporter
           break;
         case Variable.Causalities.Output:
         case Variable.Causalities.Independent:
-        case Variable.Causalities.Parameter:
-        case Variable.Causalities.StructuralParameter:
           vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.CalculatedParameter:
+        case Variable.Causalities.Parameter:
+        case Variable.Causalities.StructuralParameter:
         case Variable.Causalities.Local:
           // ignore
           continue;
@@ -186,11 +186,11 @@ public class FmuExporter : BaseExporter
           break;
         case Variable.Causalities.Output:
         case Variable.Causalities.Independent:
-        case Variable.Causalities.Parameter:
-        case Variable.Causalities.StructuralParameter:
           vcdlConsumerVariables.Add(v);
           break;
         case Variable.Causalities.CalculatedParameter:
+        case Variable.Causalities.Parameter:
+        case Variable.Causalities.StructuralParameter:
         case Variable.Causalities.Local:
           // ignore
           continue;

@@ -298,10 +298,7 @@ public class FmuImporter
     // create publishers for output variables
     foreach (var configuredVariable in FmuDataManager.OutputConfiguredVariables)
     {
-      if (configuredVariable.FmuVariableDefinition.Causality is not
-          (Variable.Causalities.Output
-          or Variable.Causalities.Parameter
-          or Variable.Causalities.StructuralParameter))
+      if (configuredVariable.FmuVariableDefinition.Causality is not Variable.Causalities.Output)
       {
         throw new InvalidConfigurationException(
           $"An internal error occurred. " +
@@ -327,29 +324,6 @@ public class FmuImporter
         _fmuImporterConfig.Instance,
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredStructure.StructureId),
-        0);
-    }
-
-    // create publishers for parameter variables
-    foreach (var configuredVariable in FmuDataManager.ParameterConfiguredVariables)
-    {
-      if (configuredVariable.FmuVariableDefinition.Causality is not
-          (Variable.Causalities.Output
-          or Variable.Causalities.Parameter
-          or Variable.Causalities.StructuralParameter))
-      {
-        throw new InvalidConfigurationException(
-          $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of parameter variables, but its " +
-          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
-      }
-
-      SilKitDataManager.CreatePublisher(
-        configuredVariable.FmuVariableDefinition.Name,
-        configuredVariable.TopicName,
-        _fmuImporterConfig.Instance,
-        _fmuImporterConfig.Namespace,
-        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
         0);
     }
   }
@@ -472,7 +446,7 @@ public class FmuImporter
       _initialSimTime = nowInNs;
       // skip initialization - it was done already.
       // However, publish all initial output variable values
-      var initialData = FmuDataManager.GetInitialVariableData();
+      var initialData = FmuDataManager.GetVariableOutputData();
       SilKitDataManager.PublishAll(initialData);
       return;
     }
@@ -511,11 +485,11 @@ public class FmuImporter
     }
 
     // Retrieve and publish non-structured variables
-    var currentOutputData = FmuDataManager.GetVariableOutputData(false);
+    var currentOutputData = FmuDataManager.GetVariableOutputData();
     SilKitDataManager.PublishAll(currentOutputData);
 
     // Retrieve and publish structures
-    var currentStructureOutputData = FmuDataManager.GetStructureOutputData(false);
+    var currentStructureOutputData = FmuDataManager.GetStructureOutputData();
     SilKitDataManager.PublishAll(currentStructureOutputData);
 
     var stopTime = FmuEntity.GetStopTime();

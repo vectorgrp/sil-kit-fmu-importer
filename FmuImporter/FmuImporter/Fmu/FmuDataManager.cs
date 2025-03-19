@@ -277,44 +277,22 @@ public class FmuDataManager
     }
   }
 
-  public List<Tuple<long, byte[]>> GetInitialVariableData()
+  public List<Tuple<long, byte[]>> GetVariableOutputData()
   {
-    var result = GetVariableParameterData();
-    result.AddRange(GetVariableOutputData(true));
-    return result;
+    return GetVariableData(OutputConfiguredVariables);
   }
 
-  public List<Tuple<long, byte[]>> GetVariableOutputData(bool initialKnownsOnly)
+  public List<Tuple<long, byte[]>> GetStructureOutputData()
   {
-    return GetVariableData(initialKnownsOnly, OutputConfiguredVariables);
+    return GetStructureData(OutputConfiguredStructures);
   }
 
-  public List<Tuple<long, byte[]>> GetStructureOutputData(bool initialKnownsOnly)
-  {
-    return GetStructureData(initialKnownsOnly, OutputConfiguredStructures);
-  }
-
-  public List<Tuple<long, byte[]>> GetVariableParameterData()
-  {
-    return GetVariableData(true, ParameterConfiguredVariables);
-  }
-
-  private List<Tuple<long, byte[]>> GetVariableData(
-    bool initialKnownsOnly,
-    List<ConfiguredVariable> configuredVariables)
+  private List<Tuple<long, byte[]>> GetVariableData(List<ConfiguredVariable> configuredVariables)
   {
     var returnData = new List<Tuple<long, byte[]>>();
 
     foreach (var configuredVariable in configuredVariables)
     {
-      if (initialKnownsOnly &&
-          ModelDescription.ModelStructure.InitialUnknowns.Contains(
-            configuredVariable.FmuVariableDefinition.ValueReference))
-      {
-        // skip initially unknown variables
-        continue;
-      }
-
       var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
       var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
 
@@ -352,19 +330,8 @@ public class FmuDataManager
     return returnData;
   }
 
-  private List<Tuple<long, byte[]>> GetStructureData(
-    bool initialKnownsOnly,
-    Dictionary<long, ConfiguredStructure> configuredStructures)
+  private List<Tuple<long, byte[]>> GetStructureData(Dictionary<long, ConfiguredStructure> configuredStructures)
   {
-    // TODO
-    //if (initialKnownsOnly &&
-    //    ModelDescription.ModelStructure.InitialUnknowns.Contains(
-    //      configuredVariable.FmuVariableDefinition.ValueReference))
-    //{
-    //  // skip initially unknown variables
-    //  continue;
-    //}
-
     var returnData = new List<Tuple<long, byte[]>>();
 
     // retrieve individual structures
