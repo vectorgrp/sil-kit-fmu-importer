@@ -28,5 +28,6 @@ public enum VariableTypes
   Binary,
   EnumFmi2,
   EnumFmi3,
-  Clock
+  TriggeredClock,
+  TimeBasedClock
 }

@@ -46,6 +46,7 @@ public class Variable
   public string Description { get; set; }
   public Causalities Causality { get; set; }
   public Variabilities Variability { get; set; }
+  public uint[]? Clocks { get; set; }
   public InitialValues InitialValue { get; set; }
 
   public VariableTypes VariableType { get; }
@@ -68,6 +69,7 @@ public class Variable
     Name = input.name;
     ValueReference = input.valueReference;
     Description = input.description;
+    Clocks = input.clocks;
 
     switch (input)
     {
@@ -133,12 +135,19 @@ public class Variable
         }
 
         break;
-      case fmi3Clock:
-        logCallback.Invoke(
-          LogSeverity.Warning,
-          $"Type 'Clock' of variable '{Name}' is not supported yet. Discarding variable.");
-        VariableType = VariableTypes.Clock;
+
+      case fmi3Clock clock:
+        if (clock.intervalVariability.Equals(fmiModelDescriptionTypeDefinitionsClockTypeIntervalVariability.triggered))
+        {
+          VariableType = VariableTypes.TriggeredClock;
+        }
+        else
+        {
+          logCallback.Invoke(LogSeverity.Warning, $"Type 'Clock' (with IntervalVariability != triggered) of variable '{Name}' is not supported yet. Discarding variable.");
+          VariableType = VariableTypes.TimeBasedClock;
+        }
         break;
+
       default:
         throw new InvalidDataException($"The FMI 3 datatype of variable {Name} is unknown.");
     }

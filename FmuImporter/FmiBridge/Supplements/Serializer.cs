@@ -234,6 +234,7 @@ public class Serializer
         return BitConverter.GetBytes(Convert.ToUInt64(data));
       }
       case VariableTypes.Boolean:
+      case VariableTypes.TriggeredClock:
       {
         if (data is bool correctType)
         {

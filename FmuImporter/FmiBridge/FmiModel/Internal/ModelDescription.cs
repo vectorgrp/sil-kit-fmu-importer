@@ -291,7 +291,7 @@ public class ModelDescription
     foreach (var fmiModelDescriptionModelVariable in input.Items)
     {
       var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions, logCallback);
-      if (v.VariableType == VariableTypes.Clock)
+      if (v.VariableType == VariableTypes.TimeBasedClock)
       {
         continue;
       }

@@ -67,6 +67,7 @@ internal class CommInterfaceGeneration
       case VariableTypes.UInt64:
         return "uint64";
       case VariableTypes.Boolean:
+      case VariableTypes.TriggeredClock:
         return "bool";
       case VariableTypes.String:
         return "string";

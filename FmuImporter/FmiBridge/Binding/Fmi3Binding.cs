@@ -12,6 +12,7 @@ using System.Text;
 using Fmi.Binding.Helper;
 using Fmi.Exceptions;
 using Fmi.FmiModel.Internal;
+using Fmi3;
 
 namespace Fmi.Binding;
 
@@ -57,7 +58,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out _fmi3ExitConfigurationMode);
     SetDelegate(out _fmi3EnterInitializationMode);
     SetDelegate(out _fmi3ExitInitializationMode);
+    SetDelegate(out _fmi3EnterEventMode);
+    SetDelegate(out _fmi3EnterStepMode);
     SetDelegate(out _fmi3DoStep);
+    SetDelegate(out _fmi3UpdateDiscreteStates);
     SetDelegate(out _fmi3Terminate);
     SetDelegate(out _fmi3SetDebugLogging);
 
@@ -73,6 +77,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out _fmi3GetInt64);
     SetDelegate(out _fmi3GetUInt64);
     SetDelegate(out _fmi3GetBoolean);
+    SetDelegate(out _fmi3GetClock);
     SetDelegate(out _fmi3GetString);
     SetDelegate(out _fmi3GetBinary);
     SetDelegate(out _fmi3SetFloat32);
@@ -86,6 +91,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     SetDelegate(out _fmi3SetInt64);
     SetDelegate(out _fmi3SetUInt64);
     SetDelegate(out _fmi3SetBoolean);
+    SetDelegate(out _fmi3SetClock);
     SetDelegate(out _fmi3SetString);
     SetDelegate(out _fmi3SetBinary);
   }
@@ -150,6 +156,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     string instantiationToken,
     bool visible,
     bool loggingOn,
+    bool eventModeUsed,
     Fmi3LogMessageCallback logger)
   {
     var resourcePath = new DirectoryInfo(
@@ -165,7 +172,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       resourcePath,
       visible,
       loggingOn,
-      false,
+      eventModeUsed,
       false,
       IntPtr.Zero,
       IntPtr.Zero,
@@ -295,7 +302,10 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       _fmi3ExitInitializationMode(_component),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    CurrentState = InternalFmuStates.StepMode;
+    if (ModelDescription.CoSimulation.hasEventMode == false)
+    {
+      CurrentState = InternalFmuStates.StepMode;
+    }
   }
 
   /*
@@ -390,6 +400,11 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       case VariableTypes.Boolean:
       {
         result = GetBoolean(valueRefs);
+        return;
+      }
+      case VariableTypes.TriggeredClock:
+      {
+        result = GetClock(valueRefs);
         return;
       }
       case VariableTypes.String:
@@ -679,6 +694,25 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
           values);
         return;
       }
+      case VariableTypes.TriggeredClock:
+      {
+        var values = new bool[arraySize];
+
+        if (isScalar)
+        {
+          var value = BitConverter.ToBoolean(data);
+          values = new[] { value };
+        }
+        else
+        {
+          Buffer.BlockCopy(data, 0, values, 0, data.Length);
+        }
+
+        SetClock(
+          new[] { mdVar.ValueReference },
+          values);
+        return;
+      }
       case VariableTypes.String:
       {
         var values = new string[arraySize];
@@ -785,7 +819,9 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
   public override void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
-    out double lastSuccessfulTime)
+    out double lastSuccessfulTime,
+    out bool eventEncountered,
+    out bool terminateRequested)
   {
     ProcessReturnCode(
       _fmi3DoStep(
@@ -793,16 +829,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         currentCommunicationPoint,
         communicationStepSize,
         true,
-        out _,
-        out var terminateRequested,
-        out _,
+        out eventEncountered,
+        out terminateRequested,
+        out var earlyReturn,
         out lastSuccessfulTime),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
     if (terminateRequested)
     {
-      Log(LogSeverity.Information, "FMU requested simulation termination.");
-      Terminate();
+      Log(LogSeverity.Information, "FMU requested simulation termination.");      
     }
   }
 
@@ -829,6 +864,79 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     out bool terminateSimulation,
     out bool earlyReturn,
     out double lastSuccessfulTime);
+
+  public void EnterStepMode()
+  {
+    ProcessReturnCode(
+      _fmi3EnterStepMode(_component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = InternalFmuStates.StepMode;
+  }
+
+  // typedef fmi3Status fmi3EnterStepModeTYPE(fmi3Instance instance);
+
+  private readonly fmi3EnterStepModeTYPE _fmi3EnterStepMode;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3EnterStepModeTYPE(IntPtr instance);
+
+  public void EnterEventMode()
+  {
+    ProcessReturnCode(
+      _fmi3EnterEventMode(_component),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    CurrentState = InternalFmuStates.EventMode;
+  }
+
+  // typedef fmi3Status fmi3EnterEventModeTYPE(fmi3Instance instance);
+
+  private readonly fmi3EnterEventModeTYPE _fmi3EnterEventMode;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3EnterEventModeTYPE(IntPtr instance);
+
+  public void UpdateDiscreteStates(out bool discreteStatesNeedUpdate, out bool terminateSimulation)
+  {
+    ProcessReturnCode(
+      _fmi3UpdateDiscreteStates(
+      _component,
+      out discreteStatesNeedUpdate,
+      out terminateSimulation,
+      out var _,
+      out var _,
+      out var _,
+      out var _),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    if (terminateSimulation)
+    {
+      Log(LogSeverity.Information, "FMU requested simulation termination.");
+    }
+  }
+
+  /*
+  typedef fmi3Status fmi3UpdateDiscreteStatesTYPE(fmi3Instance instance,
+    fmi3Boolean* discreteStatesNeedUpdate,
+    fmi3Boolean* terminateSimulation,
+    fmi3Boolean* nominalsOfContinuousStatesChanged,
+    fmi3Boolean* valuesOfContinuousStatesChanged,
+    fmi3Boolean* nextEventTimeDefined,
+    fmi3Float64* nextEventTime);
+  */
+
+  private readonly fmi3UpdateDiscreteStatesTYPE _fmi3UpdateDiscreteStates;
+  
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3UpdateDiscreteStatesTYPE(
+    IntPtr instance,
+    out bool discreteStatesNeedUpdate,
+    out bool terminateSimulation,
+    out bool nominalsOfContinuousStatesChanged,
+    out bool valuesOfContinuousStatesChanged,
+    out bool nextEventTimeDefined,
+    out double nextEventTime);
 
   public override void Terminate()
   {
@@ -1333,6 +1441,49 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
   internal delegate int fmi3GetBooleanTYPE(
+    IntPtr instance,
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+    fmi3ValueReference[] valueReferences,
+    size_t nValueReferences,
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
+    IntPtr[] values,
+    size_t nValues);
+
+  public ReturnVariable GetClock(fmi3ValueReference[] valueReferences)
+  {
+    if (_component == IntPtr.Zero)
+    {
+      throw new NullReferenceException("FMU was not initialized.");
+    }
+
+    var nValues = CalculateValueLength(ref valueReferences);
+    // bools are not blittable -> retrieve them as IntPtr and convert result afterwards
+    var tmpResult = new IntPtr[(int)nValues];
+
+    ProcessReturnCode(
+      _fmi3GetClock(
+        _component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        tmpResult,
+        nValues),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+    var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
+    return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
+  }
+
+  /*
+    typedef fmi3Status fmi3GetBooleanTYPE(
+      fmi3Instance instance,
+      const fmi3ValueReference valueReferences[],
+      size_t nValueReferences,
+      fmi3Boolean values[]);
+  */
+  private readonly fmi3GetClockTYPE _fmi3GetClock;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3GetClockTYPE(
     IntPtr instance,
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
     fmi3ValueReference[] valueReferences,
@@ -1939,6 +2090,43 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     IntPtr[] values,
     size_t nValues);
 
+
+  public void SetClock(fmi3ValueReference[] valueReferences, bool[] values)
+  {
+    if (_component == IntPtr.Zero)
+    {
+      throw new NullReferenceException("FMU was not initialized.");
+    }
+
+    ProcessReturnCode(
+      _fmi3SetClock(
+        _component,
+        valueReferences,
+        (size_t)valueReferences.Length,
+        values,
+        (size_t)values.Length),
+      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+  }
+
+  /*
+    typedef fmi3Status fmi3SetClockTYPE(
+      fmi3Instance instance,
+      const fmi3ValueReference valueReferences[],
+      size_t nValueReferences,
+      const fmi3Boolean values[]);
+  */
+  private readonly fmi3SetClockTYPE _fmi3SetClock;
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+  internal delegate int fmi3SetClockTYPE(
+    IntPtr instance,
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+    fmi3ValueReference[] valueReferences,
+    size_t nValueReferences,
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
+    bool[] values,
+    size_t nValues);
+  
 #endregion Getters & Setters
 
   private size_t CalculateValueLength(ref fmi3ValueReference[] valueReferences)

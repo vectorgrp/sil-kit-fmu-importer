@@ -221,7 +221,9 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   public abstract void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
-    out double lastSuccessfulTime);
+    out double lastSuccessfulTime,
+    out bool eventEncountered, 
+    out bool terminateRequested);
 
   public abstract void Terminate();
 

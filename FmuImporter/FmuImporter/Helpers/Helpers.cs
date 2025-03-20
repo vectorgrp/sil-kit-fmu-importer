@@ -82,6 +82,8 @@ public static class Helpers
         return typeof(ulong);
       case VariableTypes.Boolean:
         return typeof(bool);
+      case VariableTypes.TriggeredClock:
+        return typeof(bool);
       case VariableTypes.String:
         return typeof(string);
       case VariableTypes.Binary:

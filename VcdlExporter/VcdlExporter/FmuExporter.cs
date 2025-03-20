@@ -235,6 +235,8 @@ public class FmuExporter : BaseExporter
     // FMI 2.0.x types
     typeName = typeName.Replace("float32", "float");
     typeName = typeName.Replace("float64", "double");
+    // FMI 3.0 triggered clocks can be handled as bool vars
+    typeName = typeName.Replace("triggeredclock", "bool");
     return typeName;
   }
 

@@ -537,8 +537,13 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   public override void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
-    out double lastSuccessfulTime)
+    out double lastSuccessfulTime,
+    out bool _,
+    out bool terminateRequested)
   {
+    // never used for FMI2
+    terminateRequested = false;
+
     var status = _fmi2DoStep(_component, currentCommunicationPoint, communicationStepSize, out _);
     // Note that this return code is special as the code '0' as well as '5' are success values
     ProcessReturnCode(

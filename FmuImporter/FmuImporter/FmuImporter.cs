@@ -398,6 +398,11 @@ public class FmuImporter
 
   private void OnSimulationStep(ulong nowInNs, ulong durationInNs)
   {
+    bool eventEncountered = false;
+    bool discreteStatesNeedUpdate = true;
+    double lastSuccesfullTime =  0;
+    bool terminateRequested = false;
+
     if (FmuDataManager == null)
     {
       throw new NullReferenceException($"{nameof(FmuDataManager)} was null.");
@@ -444,7 +449,24 @@ public class FmuImporter
     {
       _lastSimStep = nowInNs;
       _initialSimTime = nowInNs;
-      // skip initialization - it was done already.
+      
+      if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
+      {
+        do
+        {
+          FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
+
+          if (terminateRequested)
+          {
+            FmuEntity.Terminate();
+            ExitFmuImporter();
+            return;
+          }
+        } while (discreteStatesNeedUpdate);
+
+        FmuEntity.EnterStepMode();
+      }
+
       // However, publish all initial output variable values
       var initialData = FmuDataManager.GetVariableOutputData();
       SilKitDataManager.PublishAll(initialData);
@@ -467,9 +489,52 @@ public class FmuImporter
     var fmiNow = Helpers.Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
     try
     {
-      FmuEntity.DoStep(
-        fmiNow,
-        Helpers.Helpers.SilKitTimeToFmiTime(durationInNs));
+      FmuEntity.DoStep(fmiNow, Helpers.Helpers.SilKitTimeToFmiTime(durationInNs), out lastSuccesfullTime, out eventEncountered, out terminateRequested);
+
+      // Retrieve and publish non-structured variables
+      var currentOutputDataEventMode = FmuDataManager.GetVariableOutputData();
+      SilKitDataManager.PublishAll(currentOutputDataEventMode);
+
+      // Retrieve and publish structures
+      var currentStructureOutputDataEvenMode = FmuDataManager.GetStructureOutputData();
+      SilKitDataManager.PublishAll(currentStructureOutputDataEvenMode);
+
+      if (terminateRequested)
+      {
+        FmuEntity.Terminate();
+        ExitFmuImporter();
+        return;
+      }
+
+      if (FmuEntity.ModelDescription.CoSimulation.hasEventMode && eventEncountered && (FmuEntity.Binding.CurrentState != InternalFmuStates.Terminated))
+      {
+        FmuEntity.EnterEventMode();
+
+        // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
+        var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value);
+        FmuDataManager.SetData(receivedSilKitDataEventMode);
+
+        do
+        {
+          FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
+
+          if (terminateRequested)
+          {
+            FmuEntity.Terminate();
+            ExitFmuImporter();
+            return;
+          }
+        } while (discreteStatesNeedUpdate);
+        
+        FmuEntity.EnterStepMode();
+        // Retrieve and publish non-structured variables
+        var outputData = FmuDataManager.GetVariableOutputData();
+        SilKitDataManager.PublishAll(outputData);
+
+        // Retrieve and publish structures
+        var structureOutputData = FmuDataManager.GetStructureOutputData();
+        SilKitDataManager.PublishAll(structureOutputData );
+      }
     }
     catch (Exception e)
     {
@@ -483,14 +548,6 @@ public class FmuImporter
 
       return;
     }
-
-    // Retrieve and publish non-structured variables
-    var currentOutputData = FmuDataManager.GetVariableOutputData();
-    SilKitDataManager.PublishAll(currentOutputData);
-
-    // Retrieve and publish structures
-    var currentStructureOutputData = FmuDataManager.GetStructureOutputData();
-    SilKitDataManager.PublishAll(currentStructureOutputData);
 
     var stopTime = FmuEntity.GetStopTime();
     if (stopTime.HasValue)

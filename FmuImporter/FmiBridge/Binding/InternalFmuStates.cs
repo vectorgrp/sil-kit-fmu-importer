@@ -12,5 +12,6 @@ public enum InternalFmuStates
   StepMode,
   Terminated,
   TerminatedWithError,
-  Freed
+  Freed,
+  EventMode
 }

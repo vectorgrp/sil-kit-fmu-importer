@@ -16,12 +16,19 @@ public interface IFmi3Binding : IFmiBindingCommon
     string instantiationToken,
     bool visible,
     bool loggingOn,
+    bool eventModeUsed,
     Fmi3LogMessageCallback logger);
 
   public void EnterConfigurationMode();
   public void ExitConfigurationMode();
   public void EnterInitializationMode(double? tolerance, double startTime, double? stopTime);
   public void ExitInitializationMode();
+
+  public void EnterEventMode();
+
+  public void UpdateDiscreteStates(out bool discreteStatesNeedUpdate, out bool terminateSimulation);
+
+  public void EnterStepMode();
 
   public void SetDebugLogging(
     bool loggingOn,
@@ -40,6 +47,7 @@ public interface IFmi3Binding : IFmiBindingCommon
   public ReturnVariable GetInt64(fmi3ValueReference[] valueReferences);
   public ReturnVariable GetUInt64(fmi3ValueReference[] valueReferences);
   public ReturnVariable GetBoolean(fmi3ValueReference[] valueReferences);
+  public ReturnVariable GetClock(fmi3ValueReference[] valueReferences);
   public ReturnVariable GetString(fmi3ValueReference[] valueReferences);
   public ReturnVariable GetBinary(fmi3ValueReference[] valueReferences);
   public void SetFloat32(fmi3ValueReference[] valueReferences, float[] values);
@@ -53,6 +61,7 @@ public interface IFmi3Binding : IFmiBindingCommon
   public void SetInt64(fmi3ValueReference[] valueReferences, long[] values);
   public void SetUInt64(fmi3ValueReference[] valueReferences, ulong[] values);
   public void SetBoolean(fmi3ValueReference[] valueReferences, bool[] values);
+  public void SetClock(fmi3ValueReference[] valueReferences, bool[] values);
   public void SetString(fmi3ValueReference[] valueReferences, string[] values);
   public void SetBinary(fmi3ValueReference[] valueReferences, IntPtr[] valueSizes, IntPtr[] values);
 }

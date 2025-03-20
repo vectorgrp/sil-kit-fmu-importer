@@ -36,11 +36,6 @@ public class FmuEntity : IDisposable
 
     Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, RaiseOnFmuLogEvent);
     ModelDescription = Binding.ModelDescription;
-
-    if (ModelDescription.CoSimulation.hasEventMode)
-    {
-      fmiLogCallback.Invoke(LogSeverity.Information, "Event Mode is not yet supported.");
-    }
   }
 
   protected virtual void RaiseOnFmuLogEvent(LogSeverity severity, string message)
@@ -117,6 +112,7 @@ public class FmuEntity : IDisposable
       ModelDescription.InstantiationToken,
       true,
       true,
+      ModelDescription.CoSimulation.hasEventMode,
       Fmi3Logger);
 
     CurrentFmuSuperState = FmuSuperStates.Instantiated;
@@ -149,6 +145,7 @@ public class FmuEntity : IDisposable
     fmuInitializationAction();
 
     fmi3Binding.ExitInitializationMode();
+
 
     CurrentFmuSuperState = FmuSuperStates.Initialized;
   }
@@ -216,9 +213,59 @@ public class FmuEntity : IDisposable
 
   public void DoStep(
     double currentCommunicationPoint,
-    double communicationStepSize)
+    double communicationStepSize,
+    out double _,
+    out bool eventEncountered,
+    out bool terminateRequested)
   {
-    Binding.DoStep(currentCommunicationPoint, communicationStepSize, out _);
+    Binding.DoStep(currentCommunicationPoint, communicationStepSize, out _, out eventEncountered, out terminateRequested);
+  }
+
+  public void EnterEventMode()
+  {
+    switch (FmiVersion)
+    {
+      case FmiVersions.Fmi2:
+        throw new ArgumentOutOfRangeException("TODO: Not implemented, supported or tested for FMI2.");        
+      case FmiVersions.Fmi3:
+        var fmi3Binding = (IFmi3Binding)Binding;
+        fmi3Binding.EnterEventMode();
+        break;
+      default:
+        throw new ArgumentOutOfRangeException("The provided FMI version is unknown.");
+    }    
+  }
+
+  public void EnterStepMode()
+  {
+    switch (FmiVersion)
+    {
+      case FmiVersions.Fmi2:
+        throw new ArgumentOutOfRangeException("TODO: Not implemented, supported or tested for FMI2.");        
+      case FmiVersions.Fmi3:
+        var fmi3Binding = (IFmi3Binding)Binding;
+        fmi3Binding.EnterStepMode();
+        break;
+      default:
+        throw new ArgumentOutOfRangeException("The provided FMI version is unknown.");
+    }
+  }
+
+
+
+  public void UpdateDiscreteStates(out bool discreteStatesNeedUpdate, out bool terminateRequested)
+  {
+    switch (FmiVersion)
+    {
+      case FmiVersions.Fmi2:
+        throw new ArgumentOutOfRangeException("TODO: Not implemented, supported or tested for FMI2.");        
+      case FmiVersions.Fmi3:
+        var fmi3Binding = (IFmi3Binding)Binding;
+        fmi3Binding.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
+        break;
+      default:
+        throw new ArgumentOutOfRangeException("The provided FMI version is unknown.");
+    }
   }
 
   public void Terminate()
