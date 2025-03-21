@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Fmi.Binding.Helper;
 using Fmi.Exceptions;
@@ -14,9 +15,21 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   private static readonly HashSet<int> sOkCodes = new HashSet<int>
   {
     (int)FmiStatus.OK,
-    (int)FmiStatus.Warning,
     (int)FmiStatus.Pending // asynchronous doStep (FMI 2 only)
   };
+
+  private static readonly List<string> sDiscardIsHandledAsError =
+  [
+    "EnterInitializationMode",
+    "ExitInitializationMode",
+    "EnterConfigurationMode",
+    "ExitConfigurationMode",
+    "DoStep",
+    "EnterStepMode",
+    "EnterEventMode",
+    "UpdateDiscreteStates",
+    "Terminate"
+  ];
 
 
   public InternalFmuStates CurrentState { get; internal set; } = InternalFmuStates.Initial;
@@ -233,11 +246,24 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   public void ProcessReturnCode(int statusCode, RuntimeMethodHandle? methodHandle)
   {
-    var result = Common.Helpers.ProcessReturnCode(
+    bool statusIsDiscardAndHandledAsError = false;
+
+    if (methodHandle != null)
+    {
+      var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
+      var methodeName = methodInfo?.Name;
+      if (methodeName != null)
+      {
+        statusIsDiscardAndHandledAsError = sDiscardIsHandledAsError.Contains(methodeName) && (FmiStatus)statusCode is FmiStatus.Discard;
+      }        
+    }
+
+      var result = Common.Helpers.ProcessReturnCode(
       sOkCodes,
       statusCode,
       ((FmiStatus)statusCode).ToString(),
-      methodHandle);
+      methodHandle,
+      statusIsDiscardAndHandledAsError);
     if (result.Item1)
     {
       if (result.Item2 != null)
@@ -270,9 +296,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       FreeInstance();
     }
 
-    if ((FmiStatus)statusCode is FmiStatus.Discard)
+    if (statusIsDiscardAndHandledAsError)
     {
-      // We treat 'Discard' the same way as 'Error' (as suggested by the standard)
       CurrentState = InternalFmuStates.TerminatedWithError;
       if (Environment.ExitCode == ExitCodes.Success)
       {
@@ -281,6 +306,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
       FreeInstance();
     }
+    
 
     // Throwing ensures that the FMU Importer will exit
     throw new NativeCallException(result.Item2?.ToString());
