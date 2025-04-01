@@ -296,7 +296,9 @@ public class FmuImporter
     }
 
     // create publishers for output variables
-    foreach (var configuredVariable in FmuDataManager.OutputConfiguredVariables)
+    var flattenedOutputVariables = FmuDataManager.OutputConfiguredVariables.Values.SelectMany(list => list).ToList();
+
+    foreach (var configuredVariable in flattenedOutputVariables)
     {
       if (configuredVariable.FmuVariableDefinition.Causality is not Variable.Causalities.Output)
       {

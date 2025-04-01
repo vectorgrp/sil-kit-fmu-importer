@@ -419,7 +419,15 @@ public class DataConverter
       var binDataPtr = (IntPtr)objectArray[i];
       var rawDataLength = valueSizes[i];
       var binData = new byte[rawDataLength];
-      Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
+      if (binDataPtr != 0)
+      {
+        Marshal.Copy(binDataPtr, binData, 0, rawDataLength);
+      }
+      else
+      {
+        Array.Fill<byte>(binData, 0);
+      }
+      
 
       serializer.Serialize(binData);
     }

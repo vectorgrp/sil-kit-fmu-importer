@@ -26,7 +26,7 @@ public class FmuDataManager
   public Dictionary<long, ConfiguredStructure> InputConfiguredStructures { get; }
   private readonly Dictionary<string, ConfiguredStructure> _inputConfiguredStructureByName;
 
-  public List<ConfiguredVariable> OutputConfiguredVariables { get; }
+  public Dictionary<VariableTypes, List<ConfiguredVariable>> OutputConfiguredVariables { get; }
   public Dictionary<long, ConfiguredStructure> OutputConfiguredStructures { get; }
   private readonly Dictionary<string, ConfiguredStructure> _outputConfiguredStructureByName;
 
@@ -49,7 +49,7 @@ public class FmuDataManager
     InputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
     _inputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
-    OutputConfiguredVariables = new List<ConfiguredVariable>();
+    OutputConfiguredVariables = new Dictionary<VariableTypes, List<ConfiguredVariable>>();
     OutputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
     _outputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
   }
@@ -187,7 +187,14 @@ public class FmuDataManager
     switch (c.FmuVariableDefinition.Causality)
     {
       case Variable.Causalities.Output:
-        OutputConfiguredVariables.Add(c);
+        if (OutputConfiguredVariables.TryGetValue(c.FmuVariableDefinition.VariableType, out var refValue))
+        {
+          refValue.Add(c);
+        }
+        else
+        {
+          OutputConfiguredVariables[c.FmuVariableDefinition.VariableType] = [ c ];
+        }
         break;
       case Variable.Causalities.Parameter:
       case Variable.Causalities.StructuralParameter:
@@ -287,43 +294,51 @@ public class FmuDataManager
     return GetStructureData(OutputConfiguredStructures);
   }
 
-  private List<Tuple<long, byte[]>> GetVariableData(List<ConfiguredVariable> configuredVariables)
+  private List<Tuple<long, byte[]>> GetVariableData(
+  Dictionary<VariableTypes, List<ConfiguredVariable>> configuredVariables)
   {
     var returnData = new List<Tuple<long, byte[]>>();
 
-    foreach (var configuredVariable in configuredVariables)
+    foreach (var typeVars in configuredVariables)
     {
-      var configuredVariableType = configuredVariable.FmuVariableDefinition!.VariableType;
-      var valueRefArr = new[] { configuredVariable.FmuVariableDefinition.ValueReference };
+      var valueRefQuery = from configuredVariable in typeVars.Value
+                          select configuredVariable.FmuVariableDefinition.ValueReference;
 
-      Binding.GetValue(valueRefArr, out var result, configuredVariableType);
-      if ((configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
-          (configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.Float64))
+      Binding.GetValue(valueRefQuery.ToArray(), out var result, typeVars.Key);
+      if ((typeVars.Key == VariableTypes.Float32) ||
+          (typeVars.Key == VariableTypes.Float64))
       {
         // apply FMI unit transformation
         foreach (var variable in result.ResultArray)
         {
-          var mdVar = ModelDescription.Variables[variable.ValueReference];
-          for (var i = 0; i < variable.Values.Length; i++)
+          var configuredVar = typeVars.Value.Find(x => x.FmuVariableDefinition.ValueReference == variable.ValueReference);
+          if (configuredVar != null)
           {
-            // Apply unit transformation
-            Helpers.Helpers.ApplyLinearTransformationFmi(
-              ref variable.Values[i],
-              configuredVariable);
+            for (var i = 0; i < variable.Values.Length; i++)
+            {
+              // Apply unit transformation
+              Helpers.Helpers.ApplyLinearTransformationFmi(ref variable.Values[i], configuredVar);
+            }
           }
         }
       }
 
-      for (var i = 0; i < result.ResultArray.Length; i++)
+      foreach (var variable in result.ResultArray)
       {
-        var variable = result.ResultArray[i];
-        Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], configuredVariable);
+        var configuredVar = typeVars.Value.Find(x => x.FmuVariableDefinition.ValueReference == variable.ValueReference);
+        if (configuredVar != null)
+        {
+          for (var j = 0; j < variable.Values.Length; j++)
+          {
+            Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[j], configuredVar);
+          }
 
-        var dc = new DataConverter();
-        // NB: Currently, this method transforms the FMI variable as a whole, making it impossible to have optional members
-        // Further, this prevents the data from being serialized as nested lists
-        var byteArray = dc.TransformFmuToSilKitData(variable, configuredVariable);
-        returnData.Add(Tuple.Create((long)configuredVariable.FmuVariableDefinition.ValueReference, byteArray));
+          var dc = new DataConverter();
+          // NB: Currently, this method transforms the FMI variable as a whole, making it impossible to have optional members
+          // Further, this prevents the data from being serialized as nested lists
+          var byteArray = dc.TransformFmuToSilKitData(variable, configuredVar);
+          returnData.Add(Tuple.Create((long)configuredVar.FmuVariableDefinition.ValueReference, byteArray));
+        }
       }
     }
 
