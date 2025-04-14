@@ -34,7 +34,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as float, which could not be parsed as such.");
+              $"The string '{s}' was declared as float, which could not be parsed as such. Exception thrown by" +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -56,7 +57,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as double, which could not be parsed as such.");
+              $"The string '{s}' was declared as double, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -78,7 +80,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as sbyte, which could not be parsed as such.");
+              $"The string '{s}' was declared as sbyte, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return new[] { (byte)result };
@@ -99,7 +102,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as Int16, which could not be parsed as such.");
+              $"The string '{s}' was declared as Int16, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -120,7 +124,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as Int32, which could not be parsed as such.");
+              $"The string '{s}' was declared as Int32, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -141,7 +146,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as Int64, which could not be parsed as such.");
+              $"The string '{s}' was declared as Int64, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -162,7 +168,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as byte, which could not be parsed as such.");
+              $"The string '{s}' was declared as byte, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return new[] { result };
@@ -183,7 +190,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as UInt16, which could not be parsed as such.");
+              $"The string '{s}' was declared as UInt16, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -204,7 +212,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as UInt32, which could not be parsed as such.");
+              $"The string '{s}' was declared as UInt32, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -225,7 +234,8 @@ public class Serializer
           if (!success)
           {
             throw new DataConversionException(
-              $"The string '{s}' was declared as UInt64, which could not be parsed as such.");
+              $"The string '{s}' was declared as UInt64, which could not be parsed as such. Exception thrown by " +
+              $"{variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(result);
@@ -255,7 +265,8 @@ public class Serializer
         }
 
         throw new DataConversionException(
-          $"The scalar '{data}' was declared as bool, which could not be parsed as such");
+          $"The scalar '{data}' was declared as bool, which could not be parsed as such. Exception thrown by " +
+          $"{variable.Name} with the following value reference: {variable.ValueReference}");
       }
       case VariableTypes.String:
       {
@@ -291,7 +302,8 @@ public class Serializer
           {
             throw new InvalidOperationException(
               $"Failed to set enumerator. " +
-              $"Reason: The value is too large (> Int32) and therefore cannot be handled by FMI 2.0 FMUs.");
+              $"Reason: The value is too large (> Int32) and therefore cannot be handled by FMI 2.0 FMUs. " +
+              $"Exception thrown by {variable.Name} with the following value reference: {variable.ValueReference}");
           }
 
           return BitConverter.GetBytes(correctType);
@@ -331,7 +343,8 @@ public class Serializer
           $"Variable '{variable.Name}' has an unsupported type ({variable.VariableType.ToString()}).");
     }
 
-    throw new NotSupportedException("Received unknown data type for conversion");
+    throw new NotSupportedException($"Received unknown data type for conversion. Exception thrown by {variable.Name} " +
+      $"with the following value reference: {variable.ValueReference}");
   }
 
   private static Int64 GetEnumValue(string enumNameInput, Variable v)
@@ -351,7 +364,8 @@ public class Serializer
     else
     {
       throw new DataConversionException(
-        $"The string '{enumNameInput}' mentions an enum of {v.TypeDefinition.Name} which does not exist.");
+        $"The string '{enumNameInput}' mentions an enum of {v.TypeDefinition.Name} which does not exist. Exception " +
+        $"thrown by {v.Name} with the following value reference: {v.ValueReference}");
     }
     // The case of enumValuesFound > 1 would still possible if the user deviated for the standard
   }

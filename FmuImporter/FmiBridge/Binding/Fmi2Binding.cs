@@ -228,7 +228,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     throw new ArgumentOutOfRangeException(
       nameof(type),
       type,
-      $"The provided type '{type}' is not supported.");
+      $"The provided type '{type}' is not supported. Exception thrown by the following value references: " +
+      $"{string.Join(", ", valueRefs)}");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -243,7 +244,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
     if (mdVar.Dimensions != null)
     {
-      throw new NotSupportedException("FMI 2 does not support arrays natively.");
+      throw new NotSupportedException($"FMI 2 does not support arrays natively. Exception thrown by {mdVar.Name} with" +
+        $"the following value reference: {mdVar.ValueReference}");
     }
 
     switch (type)
@@ -313,12 +315,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         break;
     }
 
-    throw new ArgumentOutOfRangeException();
+    throw new ArgumentOutOfRangeException($"The provided type '{type}' is not supported. Exception thrown by " +
+      $"{mdVar.Name} with the following value reference: {mdVar.ValueReference}");
   }
 
   public override void SetValue(uint valueRef, byte[] data, int[] binSizes)
   {
-    throw new NotSupportedException("The binary datatype is not available in FMI 2.0.");
+    throw new NotSupportedException($"The binary datatype is not available in FMI 2.0. Exception thrown by the " +
+      $"following value reference: {valueRef}");
   }
 
   public ModelDescription GetModelDescription()
@@ -716,7 +720,8 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
       result[i] = str ??
                   throw new NativeCallException(
-                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
+                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
+                    $"Exception thrown by the following value reference: {valueReferences[i]}");
     }
 
     return result;

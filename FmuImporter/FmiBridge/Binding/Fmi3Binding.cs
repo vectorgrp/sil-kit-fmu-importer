@@ -426,7 +426,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         break;
     }
 
-    throw new ArgumentOutOfRangeException(nameof(type), type, $"The type '{type}' is not supported.");
+    throw new ArgumentOutOfRangeException(nameof(type), type, $"The type '{type}' is not supported. Exception thrown" +
+      $"by the following value references: {string.Join(", ", valueRefs)}");
   }
 
   public override void SetValue(uint valueRef, byte[] data)
@@ -534,7 +535,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         {
           if (data.Length > 1)
           {
-            throw new NotSupportedException("Unexpected size of data type.");
+            throw new NotSupportedException($"Unexpected size of data type. Exception thrown by {mdVar.Name} with the " +
+              $"following value reference: {mdVar.ValueReference}");
           }
         }
 
@@ -609,7 +611,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         {
           if (data.Length > 1)
           {
-            throw new NotSupportedException("Unexpected size of data type.");
+            throw new NotSupportedException($"Unexpected size of data type. Exception thrown by {mdVar.Name} with the " +
+              $"following value reference: {mdVar.ValueReference}");
           }
         }
 
@@ -736,7 +739,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       }
       case VariableTypes.Binary:
       {
-        throw new NotSupportedException("Must be called with binSizes argument!");
+        throw new NotSupportedException($"Must be called with binSizes argument! Exception thrown by {mdVar.Name} with " +
+          $"the following value reference: {mdVar.ValueReference}");
       }
       case VariableTypes.EnumFmi3:
       {
@@ -761,7 +765,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         break;
     }
 
-    throw new ArgumentOutOfRangeException();
+    throw new ArgumentOutOfRangeException($"The provided type '{type}' is not supported. Exception thrown by " +
+      $"{mdVar.Name} with the following value reference: {mdVar.ValueReference}");
   }
 
   public override void SetValue(uint valueRef, byte[] data, int[] binSizes)
@@ -781,13 +786,15 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         throw new ArgumentOutOfRangeException(
           nameof(binSizes),
           $"The expected data length ({binSizes.Sum()}) " +
-          $"does not match the received data length ({data.Length}).");
+          $"does not match the received data length ({data.Length}). Exception thrown by {mdVar.Name} with the following" +
+          $"value reference: {mdVar.ValueReference}");
       }
     }
 
     if (type != VariableTypes.Binary)
     {
-      throw new InvalidDataException("SetValue with binSizes must target a variable of type 'Binary'.");
+      throw new InvalidDataException($"SetValue with binSizes must target a variable of type 'Binary'. Exception " +
+        $"thrown by {mdVar.Name} with the following value reference: {mdVar.ValueReference}");
     }
 
     var values = new IntPtr[arraySize];
@@ -1518,7 +1525,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
       result[i] = str ??
                   throw new NativeCallException(
-                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}.");
+                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
+                    $"Exception thrown by the following value reference: {valueReferences[i]}");
     }
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);

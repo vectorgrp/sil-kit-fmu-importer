@@ -122,7 +122,8 @@ public class FmuDataManager
       {
         if (variableConfiguration == null)
         {
-          throw new NullReferenceException("The retrieved configured variable was null.");
+          throw new NullReferenceException($"The retrieved configured variable was null. Exception thrown by the " +
+            $"following value reference: {modelDescriptionVariable.ValueReference}");
         }
       }
 
@@ -232,8 +233,10 @@ public class FmuDataManager
       default:
         // handle as if it is a variable
         throw new InvalidCommunicationInterfaceException(
-          "The structure has a member variable with a causality other than Output, Parameter, " +
-          "StructuralParameter, or Input.");
+          $"The structure has a member variable with a causality other than Output, Parameter, " +
+          $"StructuralParameter, or Input. " +
+          $"Exception thrown by {configuredVariable.FmuVariableDefinition.Name} with the following value reference: " +
+          $"{configuredVariable.FmuVariableDefinition.ValueReference}");
     }
 
     var configStructFound = targetStructureInternal.TryGetValue(
@@ -245,7 +248,9 @@ public class FmuDataManager
         commInterface.StructDefinitions?.FirstOrDefault(sd => sd.Name == structType.CustomTypeName);
       if (structDefinitionOfPubSubType == null)
       {
-        throw new InvalidConfigurationException("A service has a type that is not defined!");
+        throw new InvalidConfigurationException($"A service has a type that is not defined! " +
+          $"Exception thrown by {configuredVariable.FmuVariableDefinition.Name} with the following value reference: " +
+          $"{configuredVariable.FmuVariableDefinition.ValueReference}");
       }
 
       var flattenedMembers = structDefinitionOfPubSubType.FlattenedMembers;

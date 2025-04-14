@@ -118,7 +118,8 @@ public class DataConverter
       {
         // NB: currently, lists must be fully populated
         throw new InvalidOperationException(
-          $"The list of deserialized objects for variable '{configuredVariable.TopicName}' is not fully populated.");
+          $"The list of deserialized objects for variable '{configuredVariable.TopicName}' with value reference " +
+          $"{configuredVariable.FmuVariableDefinition.ValueReference}, is not fully populated.");
       }
     }
 
@@ -348,7 +349,7 @@ public class DataConverter
       if (targetType.InnerType == null || targetType.InnerType.Type == null)
       {
         throw new NotSupportedException(
-          "Warning: detected nested list in communication interface. This is currently not supported.");
+          $"Warning: detected nested list in communication interface in {nameof(objectArray)}. This is currently not supported.");
       }
 
       // if list -> add array header
@@ -369,7 +370,8 @@ public class DataConverter
       // -> Throw an exception is this case
       if (targetType.Type == null)
       {
-        throw new NotSupportedException("The serialization of non-built-in types is currently not supported.");
+        throw new NotSupportedException($"The serialization of non-built-in types is currently not supported. " +
+          $"Exception thrown by {nameof(objectArray)}");
       }
 
       SerializeToSilKit(objectArray, true, targetType.Type, valueSizes, serializer);
@@ -405,7 +407,7 @@ public class DataConverter
 
     if (valueSizes == null || valueSizes.Length != objectArray.Length)
     {
-      throw new ArgumentException("valueSizes was either null or did not match the size of objectArray");
+      throw new ArgumentException($"{nameof(objectArray)}: valueSizes was either null or did not match the size of objectArray");
     }
 
     // Binaries and binary arrays are special as they need additional information regarding their size
@@ -583,7 +585,8 @@ public class DataConverter
       // (it's an list of a specific type not of object as the code may suggest)
       if (objectArray[0].GetType() != typeof(string))
       {
-        throw new NotSupportedException("Strings cannot be converted to or from other types");
+        throw new NotSupportedException($"Strings cannot be converted to or from other types. Exception thrown by " +
+          $"{nameof(objectArray)}");
       }
 
       // strings cannot be convert
@@ -598,7 +601,8 @@ public class DataConverter
 
     if (sourceType == typeof(IntPtr))
     {
-      throw new NotSupportedException("Binaries cannot be converted to or from other types.");
+      throw new NotSupportedException($"Binaries cannot be converted to or from other types. Exception thrown by " +
+        $"{nameof(objectArray)}");
     }
 
     throw new NotSupportedException($"Unknown data type ('{sourceType.Name}').");

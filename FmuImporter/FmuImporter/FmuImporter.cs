@@ -216,7 +216,8 @@ public class FmuImporter
         // the parameter is an array
         if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new NotSupportedException("FMI 2.0.x does not support arrays.");
+          throw new NotSupportedException($"FMI 2.0.x does not support arrays. Exception thrown by the following " +
+            $"value reference: {refValue}");
         }
 
         if (isHandlingStructuredParameters)
@@ -247,7 +248,8 @@ public class FmuImporter
         // binary type
         if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new NotSupportedException("FMI 2.0.x does not support the binary data type.");
+          throw new NotSupportedException($"FMI 2.0.x does not support the binary data type. Exception thrown by the " +
+            $"following value reference: {refValue}");
         }
 
         FmuEntity.Binding.SetValue(refValue, data, binSizes.ToArray());
@@ -272,7 +274,8 @@ public class FmuImporter
       {
         throw new InvalidConfigurationException(
           $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of input variables, but its " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' with value reference " +
+          $"{configuredVariable.FmuVariableDefinition.ValueReference} was added to the list of input variables, but its " +
           $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
       }
 
@@ -304,7 +307,8 @@ public class FmuImporter
       {
         throw new InvalidConfigurationException(
           $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of output variables, but its " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' with value reference " +
+          $"{configuredVariable.FmuVariableDefinition.ValueReference} was added to the list of output variables, but its " +
           $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
       }
 

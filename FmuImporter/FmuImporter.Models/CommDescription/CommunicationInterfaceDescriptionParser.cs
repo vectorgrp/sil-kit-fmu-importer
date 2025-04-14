@@ -43,17 +43,17 @@ public static class CommunicationInterfaceDescriptionParser
           {
             throw new InvalidCommunicationInterfaceException($"The configuration is invalid: {e.Message}", e);
           }
-          catch (Exception)
+          catch (Exception e)
           {
-            throw;
+            throw new Exception($"{e.Message}", e);
           }
         }
 
         return success;
       }
-      catch (InvalidCommunicationInterfaceException)
+      catch (InvalidCommunicationInterfaceException e)
       {
-        throw;
+        throw new Exception($"{e.Message}", e);
       }
       catch (YamlException e)
       {

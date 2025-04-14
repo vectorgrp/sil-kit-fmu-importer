@@ -20,12 +20,12 @@ public static class StructuredVariableParser
 
       if (string.IsNullOrEmpty(variableName))
       {
-        throw new ParserException("variable names must not be empty.");
+        throw new ParserException("Variable names must not be empty.");
       }
 
       if (variableName[0] == '.')
       {
-        throw new ParserException("variable names must not start with the separator character (.)");
+        throw new ParserException($"Variable names must not start with the separator character (.). Found in: {variableName}");
       }
 
       Parse(variableName.AsSpan(), result, logCallback);
@@ -56,19 +56,19 @@ public static class StructuredVariableParser
     if (input[lastProcessedIndex + 1] != '.')
     {
       // Check for existence of separator character
-      throw new ParserException($"Missing separator character detected.");
+      throw new ParserException($"Missing separator character detected in: {input.ToString()}");
     }
 
     if (lastProcessedIndex + 1 == input.Length - 1)
     {
       // trailing separator character is forbidden
-      throw new ParserException($"Trailing separator character detected.");
+      throw new ParserException($"Trailing separator character detected in: {input.ToString()}");
     }
 
     if (input[lastProcessedIndex + 2] == '.')
     {
       // leading separator character is forbidden
-      throw new ParserException("Two consecutive separator characters detected.");
+      throw new ParserException($"Two consecutive separator characters detected in: {input.ToString()}");
     }
 
     Parse(input.Slice(lastProcessedIndex + 2), path, logCallback);
@@ -126,7 +126,7 @@ public static class StructuredVariableParser
     var scanIndex = input.IndexOf('\'');
     if (scanIndex == -1)
     {
-      throw new ParserException("The processed topic name is invalid.");
+      throw new ParserException($"The processed topic name '{input.ToString()}' is invalid.");
     }
 
     if (scanIndex == 0)
@@ -152,7 +152,7 @@ public static class StructuredVariableParser
       nextIndex = input.IndexOf('.');
       if (nextIndex == input.Length - 1)
       {
-        throw new ParserException("Trailing separator detected.");
+        throw new ParserException($"Trailing separator detected in: {input.ToString()}");
       }
 
       if (nextIndex == -1)
@@ -163,7 +163,7 @@ public static class StructuredVariableParser
 
       if (nextIndex == 0)
       {
-        throw new ParserException("Two consecutive separators detected.");
+        throw new ParserException($"Two consecutive separators detected in: {input.ToString()}");
       }
 
       path.Add(input.Slice(0, nextIndex).ToString());

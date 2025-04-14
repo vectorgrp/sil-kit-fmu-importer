@@ -244,7 +244,7 @@ public class Configuration : ConfigurationPublic
     var configPathDir = Path.GetDirectoryName(ConfigurationPath);
     if (!Directory.Exists(configPathDir))
     {
-      throw new DirectoryNotFoundException("Failed to extract directory from ConfigurationPath.");
+      throw new DirectoryNotFoundException($"Failed to extract directory from ConfigurationPath '{ConfigurationPath}'");
     }
 
     var combinedPath = Path.Combine(configPathDir, path);

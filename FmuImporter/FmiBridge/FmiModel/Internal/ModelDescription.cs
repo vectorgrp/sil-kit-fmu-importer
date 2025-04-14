@@ -143,7 +143,8 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat64.unit))
         {
-          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException($"The type definition 'Float64' in the model description has a unit " +
+            $"'{typeDefFloat64.unit}' that does not match.");
         }
 
         var typeDef = new TypeDefinition()
@@ -157,7 +158,8 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat32.unit))
         {
-          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException($"The type definition 'Float32' in the model description has a unit " +
+            $"'{typeDefFloat32.unit}' that does not match.");
         }
 
         var typeDef = new TypeDefinition
@@ -199,7 +201,8 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefReal.unit))
         {
-          throw new ModelDescriptionException("The model description has a type definition with no matching unit.");
+          throw new ModelDescriptionException($"The type definition 'Real' in the model description has a unit " +
+            $"'{typeDefReal.unit}' that does not match.");
         }
 
         var typeDef = new TypeDefinition
@@ -313,7 +316,8 @@ public class ModelDescription
       if (!result)
       {
         throw new ModelDescriptionException(
-          "Failed to parse model description: multiple variables have the same name.");
+          $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing " +
+          $"{v.Name} with the following value reference: {v.ValueReference}");
       }
     }
   }
@@ -340,7 +344,8 @@ public class ModelDescription
       if (!result)
       {
         throw new ModelDescriptionException(
-          "Failed to parse model description: multiple variables have the same name.");
+          $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing " +
+          $"{v.Name} with the following value reference: {v.ValueReference}");
       }
     }
   }

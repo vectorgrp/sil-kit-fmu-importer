@@ -220,7 +220,8 @@ public class Variable
           Start = new object[arrLength];
           for (var i = 0; i < arrLength; i++)
           {
-            Start[i] = array.GetValue(i) ?? throw new InvalidOperationException();
+            Start[i] = array.GetValue(i) ?? throw new InvalidOperationException($"Error while getting the start field" +
+              $"for {input.name} with the following reference: {input.valueReference}");
           }
         }
         else if (res is List<byte> byteList)
@@ -451,7 +452,8 @@ public class Variable
       }
       else
       {
-        throw new DataConversionException("The dimension field did not contain the expected type.");
+        throw new DataConversionException($"The dimension field did not contain the expected type. Exception thrown by" +
+          $"{_originalVariable.name} with the following value reference: {_originalVariable.valueReference}");
       }
 
       FlattenedArrayLength = 1;
@@ -479,7 +481,8 @@ public class Variable
 
         if (v.VariableType != VariableTypes.UInt64)
         {
-          throw new ModelDescriptionException("The referenced dimension variable must be of type UInt64.");
+          throw new ModelDescriptionException($"The referenced dimension variable must be of type UInt64. Exception " +
+            $"thrown by {v.Name} with the following value reference: {v.ValueReference}");
         }
 
         if (v.Causality == Causalities.StructuralParameter || v.Variability == Variabilities.Constant)
@@ -497,18 +500,21 @@ public class Variable
           }
           else
           {
-            throw new ModelDescriptionException("The referenced variable did not have a start value.");
+            throw new ModelDescriptionException($"The referenced variable did not have a start value. Exception thrown " +
+              $"by {v.Name} with the following value reference: {v.ValueReference}");
           }
         }
         else
         {
           throw new ModelDescriptionException(
-            "The referenced dimension variable must either be a structuralParameter or a constant.");
+            $"The referenced dimension variable must either be a structuralParameter or a constant. Exception thrown " +
+            $"by {v.Name} with the following value reference: {v.ValueReference}");
         }
       }
       else
       {
-        throw new ModelDescriptionException("The dimension contained neither a start value nor a value reference.");
+        throw new ModelDescriptionException($"The dimension contained neither a start value nor a value reference. " +
+          $"Exception thrown by the following value reference: {variables[originalDimensions[i].valueReference]}");
       }
     }
 
