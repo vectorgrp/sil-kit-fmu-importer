@@ -23,6 +23,7 @@ public class FmuEntity : IDisposable
 
   public FmuSuperStates CurrentFmuSuperState { get; private set; } = FmuSuperStates.Uninitialized;
   public ModelDescription ModelDescription { get; set; }
+  public TerminalsAndIcons? TerminalsAndIcons { get; set; }
   public IFmiBindingCommon Binding { get; set; }
 
   public delegate void FmiLog(LogSeverity severity, string message);
@@ -36,6 +37,12 @@ public class FmuEntity : IDisposable
 
     Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, RaiseOnFmuLogEvent);
     ModelDescription = Binding.ModelDescription;
+
+    if (FmiVersion == FmiVersions.Fmi3)
+    {
+      // null if no TerminalsAndIcons
+      TerminalsAndIcons = Binding.TerminalsAndIcons;
+    }
   }
 
   protected virtual void RaiseOnFmuLogEvent(LogSeverity severity, string message)

@@ -637,4 +637,5 @@ The following table lists the meaning of the current exit codes:
 | 54   | FMI Binding     | FMU failed due to call that return with 'discard' status code  |
 | 55   | FMI Binding     | FMU failed due to call that return with 'error' status code |
 | 56   | FMI Binding     | FMU failed due to call that return with 'fatal' status code |
+| 57   | FMI Binding     | Failed to read the FMU's terminals and icons file |
 | 101  | SIL Kit Binding | Failed to log using SIL Kit's logger |

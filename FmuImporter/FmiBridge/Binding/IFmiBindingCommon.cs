@@ -9,6 +9,7 @@ namespace Fmi.Binding;
 public interface IFmiBindingCommon : IDisposable
 {
   public ModelDescription ModelDescription { get; }
+  public TerminalsAndIcons? TerminalsAndIcons { get; }
   public InternalFmuStates CurrentState { get; }
 
   public void GetValue(uint[] valueRefs, out ReturnVariable result, VariableTypes type);

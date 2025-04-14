@@ -14,4 +14,5 @@ public class ExitCodes
   public const int FmuFailedWithDiscard = Offset + 4;
   public const int FmuFailedWithError = Offset + 5;
   public const int FmuFailedWithFatal = Offset + 6;
+  public const int FailedToReadTerminalsAndIcons = Offset + 7;
 }

@@ -35,6 +35,8 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   public InternalFmuStates CurrentState { get; internal set; } = InternalFmuStates.Initial;
 
   public ModelDescription ModelDescription { get; }
+  
+  public TerminalsAndIcons? TerminalsAndIcons { get; }
 
   private readonly string _extractedFolderPath;
 
@@ -75,6 +77,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     }
 
     ModelDescription = InitializeModelDescription(ExtractedFolderPath);
+    TerminalsAndIcons = InitializeTerminalsAndIcons(ExtractedFolderPath);
 
     FullFmuLibPath =
       $"{Path.GetFullPath(ExtractedFolderPath + osDependentPath + "/" + ModelDescription.CoSimulation.ModelIdentifier)}";
@@ -159,6 +162,26 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       Log(LogSeverity.Debug, $"An error was encountered while reading the model description: {e}");
       throw;
     }
+  }
+
+  private TerminalsAndIcons? InitializeTerminalsAndIcons(string extractedFolderPath)
+  {
+    try
+    {
+      return ModelLoader.LoadTerminalsAndIconsFromExtractedPath(extractedFolderPath, ModelDescription, _loggerAction!);
+    }
+    catch (Exception e)
+    {
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.FailedToReadTerminalsAndIcons;
+      }
+
+      Log(LogSeverity.Error, $"An error was encountered while reading the terminals and icons: {e.Message}");
+      Log(LogSeverity.Debug, $"An error was encountered while reading the terminals and icons: {e}");
+      throw;
+    }
+    
   }
 
   private void InitializeModelBinding(string fullPathToLibrary)
