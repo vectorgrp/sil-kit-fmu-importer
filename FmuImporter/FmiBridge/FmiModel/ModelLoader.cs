@@ -65,6 +65,8 @@ public class ModelLoader
 
     ModelDescription? commonDescription = null;
 
+    TerminalsAndIcons? TerminalsAndIcons = null;
+
     using var fileStream = File.Open(modelDescriptionPath, FileMode.Open);
     XmlSerializer ser;
     switch (fmiVersion)
@@ -87,8 +89,20 @@ public class ModelLoader
         if (fmiModelDescription != null)
         {
           commonDescription = new ModelDescription(fmiModelDescription, logCallback);
-        }
 
+          var terminalsAndIconsPath = $"{extractedFmuPath}/terminalsAndIcons/terminalsAndIcons.xml";
+          if (File.Exists(terminalsAndIconsPath))
+          {
+            using var fileStreamTerminals = File.Open(terminalsAndIconsPath, FileMode.Open);
+            XmlSerializer serTerminals;
+            serTerminals = new XmlSerializer(typeof(fmiTerminalsAndIcons));
+            var terminalsAndIcons = serTerminals.Deserialize(fileStreamTerminals) as fmiTerminalsAndIcons;
+            if (terminalsAndIcons != null)
+            {
+              TerminalsAndIcons = new TerminalsAndIcons(terminalsAndIcons, commonDescription, logCallback);
+            }
+          }
+        }
         break;
       }
       default:
