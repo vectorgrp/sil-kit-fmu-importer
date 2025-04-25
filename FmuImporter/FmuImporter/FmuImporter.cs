@@ -577,6 +577,11 @@ public class FmuImporter
 
   public void ExitFmuImporter()
   {
+    if (FmuEntity == null)
+    {
+      return;
+    }
+
     if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initialized) &&
         !(FmuEntity.Binding.CurrentState is
             InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
