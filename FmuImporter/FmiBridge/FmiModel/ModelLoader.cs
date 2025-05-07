@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.IO.Compression;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
 using Fmi.FmiModel.Internal;
@@ -102,6 +103,7 @@ public class ModelLoader
     return commonDescription;
   }
 
+
   internal static TerminalsAndIcons? LoadTerminalsAndIconsFromExtractedPath(
     string extractedFmuPath, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
   {
@@ -169,4 +171,45 @@ public class ModelLoader
         return FmiVersions.Invalid;
     }
   }
+
+  private static bool IsLayeredStandardBus(in TerminalsAndIcons? terminalsAndIcons)
+  {
+    return (terminalsAndIcons != null) && terminalsAndIcons.Terminals.Values.Any(terminal => terminal.TerminalKind == "org.fmi-ls-bus.network-terminal");
+  }
+
+  public static void CheckCoSimAttributes(in ModelDescription modelDescription, in TerminalsAndIcons? TerminalsAndIcons, Action<LogSeverity, string> logCallback)
+  {
+    var coSimulation = modelDescription.CoSimulation;
+    // Check general CoSimulation attributes' requirements
+    if(coSimulation.ProvidesIntermediateUpdate)
+    {
+      logCallback.Invoke(LogSeverity.Warning, "[providesIntermediateUpdate=true] has been loaded as a Co-Simulation attribute but the FMU Importer expects it to be [providesIntermediateUpdate=false].");
+    }
+
+    if (coSimulation.MightReturnEarlyFromDoStep)
+    {
+      logCallback.Invoke(LogSeverity.Warning, "[mightReturnEarlyFromDoStep=true] has been loaded as a Co-Simulation attribute but the FMU Importer expects it to be [mightReturnEarlyFromDoStep=false].");
+    }
+
+    if (coSimulation.CanReturnEarlyAfterIntermediateUpdate)
+    {
+      logCallback.Invoke(LogSeverity.Warning, "[canReturnEarlyAfterIntermediateUpdate=true] has been loaded as a Co-Simulation attribute but the FMU Importer expects it to be [canReturnEarlyAfterIntermediateUpdate=false].");
+    }
+
+    // Check FLI-LS-BUS specific attributes' requirements
+    if (IsLayeredStandardBus(in TerminalsAndIcons) && !coSimulation.hasEventMode)
+    {
+      logCallback.Invoke(LogSeverity.Warning, "[hasEventMode=false] has been loaded as a Co-Simulation attribute but the FMU Importer expects it to be [hasEventMode=true] for FMI-LS-BUS compatibility.");
+    }
+
+    // Special case of the FixedInternalStepSize that defaults to 1ms if not set in modelDescription.xml
+    if (modelDescription.FmiVersion == FmiVersions.Fmi3.ToString())
+    {
+      if (coSimulation.FixedInternalStepSize == null)
+      {
+        logCallback.Invoke(LogSeverity.Warning, "The Model Description lacks the Co-Simulation attribute [fixedInternalStepSize]. The FMU Importer will internally default it to 1[ms].");
+      }
+    }
+  }
 }
+

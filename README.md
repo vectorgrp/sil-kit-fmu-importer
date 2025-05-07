@@ -44,7 +44,9 @@ Its behavior is configured by configuration files that are passed during launch.
         3. [VariableMappings](#variablemappings)
         4. [VariableMappings.Transformation](#variablemappingstransformation)
         5. [Supported Data Types](#supported-data-types)
-  7. [Error Handling](#error-handling)
+  7. [Supported FMUs](#supported-fmus)
+     1. [General Co-Simulation settings](#general-co-simulation-settings)
+  8. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
 
@@ -604,6 +606,20 @@ This is done by appending a question mark (`?`) at the end of the data type.
 
 > The FMU Importer will never skip optional data when distributing structures.
 However, it is still important to declare the structure's data types correctly, as this impacts the serialization of the structure.
+
+---
+
+## **Supported FMU Settings**
+The FMU Importer expects FMUs in Co-Simulation mode with some specific settings defined in `modelDescription.xml`, in a way to guarantee compatibility and synchronisation with other SIL Kit participants. These settings are shown below. 
+
+### **General Co-Simulation settings**
+These settings garantee synchronization on the SIL Kit network and avoid disruptions.
+
+|    **Model Description Attribute**     | **Required value**                |
+|----------------------------------------|-----------------------------------|
+| providesIntermediateUpdate             | false                             |
+| mightReturnEarlyFromDoStep             | false                             |
+| canReturnEarlyAfterIntermediateUpdate  | false                             |
 
 ---
 

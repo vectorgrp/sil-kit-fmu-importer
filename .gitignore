@@ -105,3 +105,6 @@ launchSettings.json
 
 # Resharper user settings
 *.DotSettings.user
+
+# vscode settings
+.vscode/settings.json

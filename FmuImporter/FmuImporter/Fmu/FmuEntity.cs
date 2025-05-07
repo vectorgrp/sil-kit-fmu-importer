@@ -43,6 +43,8 @@ public class FmuEntity : IDisposable
       // null if no TerminalsAndIcons
       TerminalsAndIcons = Binding.TerminalsAndIcons;
     }
+    // Check loaded ModelDescription Co-Simulation attributes and verify its compatibility 
+    ModelLoader.CheckCoSimAttributes(ModelDescription, TerminalsAndIcons, RaiseOnFmuLogEvent);
   }
 
   protected virtual void RaiseOnFmuLogEvent(LogSeverity severity, string message)
