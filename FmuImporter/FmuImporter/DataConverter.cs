@@ -4,9 +4,13 @@
 using System.Runtime.InteropServices;
 using Fmi;
 using Fmi.Binding.Helper;
+using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using FmuImporter.Models.Exceptions;
 using FmuImporter.Models.Helpers;
+using SilKit.Services.Can;
+using SilKit.Services.Logger;
+using SilKit.Services.PubSub;
 using SilKit.Supplements;
 
 namespace FmuImporter;
@@ -41,6 +45,11 @@ public class DataConverter
       {
         throw new NullReferenceException(
           $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
+      }
+
+      if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) /*&& TODO: optimizeClockedVarHandling */)
+      {
+        continue;
       }
 
       var localBinSize = new List<int>();
@@ -124,6 +133,21 @@ public class DataConverter
     }
 
     return bytes;
+  }
+
+  public byte[] SilKitCanFrameToLsCanTransmitOperation(CanFrame silkitCanFrame)
+  {
+    ushort dataSize = (ushort)silkitCanFrame.data.size;
+
+    CanTransmitOperation canTransmitOp = new CanTransmitOperation(dataSize);
+    canTransmitOp.SetOPCode((int)CanOperations.CAN_Transmit);
+    canTransmitOp.SetLength((uint)16 + dataSize); // 16 : header fields (without data)
+    canTransmitOp.SetID(silkitCanFrame.id);
+    canTransmitOp.SetIde((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Ide) == 0 ? 0 : 1);
+    canTransmitOp.SetRtr((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Rtr) == 0 ? 0 : 1);
+    canTransmitOp.SetData(silkitCanFrame.data.data);
+
+    return canTransmitOp.GetBytes();
   }
 
 #endregion SIL Kit -> FMU (plain)
@@ -325,6 +349,72 @@ public class DataConverter
         Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
         serializer);
     }
+  }
+
+  private static ushort CalculateDlc(ushort dataFieldSize)
+  {
+    return (dataFieldSize <= 8) ? dataFieldSize :
+           (dataFieldSize <= 12) ? (ushort)9 :
+           (dataFieldSize <= 16) ? (ushort)10 :
+           (dataFieldSize <= 20) ? (ushort)11 :
+           (dataFieldSize <= 24) ? (ushort)12 :
+           (dataFieldSize <= 32) ? (ushort)13 :
+           (dataFieldSize <= 48) ? (ushort)14 :
+           (dataFieldSize <= 64) ? (ushort)15 :
+                                   (ushort)0xFFFF;
+  }
+
+  public CanFrame LsCanTransmitOperationToSilKitCanFrame(byte[] LSCanFrame, ILogger Logger)
+  {
+    int size = Marshal.SizeOf(typeof(CanTransmitOperation));
+    IntPtr ptr = Marshal.AllocHGlobal(size);
+    Marshal.Copy(LSCanFrame, 0, ptr, LSCanFrame.Length);
+    var ptrToStruct = Marshal.PtrToStructure(ptr, typeof(CanTransmitOperation));
+    Marshal.FreeHGlobal(ptr);
+
+    if (ptrToStruct == null)
+    {
+      Logger.Log(LogLevel.Error, $"Error while casting CAN transmit operation to SIL Kit CAN frame. Retreived bytes:" +
+        $"{LSCanFrame}");
+      return new CanFrame();
+    }
+ 
+    CanTransmitOperation canTransmitOp = (CanTransmitOperation)ptrToStruct;
+
+    CanFrame silkitCanFrame = new CanFrame();
+
+    silkitCanFrame.id = canTransmitOp.GetID();
+    if (canTransmitOp.GetIde() == 1)
+    {
+      silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Ide;
+    }
+    if (canTransmitOp.GetRtr() == 1)
+    {
+      silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Rtr;
+    }
+    var dataLength = canTransmitOp.GetDataLength();
+    silkitCanFrame.dlc = CalculateDlc(dataLength);
+    if ( silkitCanFrame.dlc == 0xFFFF)
+    {
+      Logger.Log(LogLevel.Error, $"Error while processing the CAN frame dlc. The frame is ignored due to inconsistent " +
+        $"frame size. DataLength is: {dataLength}");
+      return new CanFrame();
+    }
+    // 3 next fields only used for can XL
+    silkitCanFrame.sdt = 0;
+    silkitCanFrame.vcid = 0;
+    silkitCanFrame.af = 0;
+
+    var handle = GCHandle.Alloc(canTransmitOp.GetData(), GCHandleType.Pinned);
+    var dataPtr = handle.AddrOfPinnedObject();
+    silkitCanFrame.data = new ByteVector
+    {
+      data = dataPtr,
+      size = (IntPtr)dataLength
+    };
+    handle.Free();
+
+    return silkitCanFrame;
   }
 
 #endregion FMU -> SIL Kit (plain)

@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using SilKit.Config;
+using SilKit.Services.Can;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
@@ -142,6 +143,11 @@ public class Participant : IDisposable
   public ILifecycleService CreateLifecycleService(LifecycleService.LifecycleConfiguration lc)
   {
     return new LifecycleService(this, lc);
+  }
+
+  public ICanController CreateCanController(string controllerName, string networkName)
+  {
+    return new CanController(this, controllerName, networkName);
   }
 
   public IDataPublisher CreateDataPublisher(string controllerName, PubSubSpec dataSpec, byte history)

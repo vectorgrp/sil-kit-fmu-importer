@@ -64,7 +64,8 @@ public class FmuDataManager
   ///   Thrown if one of the variables in the Importer configuration does not exist in the FMU's model description.
   /// </exception>
   /// <exception cref="NullReferenceException"></exception>
-  public void Initialize(Configuration importerConfiguration, CommunicationInterfaceInternal? commInterface)
+  public void Initialize(Configuration importerConfiguration, CommunicationInterfaceInternal? commInterface,
+     List<Variable> modelDescriptionVariables)
   {
     var variableConfigurationsDictionary =
       new Dictionary<uint, VariableConfiguration>(ModelDescription.Variables.Values.Count);
@@ -89,7 +90,7 @@ public class FmuDataManager
       (ModelDescription.VariableNamingConvention == ModelDescription.VariableNamingConventions.Structured) ||
       importerConfiguration.AlwaysUseStructuredNamingConvention;
 
-    foreach (var modelDescriptionVariable in ModelDescription.Variables.Values)
+    foreach (var modelDescriptionVariable in modelDescriptionVariables)
     {
       if (modelDescriptionVariable.Causality
           is not (Variable.Causalities.Input
@@ -158,6 +159,13 @@ public class FmuDataManager
         (configuredVariable.StructuredPath != null) &&
         (configuredVariable.StructuredPath.Path.Count > 1))
     {
+      if (!(configuredVariable.FmuVariableDefinition.Causality == Variable.Causalities.Input ||
+        configuredVariable.FmuVariableDefinition.Causality == Variable.Causalities.Output))        
+      {
+        // Those variable types are not input or output, and so should be ignored
+        return;
+      }
+
       // use structure handling for data processing
       var structName = configuredVariable.StructuredPath.RootName;
       var structType = commInterface.Publishers?.FirstOrDefault(pub => pub.Name == structName)?.ResolvedType;
@@ -413,7 +421,6 @@ public class FmuDataManager
     return returnData;
   }
 
-
   public void SetData(Dictionary<long, byte[]> silKitDataMap)
   {
     foreach (var dataKvp in silKitDataMap)
@@ -461,6 +468,16 @@ public class FmuDataManager
       {
         throw new NullReferenceException(
           $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
+      }
+
+      if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) /*&& TODO: optimizeClockedVarHandling */)
+      {
+        continue;
+      }
+
+      if ((structureMember.FmuVariableDefinition.Clocks != null) /*&& TODO: optimizeClockedVarHandling */)
+      {
+        Binding.SetValue(structureMember.FmuVariableDefinition.Clocks.FirstOrDefault(), new byte[] { 1 });
       }
 
       var data = fmuData[index];

@@ -41,7 +41,7 @@ internal struct DataMessageEventInternal
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
-internal struct ByteVector
+public struct ByteVector
 {
   public IntPtr data;
   public IntPtr /*size_t*/ size;

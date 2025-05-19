@@ -81,4 +81,29 @@ public class Logger : ILogger
   private static extern int SilKit_Participant_GetLogger(
     out IntPtr outLogger,
     [In] IntPtr participant);
+
+  public LogLevel GetLogLevel()
+  {
+    IntPtr logLevel = Marshal.AllocHGlobal(sizeof(UInt32));
+    try
+    {
+      Helpers.ProcessReturnCode(
+       (Helpers.SilKit_ReturnCodes)SilKit_Logger_GetLogLevel(LoggerPtr, logLevel),
+       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+      return (LogLevel)Marshal.ReadInt32(logLevel);
+    }
+    finally
+    {
+      Marshal.FreeHGlobal(logLevel);
+    }
+  }
+
+  /*
+    SilKit_Logger_GetLogLevel(SilKit_Logger* self, SilKit_LoggingLevel* outLevel);
+  */
+  [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+  private static extern int SilKit_Logger_GetLogLevel(
+    [In] IntPtr logger,
+    [In] IntPtr outLevel);
 }

@@ -28,7 +28,9 @@ public class ConfiguredStructure
   public void AddMember(ConfiguredVariable configuredVariable)
   {
     var exists = _structureMembers.ContainsKey(configuredVariable.StructuredPath!.PathWithRootName);
-    if (!exists)
+
+    if (!exists && 
+      (!(configuredVariable.FmuVariableDefinition.VariableType == Fmi.VariableTypes.TriggeredClock) /*&& TODO: optimizeClockedVarHandling */))
     {
       throw new ArgumentException(
         $"Failed to map '{configuredVariable.StructuredPath.PathWithRootName}' as a structure member.");

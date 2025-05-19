@@ -11,6 +11,7 @@ using FmuImporter.Models.CommDescription;
 using FmuImporter.Models.Config;
 using FmuImporter.Models.Exceptions;
 using FmuImporter.SilKit;
+using SilKit.Services.Can;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 
@@ -31,8 +32,10 @@ public class FmuImporter
 
   private SilKitEntity SilKitEntity { get; }
   private SilKitDataManager SilKitDataManager { get; }
+  private SilKitCanManager SilKitCanManager { get; }
   private FmuEntity FmuEntity { get; }
-  private FmuDataManager? FmuDataManager { get; set; }
+  private FmuDataManager FmuDataManager { get; set; }
+  private FmuCanManager FmuCanManager { get; set; }
 
   private readonly Configuration _fmuImporterConfig;
   private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
@@ -143,7 +146,31 @@ public class FmuImporter
       // Initialize FmuDataManager
       FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog);
 
-      PrepareConfiguredVariables();
+      // create a temporary copy to avoid modifying the FmuEntity's ModelDescription
+      var modelDescriptionVariables = new Dictionary<uint, Variable>(FmuEntity.ModelDescription.Variables);
+
+      if (FmuEntity.TerminalsAndIcons != null)
+      {
+        foreach (var pairNameTerminal in FmuEntity.TerminalsAndIcons.Terminals)
+        {
+          // handle CAN terminal if any
+          if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.CAN)
+          {
+            FmuCanManager = new FmuCanManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitCanManager = new SilKitCanManager(SilKitEntity);
+            break;
+          }
+        }
+        // process can variables and remove them from the modelDescriptionVariables
+        ProcessCanVariables(ref modelDescriptionVariables);
+      }
+      // if no CanManager, use the default ctor to avoid making them nullable
+      FmuCanManager ??= new FmuCanManager();
+      SilKitCanManager ??= new SilKitCanManager();
+
+      PrepareConfiguredVariables(modelDescriptionVariables.Values.ToList());
+
+      SilKitCanManager.StartCanControllers();
     }
     catch (Exception e)
     {
@@ -257,14 +284,14 @@ public class FmuImporter
     }
   }
 
-  private void PrepareConfiguredVariables()
+  private void PrepareConfiguredVariables(List<Variable> modelDescriptionVariables)
   {
     if (FmuDataManager == null)
     {
       throw new NullReferenceException($"{nameof(FmuDataManager)} was null.");
     }
 
-    FmuDataManager.Initialize(_fmuImporterConfig, _fmuImporterCommInterface);
+    FmuDataManager.Initialize(_fmuImporterConfig, _fmuImporterCommInterface, modelDescriptionVariables);
 
     // create subscribers for input variables
     foreach (var configuredVariable in FmuDataManager.InputConfiguredVariables.Values)
@@ -274,8 +301,7 @@ public class FmuImporter
       {
         throw new InvalidConfigurationException(
           $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' with value reference " +
-          $"{configuredVariable.FmuVariableDefinition.ValueReference} was added to the list of input variables, but its " +
+          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of input variables, but its " +
           $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
       }
 
@@ -331,6 +357,49 @@ public class FmuImporter
         _fmuImporterConfig.Namespace,
         new IntPtr(configuredStructure.StructureId),
         0);
+    }
+  }
+
+  private static int canControllerId = 1;
+  private void ProcessCanVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  {
+    FmuCanManager.Initialize(ref modelDescriptionVariables);
+
+    // if any, get the terminal names with their respective vRef in/out  
+    var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
+    if (networkNamesValueRefs.Count == 0) 
+    {
+      return;
+    }
+
+    for (int i = 0; i < FmuCanManager.OutputCanVariables.Count; i++)
+    {
+      string networkName = "";
+      foreach (var pairTerminalNameVrefs in networkNamesValueRefs)
+      {
+        if (pairTerminalNameVrefs.Value.Item2 == FmuCanManager.OutputCanVariables[i].ValueReference)
+        {
+          var vRefOut = pairTerminalNameVrefs.Value.Item2;
+          var vRefIn = pairTerminalNameVrefs.Value.Item1;
+          networkName = pairTerminalNameVrefs.Key;
+          SilKitCanManager.CreateCanController("SilKit_CAN_CTRL_" + canControllerId, networkName, vRefOut.Value);
+          SilKitCanManager.AddCanFrameHandler(vRefOut.Value, (long)vRefIn!.Value, SilKitCanManager.FuncCanFrameHandler, (int)TransmitDirection.RX);
+          if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
+          {
+            SilKitCanManager.AddFrameTransmitHandler(vRefOut.Value, SilKitCanManager.FuncCanFrameTransmitHandler,
+              (int)(CanTransmitStatus.Transmitted | CanTransmitStatus.Canceled | CanTransmitStatus.TransmitQueueFull));
+          }
+
+          canControllerId++;
+          break;
+        }
+      }
+      if (networkName == "")
+      {
+        throw new InvalidConfigurationException($"An internal error occurred. The value reference " +
+          $"{FmuCanManager.OutputCanVariables[i].ValueReference} with the mimeType application/org.fmi-standard.fmi-ls-bus.can does not have " +
+          $"a corresponding variable in the TerminalsAndIcons.xml file.");
+      }
     }
   }
 
@@ -401,7 +470,6 @@ public class FmuImporter
     }
   }
 
-
   private void OnSimulationStep(ulong nowInNs, ulong durationInNs)
   {
     bool eventEncountered = false;
@@ -464,6 +532,7 @@ public class FmuImporter
 
           if (terminateRequested)
           {
+            SilKitCanManager.StopCanControllers();
             FmuEntity.Terminate();
             ExitFmuImporter();
             return;
@@ -482,6 +551,10 @@ public class FmuImporter
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
     var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value);
     FmuDataManager.SetData(receivedSilKitData);
+
+    // handle received CAN frames
+    var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
+    FmuCanManager.SetCanData(receivedSilKitCanData);
 
     _lastSimStep = nowInNs;
 
@@ -507,6 +580,7 @@ public class FmuImporter
 
       if (terminateRequested)
       {
+        SilKitCanManager.StopCanControllers();
         FmuEntity.Terminate();
         ExitFmuImporter();
         return;
@@ -520,26 +594,36 @@ public class FmuImporter
         var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value);
         FmuDataManager.SetData(receivedSilKitDataEventMode);
 
+        // Handle received CAN frames
+        var receivedSilKitCanDataEventMode = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
+        FmuCanManager.SetCanData(receivedSilKitCanDataEventMode);
+
         do
         {
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           if (terminateRequested)
           {
+            SilKitCanManager.StopCanControllers();
             FmuEntity.Terminate();
             ExitFmuImporter();
             return;
           }
         } while (discreteStatesNeedUpdate);
         
-        FmuEntity.EnterStepMode();
         // Retrieve and publish non-structured variables
         var outputData = FmuDataManager.GetVariableOutputData();
         SilKitDataManager.PublishAll(outputData);
 
         // Retrieve and publish structures
         var structureOutputData = FmuDataManager.GetStructureOutputData();
-        SilKitDataManager.PublishAll(structureOutputData );
+        SilKitDataManager.PublishAll(structureOutputData);
+
+        // Retrieve and send can frames
+        var outputCan = FmuCanManager.GetCanData();
+        SilKitCanManager.SendAllFrames(outputCan);
+
+        FmuEntity.EnterStepMode();
       }
     }
     catch (Exception e)
@@ -586,6 +670,7 @@ public class FmuImporter
         !(FmuEntity.Binding.CurrentState is
             InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
     {
+      SilKitCanManager.StopCanControllers();
       FmuEntity.Terminate();
       // FreeInstance will be called by the dispose pattern
     }

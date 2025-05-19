@@ -51,6 +51,8 @@ public class Variable
 
   public VariableTypes VariableType { get; }
 
+  public string? MimeType { get; }
+
   public object[]? Start { get; set; }
 
   public ulong[]? Dimensions { get; set; }
@@ -121,6 +123,8 @@ public class Variable
         break;
       case Fmi3.fmi3Binary:
         VariableType = VariableTypes.Binary;
+        var downcast = (Fmi3.fmi3Binary)input;
+        MimeType = downcast.mimeType;
         break;
       case fmi3Enumeration inputVar:
         VariableType = VariableTypes.EnumFmi3;

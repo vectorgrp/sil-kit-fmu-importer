@@ -82,11 +82,11 @@ internal static class SilKitVersion
   {
     // CAN
 
-    //CanFrame = 1,
-    //CanFrameTransmitEvent = 2,
-    //CanFrameEvent = 3,
-    //CanStateChangeEvent = 4,
-    //CanErrorStateChangeEvent = 5,
+    CanFrame = 1,
+    CanFrameTransmitEvent = 2,
+    CanFrameEvent = 3,
+    CanStateChangeEvent = 4,
+    CanErrorStateChangeEvent = 5,
 
     // // CAN data type versions
     // #define SilKit_CanFrame_VERSION 1

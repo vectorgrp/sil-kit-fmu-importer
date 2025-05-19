@@ -215,6 +215,37 @@ public class FmuEntity : IDisposable
     return null;
   }
 
+  /* Get terminal name with associated vRefIn (Rx_Data) and vRefOut (Tx_Data) */
+  public Dictionary<string, (uint? /* vRefIn */, uint? /* vRefOut */)> GetTerminalsValueRefs()
+  {
+    var returnedDict = new Dictionary<string, (uint?, uint?)>();
+
+    if (TerminalsAndIcons == null) 
+    { 
+      return returnedDict;
+    }
+
+    foreach (var (terminalName, terminal) in TerminalsAndIcons.Terminals)
+    {
+      uint? vRefIn = null;
+      uint? vRefOut = null;
+      foreach (var (_, variable) in terminal.TerminalMemberVariables)
+      {
+        var memberName = variable.MemberName;
+        if (memberName == "Rx_Data")
+        {
+          vRefIn = variable.CorrespondingValueReference;
+        }
+        else if (memberName == "Tx_Data")
+        {
+          vRefOut = variable.CorrespondingValueReference;
+        }
+      }
+      returnedDict[terminalName] = (vRefIn, vRefOut);
+    }
+    return returnedDict;
+  }
+
   public double? GetStopTime()
   {
     return ModelDescription.DefaultExperiment?.StopTime;

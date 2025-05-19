@@ -14,8 +14,19 @@ internal class CommInterfaceGeneration
 {
   public static string GenerateFromFile(string fmuPath)
   {
-    var FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
-    return GenerateFrom(BindingFactory.CreateBinding(FmiVersion, fmuPath, LogCallback).ModelDescription);
+    try
+    {
+      var FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
+      var binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, LogCallback);
+      return GenerateFrom(binding.ModelDescription, binding.TerminalsAndIcons);
+    }
+    catch (Exception e)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.WriteLine(e);
+      Console.ResetColor();
+      throw;
+    }
   }
 
   private static void LogCallback(LogSeverity arg1, string arg2)
@@ -23,7 +34,7 @@ internal class CommInterfaceGeneration
     Console.WriteLine(arg2);
   }
 
-  private static string GenerateFrom(ModelDescription modelDescription)
+  private static string GenerateFrom(ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons)
   {
     var result = new StringBuilder();
 
@@ -32,7 +43,7 @@ internal class CommInterfaceGeneration
 
     GenerateEnumDefinitions(modelDescription, result);
 
-    GenerateStructDefinitionsPubsAndSubs(modelDescription, result);
+    GenerateStructDefinitionsPubsAndSubs(modelDescription, terminalsAndIcons, result);
 
     return result.ToString();
   }
@@ -89,7 +100,7 @@ internal class CommInterfaceGeneration
     }
   }
 
-  private static void GenerateStructDefinitionsPubsAndSubs(ModelDescription modelDescription, StringBuilder result)
+  private static void GenerateStructDefinitionsPubsAndSubs(ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons, StringBuilder result)
   {
     var publishers = new StringBuilder();
     var subscribers = new StringBuilder();
@@ -98,12 +109,26 @@ internal class CommInterfaceGeneration
     // This contains the *actual* name (modified with GenerateStructNameFromPath) of structs. Same keys as 'structsDictionnary'
     var generatedStructName = new Dictionary<string, string>();
 
+    FindLsBusCanValueRefs(terminalsAndIcons, out var valueRefsUsedForLsBusCan);
+
     foreach (var variable in modelDescription.Variables)
     {
-      if (variable.Value.Causality is Variable.Causalities.Local 
-          or Variable.Causalities.CalculatedParameter)
+      if (valueRefsUsedForLsBusCan.Contains(variable.Key))
+      {
+        // Skip variables that are used for LS-Bus CAN
+        continue;
+      }
+
+      if (variable.Value.Causality is not Variable.Causalities.Input
+          and not Variable.Causalities.Output)
       {
         // Those variable types are not input or output, and so should be ignored
+        continue;
+      }
+
+      if (variable.Value.VariableType is VariableTypes.TriggeredClock /* TODO: && optimizeClockedVarHandling */ )
+      {
+        // TriggeredClocks are not bound to a pubSub topic when optimizeClockedVarHandling is enabled
         continue;
       }
 
@@ -211,6 +236,22 @@ internal class CommInterfaceGeneration
     if (subscribers.Length > 0)
     {
       result.AppendLine(subscribers.ToString());
+    }
+  }
+
+  private static void FindLsBusCanValueRefs(TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusCan)
+  {
+    modelVariablesUsedForLsBusCan = new List<uint>();
+
+    var valuesToAdd = terminalsAndIcons?.Terminals
+     .Where(t => t.Value.InternalTerminalKind == InternalTerminalKind.CAN)
+     .SelectMany(t => t.Value.TerminalMemberVariables
+       .Where(m => m.Value.CorrespondingValueReference != null)
+       .Select(m => m.Value.CorrespondingValueReference!.Value));
+
+    if (valuesToAdd != null)
+    {
+      modelVariablesUsedForLsBusCan.AddRange(valuesToAdd);
     }
   }
 
