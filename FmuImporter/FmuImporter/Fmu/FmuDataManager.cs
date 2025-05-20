@@ -379,36 +379,32 @@ public class FmuDataManager
         var valueRefArr = new[] { structureMember.FmuVariableDefinition.ValueReference };
         Binding.GetValue(valueRefArr, out var result, configuredVariableType);
 
-        // apply linear transformation to individual variables
-        if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
-            (structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float64))
-        {
-          // apply FMI unit transformation
-          foreach (var variable in result.ResultArray)
-          {
-            var mdVar = ModelDescription.Variables[variable.ValueReference];
-            for (var i = 0; i < variable.Values.Length; i++)
-            {
-              // Apply unit transformation
-              Helpers.Helpers.ApplyLinearTransformationFmi(
-                ref variable.Values[i],
-                structureMember);
-            }
-          }
-        }
-
-        for (var i = 0; i < result.ResultArray.Length; i++)
-        {
-          var variable = result.ResultArray[i];
-          Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref variable.Values[i], structureMember);
-        }
-
         if (result.ResultArray.Length != 1)
         {
           throw new NotSupportedException("Currently, this method only supports to process one variable at a time.");
         }
 
-        // NB: fix this if more than one value is retrieved at once
+        var resVariable = result.ResultArray[0];
+
+        // apply linear transformation to individual variables
+        if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float32) ||
+            (structureMember.FmuVariableDefinition.VariableType == VariableTypes.Float64))
+        {
+          // apply FMI unit transformation
+          for (var i = 0; i < resVariable.Values.Length; i++)
+          {
+            // Apply unit transformation
+            Helpers.Helpers.ApplyLinearTransformationFmi(
+              ref resVariable.Values[i],
+              structureMember);
+          }
+        }
+
+        for (var i = 0; i < resVariable.Values.Length; i++)
+        {
+          Helpers.Helpers.ApplyLinearTransformationImporterConfig(ref resVariable.Values[i], structureMember);
+        }
+        
         memberData.Add(result.ResultArray[0]);
       }
 
