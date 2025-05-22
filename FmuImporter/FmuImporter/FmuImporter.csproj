@@ -9,6 +9,8 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
+        <PostBuildEnvVar Condition="('$(GITHUB_ACTIONS)' == 'true')">$(GITHUB_WORKSPACE)/FmuImporter/</PostBuildEnvVar>
+        <PostBuildEnvVar Condition="('$(GITHUB_ACTIONS)' != 'true')">$(MSBuildProjectDirectory)/../</PostBuildEnvVar>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,5 +23,12 @@
         <ProjectReference Include="..\FmuImporter.Models\FmuImporter.Models.csproj" />
         <ProjectReference Include="..\SilKitBridge\SilKitBridge.csproj" />
     </ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <ItemGroup>
+            <SilKitConfigFile Include="$(PostBuildEnvVar)_silkit/Config.silkit.yaml" />
+        </ItemGroup>
+        <Copy SourceFiles="@(SilKitConfigFile)" DestinationFolder="$(TargetDir)"  />
+	</Target>
 
 </Project>

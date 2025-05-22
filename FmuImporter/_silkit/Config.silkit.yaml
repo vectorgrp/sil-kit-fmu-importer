@@ -1,0 +1,5 @@
+Description: Sample Configuration for FMU Importer participant
+Logging:
+  Sinks:
+    - Level: Info
+      Type: Stdout

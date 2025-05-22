@@ -30,7 +30,8 @@ internal class Program
 
     var silKitConfigFileOption = new Option<string?>(
       "--sil-kit-config-file",
-      "Set the path to the SIL Kit configuration file.");
+      getDefaultValue: () => "./Config.silkit.yaml",
+      description: "Set the path to the SIL Kit configuration file.");
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
