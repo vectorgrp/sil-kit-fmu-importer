@@ -13,11 +13,17 @@ public class ModelDescription
     Flat,
     Structured
   }
+  public enum GenerationTools
+  {
+    Vector_vVIRTUALtarget,
+    Other
+  }
 
   // Former attributes
   public string ModelName { get; set; }
   public string Description { get; set; }
   public string InstantiationToken { get; set; }
+  public GenerationTools GenerationTool { get; set; }
   public string FmiVersion { get; set; }
   public string Version { get; set; }
   public VariableNamingConventions VariableNamingConvention { get; set; }
@@ -55,6 +61,9 @@ public class ModelDescription
     ModelName = input.modelName;
     Description = input.description;
     InstantiationToken = input.instantiationToken.Normalize();
+    GenerationTool = input.generationTool.Normalize().Contains("Vector vVIRTUALtarget")
+      ? GenerationTools.Vector_vVIRTUALtarget
+      : GenerationTools.Other;
     FmiVersion = input.fmiVersion;
     Version = input.version;
     VariableNamingConvention =

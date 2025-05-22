@@ -20,6 +20,21 @@ public class FmuExporter : BaseExporter
     VcdlPath = vcdlPath;
   }
 
+
+  public static string? FindVcdlFile(string directory)
+  {
+    // Search for .vcdl files in the "/resources" FMU subfolder
+    var resourcesPath = Path.Combine(directory, "resources");
+    
+    foreach (string file in Directory.EnumerateFiles(resourcesPath, "*.vcdl", SearchOption.AllDirectories))
+    {
+      return file; // Return the first .vcdl file found
+    }
+
+    return null; // Return null if no .vcdl file is found
+  }
+
+
   public void Export()
   {
     var commonTextSb = new StringBuilder();
@@ -29,23 +44,46 @@ public class FmuExporter : BaseExporter
     var FmiVersion = ModelLoader.FindFmiVersion(FmuPath);
 
     var Binding = BindingFactory.CreateBinding(FmiVersion, FmuPath, FmiLogCallback);
-
+    
     ModelDescription modelDescription;
     switch (FmiVersion)
     {
       case FmiVersions.Fmi2:
         modelDescription = ((IFmi2Binding)Binding).ModelDescription;
-        AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
-        ParseFmi2(modelDescription, interfaceSb, objectsSb);
         break;
       case FmiVersions.Fmi3:
         modelDescription = ((IFmi3Binding)Binding).ModelDescription;
-        AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
-        ParseFmi3(modelDescription, interfaceSb, objectsSb);
         break;
       case FmiVersions.Invalid:
       default:
         throw new InvalidDataException("The FMU uses an unsupported FMU version.");
+    }
+
+    // Check GenerationTool before parsing, if Vector vVIRTUALtarget FMU, copy-paste it instead of parsing 
+    if (modelDescription.GenerationTool == ModelDescription.GenerationTools.Vector_vVIRTUALtarget)
+    {
+      string? FmuVcdlPath = FindVcdlFile(Binding.ExtractedFolderPath);
+      if (File.Exists(FmuVcdlPath))
+      {
+        Console.WriteLine("The imported FMU has been identified as a Vector vVIRTUALtarget FMU. The .vCDL file included in this FMU will be extracted to the defined output path.");
+        // Copy FMU vCDL file instead of parsing
+        File.Copy(FmuVcdlPath, VcdlPath, overwrite: true);
+        return;
+      }
+      Console.WriteLine("The provided Vector vVIRTUALtarget FMU does not contain a .vCDL file. A .vCDL file will be exported to the defined output path.");
+    }
+
+    // Proceed with parsing
+    AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
+
+    switch (FmiVersion)
+    {
+      case FmiVersions.Fmi2:
+        ParseFmi2(modelDescription, interfaceSb, objectsSb);
+        break;
+      case FmiVersions.Fmi3:
+        ParseFmi3(modelDescription, interfaceSb, objectsSb);
+        break;
     }
 
     commonTextSb.Append(interfaceSb.ToString());

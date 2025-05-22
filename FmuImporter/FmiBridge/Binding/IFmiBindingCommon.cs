@@ -16,7 +16,7 @@ public interface IFmiBindingCommon : IDisposable
 
   public void SetValue(uint valueRef, byte[] data);
   public void SetValue(uint valueRef, byte[] data, int[] binSizes);
-
+  public string ExtractedFolderPath { get; }
   public void DoStep(
     double currentCommunicationPoint,
     double communicationStepSize,
