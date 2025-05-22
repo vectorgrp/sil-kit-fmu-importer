@@ -32,8 +32,16 @@ jobs:
       HTTP_PROXY: ""
       HTTPS_PROXY: ""
 
+
+      
+
     steps:
     # Check out this Git repo
+    - name: Install .Net 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+      
     - uses: actions/checkout@v4
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
