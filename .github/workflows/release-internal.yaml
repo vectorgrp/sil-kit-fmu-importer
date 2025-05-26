@@ -48,7 +48,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       env:
-        NODE_EXTRA_CA_CERTS: "/tmp/ca/Vector_Root_CA_2.0.crt"
+        NODE_EXTRA_CA_CERTS: ${{ secrets.CERT_PATH }}
         http_proxy: ""  # Explicitly disable the proxy for Node.js
         https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
