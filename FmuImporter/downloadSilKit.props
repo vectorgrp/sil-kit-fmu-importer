@@ -8,7 +8,7 @@
   <Target Name="PrepareSilKit" AfterTargets="BuildAll;Build"
           Condition="!Exists('$(SilKitWinLibPath)')">
     <PropertyGroup>
-      <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/sil-kit%2Fv$(SilKitVersion)/</SilKitUrl>
+      <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/v$(SilKitVersion)/</SilKitUrl>
       <SilKitWinName>SilKit-$(SilKitVersion)-Win-x86_64-VS2017</SilKitWinName>
       <SilKitUbuntuName>SilKit-$(SilKitVersion)-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
     </PropertyGroup>
