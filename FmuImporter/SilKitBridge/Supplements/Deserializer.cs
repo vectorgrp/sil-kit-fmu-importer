@@ -105,6 +105,12 @@ public class Deserializer
     throw new NotSupportedException("Failed to deserialize data type: " + type.FullName);
   }
 
+  public object DeserializeRaw(int byteCount)
+  {    
+    var span = DeserializeAligned(byteCount);    
+    return span.ToArray();
+  }
+
   // struct
   public void BeginStruct()
   {
@@ -142,8 +148,7 @@ public class Deserializer
     _readPos = 0;
     _unalignedBits = 0;
   }
-
-
+  
   private Span<byte> DeserializeAligned(int byteCount)
   {
     Align();

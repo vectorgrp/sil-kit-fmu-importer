@@ -84,6 +84,13 @@ public class Serializer
     _buffer.Capacity += data.Length;
     _buffer.AddRange(data);
   }
+  
+  // vcdl struct
+  public void SerializeRaw(byte[] data)
+  {
+    Align();
+    _buffer.AddRange(data);
+  }
 
   // struct
   public void BeginStruct()

@@ -545,7 +545,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
         SetInt8(
           new[] { mdVar.ValueReference },
-          new[] { (sbyte)data[0] });
+          values);
         return;
       }
       case VariableTypes.Int16:

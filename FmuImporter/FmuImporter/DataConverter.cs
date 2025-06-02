@@ -159,6 +159,14 @@ public class DataConverter
     var att = configuredVariable.ImporterVariableConfiguration.Transformation?.ResolvedTransmissionType;
     if (att != null)
     {
+      if (configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null)
+      {
+        return new List<object?>
+        {
+          deserializer.DeserializeRaw((int)configuredVariable.FmuVariableDefinition.VcdlStructMaxSize)
+        };
+      }
+
       return DeserializeFromSilKit(deserializer, att, targetType);
     }
 
@@ -166,6 +174,14 @@ public class DataConverter
     // regular deserialization
     if (configuredVariable.FmuVariableDefinition.IsScalar)
     {
+      if (configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null)
+      {
+        return new List<object?>
+        {
+          deserializer.DeserializeRaw((int)configuredVariable.FmuVariableDefinition.VcdlStructMaxSize)
+        };
+      }
+
       return new List<object?>
       {
         DeserializeFromSilKit(deserializer, type, type)
@@ -176,7 +192,9 @@ public class DataConverter
     var objectCount = deserializer.BeginArray();
     for (var i = 0; i < objectCount; i++)
     {
-      result.Add(DeserializeFromSilKit(deserializer, type, type));
+      result.Add(configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null
+          ? deserializer.DeserializeRaw((int)configuredVariable.FmuVariableDefinition.VcdlStructMaxSize)
+          : DeserializeFromSilKit(deserializer, type, type));
     }
 
     deserializer.EndArray();
@@ -345,6 +363,7 @@ public class DataConverter
       SerializeToSilKit(
         variable.Values,
         variable.IsScalar,
+        configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null,
         Helpers.Helpers.VariableTypeToType(variable.Type),
         Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
         serializer);
@@ -464,7 +483,7 @@ public class DataConverter
           $"Exception thrown by {nameof(objectArray)}");
       }
 
-      SerializeToSilKit(objectArray, true, targetType.Type, valueSizes, serializer);
+      SerializeToSilKit(objectArray, true, false, targetType.Type, valueSizes, serializer);
     }
 
     // end optional
@@ -478,6 +497,7 @@ public class DataConverter
   private void SerializeToSilKit(
     object[] objectArray,
     bool isScalar,
+    bool serializeRawData,
     Type sourceType,
     int[]? valueSizes,
     Serializer serializer)
@@ -520,8 +540,14 @@ public class DataConverter
         Array.Fill<byte>(binData, 0);
       }
       
-
-      serializer.Serialize(binData);
+      if (serializeRawData)
+      {
+        serializer.SerializeRaw(binData);
+      }
+      else
+      {
+        serializer.Serialize(binData);
+      }      
     }
 
     if (!isScalar)

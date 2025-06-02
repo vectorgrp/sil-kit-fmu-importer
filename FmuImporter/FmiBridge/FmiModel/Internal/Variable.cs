@@ -52,6 +52,10 @@ public class Variable
   public VariableTypes VariableType { get; }
 
   public string? MimeType { get; }
+  
+  // used for (De-)Serialization of Binaries with MimeType "*.vcdl.struct.*"
+  // e.g. present in FMUs exported by Vector vVIRTUALtarget
+  public int? VcdlStructMaxSize { get; }
 
   public object[]? Start { get; set; }
 
@@ -243,6 +247,14 @@ public class Variable
     IsScalar =
       _originalVariable.GetType().GetProperty("Dimension")?.GetValue(_originalVariable) is not
         fmi3ArrayableVariableDimension[];
+
+    if (VariableType is VariableTypes.Binary &&
+        MimeType is not null &&
+        input.GetType().GetProperty("maxSize")?.GetValue(input) is not null and var maxSize &&
+        MimeType.Contains(".vcdl.struct."))
+    {
+      VcdlStructMaxSize = Convert.ToInt32(maxSize.ToString());
+    }
   }
 
   public Variable(fmi2ScalarVariable input, Dictionary<string, TypeDefinition> typeDefinitions)
