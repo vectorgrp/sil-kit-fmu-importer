@@ -4,6 +4,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
+using Fmi.FmiModel;
 using FmuImporter.SilKit;
 using SilKit.Services.Orchestration;
 
@@ -31,7 +32,7 @@ internal class Program
     var silKitConfigFileOption = new Option<string?>(
       "--sil-kit-config-file",
       getDefaultValue: () => "./Config.silkit.yaml",
-      description: "Set the path to the SIL Kit configuration file.");
+      description: "Set the path to the SIL Kit configuration file.");
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
@@ -56,14 +57,6 @@ internal class Program
     participantNameOption.AddAlias("-p");
     rootCommand.AddOption(participantNameOption);
 
-    // This method is deprecated as of version 1.1.0 (see changelog)
-    var useStopTimeOption = new Option<bool>(
-      "--use-stop-time",
-      () => true);
-    useStopTimeOption.AddAlias("-t");
-    useStopTimeOption.IsHidden = true;
-    rootCommand.AddOption(useStopTimeOption);
-
     var lifecycleModeOption = new Option<string>(
         "--operation-mode",
         description:
@@ -85,25 +78,45 @@ internal class Program
         "unsynchronized");
     rootCommand.AddOption(timeSyncModeOption);
 
-    rootCommand.SetHandler(
-      (
-        fmuPath,
-        silKitConfigFile,
-        fmuImporterConfigFile,
-        fmuImporterCommInterface,
-        participantName,
-        useStopTime,
-        lifecycleMode,
-        timeSyncMode) =>
+    var createPersistedFmuOption = new Option<bool>(
+      "--persist",
+      description: "Unpack the FMU into a persistent directory.",
+      getDefaultValue: () => false);
+    rootCommand.AddOption(createPersistedFmuOption);
+
+    var usePersistedFmuOption = new Option<bool>(
+      "--use-persisted",
+      description: "Use a persisted FMU directory (created with \"--persist\" option).",
+      getDefaultValue: () => false);
+    rootCommand.AddOption(usePersistedFmuOption);
+
+    rootCommand.SetHandler((context) =>
+    {
+      var fmuPath = context.ParseResult.GetValueForOption(fmuPathOption);
+      var silKitConfigFile = context.ParseResult.GetValueForOption(silKitConfigFileOption)!;
+      var fmuImporterConfigFile = context.ParseResult.GetValueForOption(fmuImporterConfigFileOption);
+      var fmuImporterCommInterface = context.ParseResult.GetValueForOption(fmuImporterCommInterfaceFileOption);
+      var participantName = context.ParseResult.GetValueForOption(participantNameOption)!;
+      var lifecycleMode = context.ParseResult.GetValueForOption(lifecycleModeOption);
+      var timeSyncMode = context.ParseResult.GetValueForOption(timeSyncModeOption);
+      var createPersitentFmu = context.ParseResult.GetValueForOption(createPersistedFmuOption);
+      var usePersistedFmu = context.ParseResult.GetValueForOption(usePersistedFmuOption);
+
+      try
       {
-        try
-        {
           if (!File.Exists(fmuPath))
           {
             throw new FileNotFoundException($"The provided FMU file path ({fmuPath}) is invalid.");
           }
 
-          if (silKitConfigFile != null && !File.Exists(silKitConfigFile))
+          if(createPersitentFmu)
+          {
+            // special case early exit : if "--persist" flag is passed, generate the persistent FMU folder and return, no simulation should be started
+            ModelLoader.CreatePersistentFmuArtifacts(fmuPath);
+            return;
+          }
+
+          if (!File.Exists(silKitConfigFile))
           {
             throw new FileNotFoundException(
               $"The provided SIL Kit configuration file path ({silKitConfigFile}) is invalid.");
@@ -165,7 +178,9 @@ internal class Program
             fmuImporterCommInterface,
             participantName,
             parsedLifecycleMode,
-            parsedTimeSyncMode);
+            parsedTimeSyncMode,
+            usePersistedFmu
+            );
 
           instance.StartSimulation();
           instance.Dispose();
@@ -190,16 +205,7 @@ internal class Program
             Console.ResetColor();
           }
         }
-      },
-      fmuPathOption,
-      silKitConfigFileOption,
-      fmuImporterConfigFileOption,
-      fmuImporterCommInterfaceFileOption,
-      participantNameOption,
-      useStopTimeOption,
-      lifecycleModeOption,
-      timeSyncModeOption);
-
+      });
     await rootCommand.InvokeAsync(args);
   }
 

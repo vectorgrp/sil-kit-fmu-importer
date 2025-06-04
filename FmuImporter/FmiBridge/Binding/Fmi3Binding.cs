@@ -12,7 +12,6 @@ using System.Text;
 using Fmi.Binding.Helper;
 using Fmi.Exceptions;
 using Fmi.FmiModel.Internal;
-using Fmi3;
 
 namespace Fmi.Binding;
 
@@ -49,7 +48,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
   }
 
-  public Fmi3Binding(string fmuPath, Action<LogSeverity, string> logCallback) : base(fmuPath, OsPath, logCallback)
+  public Fmi3Binding(string fmuPath, bool usePersistedFmu, Action<LogSeverity, string> logCallback) : base(fmuPath, usePersistedFmu, OsPath, logCallback)
   {
     // Common functions
     SetDelegate(out _fmi3InstantiateCoSimulation);

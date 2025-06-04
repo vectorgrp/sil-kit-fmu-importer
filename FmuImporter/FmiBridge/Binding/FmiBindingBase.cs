@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Fmi.Binding.Helper;
 using Fmi.Exceptions;
@@ -67,15 +66,20 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
   }
 
   // ctor
-  protected FmiBindingBase(string fmuPath, string osDependentPath, Action<LogSeverity, string> logCallback)
+  protected FmiBindingBase(string fmuPath, bool usePersistedFmu, string osDependentPath, Action<LogSeverity, string> logCallback)
   {
     _loggerAction = logCallback;
-    ModelLoader.ExtractFmu(fmuPath, out _extractedFolderPath, out _isTemporary);
+    ModelLoader.ExtractFmu(fmuPath, usePersistedFmu, out _extractedFolderPath, out _isTemporary, logCallback);
     if (IsTemporary)
     {
       Log(LogSeverity.Debug, $"Temporarily extracted the FMU to '{_extractedFolderPath}'.");
     }
-
+    else
+    {
+      // persistence mode
+      Log(LogSeverity.Information, $"Loading FMU with persistence from '{_extractedFolderPath}'.");
+    }
+    
     ModelDescription = InitializeModelDescription(ExtractedFolderPath);
     TerminalsAndIcons = InitializeTerminalsAndIcons(ExtractedFolderPath);
 

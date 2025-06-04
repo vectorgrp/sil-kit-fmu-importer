@@ -30,12 +30,12 @@ public class FmuEntity : IDisposable
 
   public event FmiLog? OnFmuLog;
 
-  public FmuEntity(string fmuPath, FmiLog fmiLogCallback)
+  public FmuEntity(string fmuPath, bool usePersistedFmu, FmiLog fmiLogCallback)
   {
     FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
     OnFmuLog = fmiLogCallback;
 
-    Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, RaiseOnFmuLogEvent);
+    Binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, usePersistedFmu, RaiseOnFmuLogEvent);
     ModelDescription = Binding.ModelDescription;
 
     if (FmiVersion == FmiVersions.Fmi3)

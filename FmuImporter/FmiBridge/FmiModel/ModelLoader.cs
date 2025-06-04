@@ -2,7 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.IO.Compression;
-using System.Reflection;
+using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Serialization;
 using Fmi.FmiModel.Internal;
@@ -11,31 +11,102 @@ namespace Fmi.FmiModel;
 
 public class ModelLoader
 {
-  internal static void ExtractFmu(string fmuPath, out string extractedPath, out bool isTemporary)
+  internal static string GenerateHashString(string fmuPath)
   {
-    // check if the directory exists
-    var targetFolderPath =
-      $"{Path.GetDirectoryName(fmuPath)}{Path.DirectorySeparatorChar}{Path.GetFileNameWithoutExtension(fmuPath)}";
+    using var sha256 = SHA256.Create();
+    using var stream = File.OpenRead(fmuPath);
+    var hashBytes = sha256.ComputeHash(stream);
+    return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+  }
 
-    // TODO switch to temporary directory as soon as everything works as intended
-    //var dir = Directory.CreateTempSubdirectory(
-    //  $"SilKitImporter_{Path.GetFileNameWithoutExtension(fmuPath)}");
-    if (Directory.Exists(targetFolderPath) && Directory.EnumerateFileSystemEntries(targetFolderPath).Any())
+  internal static void SpawnFmuHashFile(string fmuPath, string outputDirectory)
+  {
+    var filePath = Path.Combine(outputDirectory, "fmu_SHA256.txt");
+    File.WriteAllText(filePath, GenerateHashString(fmuPath));
+  }
+
+  private static string GetTargetFolderPath(string fmuPath)
+  {
+    return Path.Combine(Path.GetDirectoryName(fmuPath)!, Path.GetFileNameWithoutExtension(fmuPath));
+  }
+
+  private static void ExtractFmuToDirectory(string fmuPath, string destinationPath)
+  {
+    Directory.CreateDirectory(destinationPath);
+    ZipFile.ExtractToDirectory(fmuPath, destinationPath);
+  }
+
+  internal static bool ShaComparisonIsOk(string fmuPath)
+  {
+    var fmuDirectory = Path.Combine(Path.GetDirectoryName(fmuPath)!, Path.GetFileNameWithoutExtension(fmuPath));
+    var hashFilePath = Path.Combine(fmuDirectory, "fmu_SHA256.txt");
+
+    if (!File.Exists(hashFilePath))
     {
-      isTemporary = false;
-      extractedPath = targetFolderPath;
-      // directory exists and has entries -> skip extraction
-      return;
+      return false;
+    }
+
+    var existingHash = File.ReadAllText(hashFilePath).Trim();
+    var currentHash = GenerateHashString(fmuPath);
+
+    return string.Equals(existingHash, currentHash, StringComparison.OrdinalIgnoreCase);
+  }
+
+  public static void CreatePersistentFmuArtifacts(string fmuPath)
+  {
+    var targetFolderPath = GetTargetFolderPath(fmuPath);
+
+    if (Directory.Exists(targetFolderPath))
+    {
+      Console.WriteLine($"An extracted FMU already exists at [{targetFolderPath}], overwriting the directory with the new FMU.");
+      Directory.Delete(targetFolderPath, recursive: true);
+    }
+
+    ExtractFmuToDirectory(fmuPath, targetFolderPath);
+    SpawnFmuHashFile(fmuPath, targetFolderPath);
+
+    Console.WriteLine($"Extracted FMU to the following persistent directory [{targetFolderPath}]");
+  }
+
+  internal static void ExtractFmu(string fmuPath, bool usePersistedFmu, out string extractedPath, out bool isTemporary, Action<LogSeverity, string> logCallback)
+  {
+    var targetFolderPath = GetTargetFolderPath(fmuPath);
+    bool folderExists = Directory.Exists(targetFolderPath) && Directory.EnumerateFileSystemEntries(targetFolderPath).Any();
+
+    if(usePersistedFmu)
+    {
+      if(folderExists) 
+      {
+        isTemporary = false;
+        extractedPath = targetFolderPath;
+        if (ShaComparisonIsOk(fmuPath))
+        {
+          logCallback.Invoke(LogSeverity.Debug, $"Persistence SHA256 check passed.");
+          return;
+        }
+        else
+        {
+          throw new InvalidOperationException(
+          $"Persistence SHA256 check failed: hash of FMU at '{fmuPath}' does not match the hash in '{targetFolderPath}'.\n" +
+          $"Persistent artifacts may be outdated or invalid. Please regenerate them by running:\n" +
+          $"FmuImporter(.exe) -f {fmuPath} --persist");
+        }
+      }
+      else 
+      {
+        throw new InvalidOperationException(
+          $"Persistence use requested, but no persistent FMU found at '{targetFolderPath}'.\n" +
+          $"Please generate it by running: FmuImporter(.exe) -f {fmuPath} --persist\")");
+      }
     }
 
     var tempDirectory = CreateTempDirectory();
+    var tempTargetPath = Path.Combine(tempDirectory, Path.GetFileNameWithoutExtension(fmuPath));
 
-    var dir = Directory.CreateDirectory(
-      $"{tempDirectory}/{Path.GetFileNameWithoutExtension(fmuPath)}");
+    ExtractFmuToDirectory(fmuPath, tempTargetPath);
 
-    ZipFile.ExtractToDirectory(fmuPath, dir.FullName);
+    extractedPath = tempTargetPath;
     isTemporary = true;
-    extractedPath = dir.FullName;
   }
 
   private static string CreateTempDirectory()

@@ -177,6 +177,8 @@ Available options are:
 | -i, --fmu-importer-communication-interface-file \<communication-interface-file>  | Set the path to the FMU Importer configuration file. |
 | -p, --participant-name \<participant-name>                                       | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
 | --time-sync-mode \<synchronized \| unsynchronized>                               | Choose the time synchronization mode. [default: synchronized] |
+| --persist                                                                        | Unpack the FMU into a persisted FMU directory. [default: False] |
+| --use-persisted                                                                  | Use a persisted FMU directory (created with "--persist" option). [default: False] |
 | --version                                                                        | Show version information |
 | -?, -h, --help                                                                   | Show help and usage information |
 
@@ -185,6 +187,7 @@ If no configuration was provided or if it did not specify a registry URI, the de
 The FMU Importer uses the SIL Kit logger for its output.
 Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer.
 The FMU Importer prints most of its logs on the `Info` level, but in case an error occurs, there is one log message on the `Error` level that contains the error message and a log message on the `Debug` level that contains the error message including further information (such as a stack trace) to track the error's origin more easily.
+> Persistence allows the FMU to be extracted once and reused across runs by storing it in a known folder (that has the same name as the FMU itself) and validating it with a hash.
 
 ## **Data, Time, and Lifecycle Handling**
 

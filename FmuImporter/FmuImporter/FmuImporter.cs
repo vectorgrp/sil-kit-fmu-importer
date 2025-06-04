@@ -46,12 +46,13 @@ public class FmuImporter
 
   public FmuImporter(
     string fmuPath,
-    string? silKitConfigurationPath,
+    string silKitConfigurationPath,
     string? fmuImporterConfigFilePath,
     string? fmuImporterCommInterfaceFilePath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
-    TimeSyncModes timeSyncMode)
+    TimeSyncModes timeSyncMode,
+    bool usePersistedFmu)
   {
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>
@@ -121,7 +122,7 @@ public class FmuImporter
 
     try
     {
-      FmuEntity = new FmuEntity(fmuPath, FmuEntity_OnFmuLog);
+      FmuEntity = new FmuEntity(fmuPath, usePersistedFmu, FmuEntity_OnFmuLog);
 
       _configuredParameters = _fmuImporterConfig.GetParameters();
       _configuredStructuralParameters = new Dictionary<string, Parameter>();

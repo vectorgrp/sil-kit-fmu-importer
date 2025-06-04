@@ -26,7 +26,7 @@ public class SilKitEntity : IDisposable
   public ILogger Logger { get; set; }
 
   public SilKitEntity(
-    string? configurationPath,
+    string configurationPath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
     TimeSyncModes timeSyncMode)
@@ -35,15 +35,9 @@ public class SilKitEntity : IDisposable
 
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
-    if (string.IsNullOrEmpty(configurationPath))
-    {
-      config = wrapper.GetConfigurationFromString("");
-    }
-    else
-    {
-      config = wrapper.GetConfigurationFromFile(configurationPath);
-    }
-
+    
+    config = wrapper.GetConfigurationFromFile(configurationPath);
+    
     var lc = new LifecycleService.LifecycleConfiguration(lifecycleMode);
 
     _participant = wrapper.CreateParticipant(config, participantName);
