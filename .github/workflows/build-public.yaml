@@ -25,7 +25,7 @@ jobs:
 
   # Get environment variable for docker image URI and provide it to next build step
   prep-linux:
-    runs-on: [Ubuntu-20.04]
+    runs-on: [ubuntu-22.04]
     outputs:
       image: ${{ steps.set_image.outputs.image }}
     environment: build-action
@@ -39,7 +39,7 @@ jobs:
 
   # Build the project, then remove the built artifacts
   build-linux:
-    runs-on: [Ubuntu-20.04]
+    runs-on: [ubuntu-22.04]
     needs: prep-linux
     container:
       image: ${{ needs.prep-linux.outputs.image }}
