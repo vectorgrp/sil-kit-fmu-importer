@@ -43,7 +43,7 @@ public class FmuExporter : BaseExporter
 
     var FmiVersion = ModelLoader.FindFmiVersion(FmuPath);
 
-    var Binding = BindingFactory.CreateBinding(FmiVersion, FmuPath, FmiLogCallback);
+    var Binding = BindingFactory.CreateBinding(FmiVersion, FmuPath, false, FmiLogCallback);
     
     ModelDescription modelDescription;
     switch (FmiVersion)

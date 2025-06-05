@@ -17,7 +17,7 @@ internal class CommInterfaceGeneration
     try
     {
       var FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
-      var binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, LogCallback);
+      var binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, false, LogCallback);
       return GenerateFrom(binding.ModelDescription, binding.TerminalsAndIcons);
     }
     catch (Exception e)
