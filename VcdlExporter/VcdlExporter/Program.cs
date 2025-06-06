@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.CommandLine;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace VcdlExporter;
@@ -59,8 +60,19 @@ internal class Program
     fmuCommand.SetHandler(
       (fmuPath, vcdlPath) =>
       {
-        var fmuExporter = new FmuExporter(fmuPath, vcdlPath);
-        fmuExporter.Export();
+        try
+        {
+          var fmuExporter = new FmuExporter(fmuPath, vcdlPath);
+          fmuExporter.Export();
+        }
+        catch (Exception e)
+        {
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine(
+            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+          Debug.WriteLine($"Encountered exception: {e}.");
+          Console.ResetColor();
+        }
       },
       fmuPathOption,
       vcdlPathOption);
@@ -68,8 +80,19 @@ internal class Program
     communicationInterfaceCommand.SetHandler(
       (commInterfacePath, vcdlPath, interfaceName) =>
       {
-        var fmuExporter = new CommInterfaceExporter(commInterfacePath, vcdlPath, interfaceName);
-        fmuExporter.Export();
+        try
+        {
+          var fmuExporter = new CommInterfaceExporter(commInterfacePath, vcdlPath, interfaceName);
+          fmuExporter.Export();
+        }
+        catch (Exception e)
+        {
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine(
+            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
+          Debug.WriteLine($"Encountered exception: {e}.");
+          Console.ResetColor();
+        }
       },
       commInterfacePathOption,
       vcdlPathOption,
