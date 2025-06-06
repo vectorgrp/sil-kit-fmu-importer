@@ -172,7 +172,7 @@ Available options are:
 | Option                                                                           | Description |
 |----------------------------------------------------------------------------------|-------------|
 | -f, --fmu-path \<fmu-path> (REQUIRED)                                            | Set the path to the FMU file (.fmu). **This is mandatory.** |
-| -s, --sil-kit-config-file \<sil-kit-config-file>                                 | Set the path to the SIL Kit configuration file. [default: ./Config.silkit.yaml] |
+| -s, --sil-kit-config-file \<sil-kit-config-file>                                 | Set the path to the SIL Kit configuration file. [default: <path_to_build_directory>/Config.silkit.yaml] |
 | -c, --fmu-importer-config-file \<config-file>                                    | Set the path to the FMU Importer configuration file. |
 | -i, --fmu-importer-communication-interface-file \<communication-interface-file>  | Set the path to the FMU Importer configuration file. |
 | -p, --participant-name \<participant-name>                                       | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |

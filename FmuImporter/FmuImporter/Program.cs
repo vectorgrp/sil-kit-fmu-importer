@@ -4,6 +4,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using Fmi.FmiModel;
 using FmuImporter.SilKit;
 using SilKit.Services.Orchestration;
@@ -29,10 +30,13 @@ internal class Program
     fmuPathOption.IsRequired = true;
     rootCommand.AddOption(fmuPathOption);
 
+    // Set the default config file path relative to the executable
+    string exeDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+    string defaultConfigPath = Path.Combine(exeDirectory, "Config.silkit.yaml");
     var silKitConfigFileOption = new Option<string?>(
       "--sil-kit-config-file",
-      getDefaultValue: () => "./Config.silkit.yaml",
-      description: "Set the path to the SIL Kit configuration file.");
+      getDefaultValue: () => defaultConfigPath,
+      description: "Set the path to the SIL Kit configuration file.");
     silKitConfigFileOption.AddAlias("-s");
     rootCommand.AddOption(silKitConfigFileOption);
 
