@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <Version>1.4.0</Version>
-    <SilKitVersion>4.0.55</SilKitVersion>
+    <SilKitVersion>4.0.56</SilKitVersion>
     <Copyright>Copyright (c) Vector Informatik GmbH. All rights reserved.</Copyright>
   </PropertyGroup>
 
