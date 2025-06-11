@@ -173,10 +173,10 @@ Available options are:
 |----------------------------------------------------------------------------------|-------------|
 | -f, --fmu-path \<fmu-path> (REQUIRED)                                            | Set the path to the FMU file (.fmu). **This is mandatory.** |
 | -s, --sil-kit-config-file \<sil-kit-config-file>                                 | Set the path to the SIL Kit configuration file. [default: <path_to_build_directory>/Config.silkit.yaml] |
-| -c, --fmu-importer-config-file \<config-file>                                    | Set the path to the FMU Importer configuration file. |
-| -i, --fmu-importer-communication-interface-file \<communication-interface-file>  | Set the path to the FMU Importer configuration file. |
+| -c, --fmu-importer-config-file \<config-file>                                    | Set the path to the [FMU Importer configuration](#configuring-the-fmu-and-the-fmu-importer) file. |
+| -i, --fmu-importer-communication-interface-file \<communication-interface-file>  | Set the path to the [Communication Interface Description](#the-communication-interface-description) file. |
 | -p, --participant-name \<participant-name>                                       | Set the name of the SIL Kit participant. [default: sil-kit-fmu-importer] |
-| --time-sync-mode \<synchronized \| unsynchronized>                               | Choose the time synchronization mode. [default: synchronized] |
+| --time-sync-mode \<synchronized \| unsynchronized>                               | Choose the [time synchronization mode](#time-and-lifecycle-management). [default: synchronized] |
 | --persist                                                                        | Unpack the FMU into a persisted FMU directory. [default: False] |
 | --use-persisted                                                                  | Use a persisted FMU directory (created with "--persist" option). [default: False] |
 | --version                                                                        | Show version information |
@@ -405,10 +405,13 @@ gps
 
 More details about FMI's naming convention can be found in the FMI standard ([link to corresponding section in FMI 3.0](https://fmi-standard.org/docs/3.0.1/#namingSection)).
 
-If the FMU defines its naming convention to be 'structured', the FMU Importer uses it to automatically map FMU variables to SIL Kit structures defined in the [Communication Interface Description](#the-communication-interface-description).
-If an FMU does not explicitly use the structured naming convention, users can activate the detection of the naming convention by setting `AlwaysUseStructuredNamingConvention` in the FMU Importer configuration file to `true` (see [Available Options in Configuration](#available-options-in-configuration)).
+The behavior of the SIL Kit FMU Importer regarding the structured naming convention is as follows:
 
-> Note: It is possible to manually 'map' a variable, which is not named like a structure member, by assigning it a topic name that corresponds to the name it should have based on the structured naming convention.
+If the FMU defines its naming convention to be 'structured' or the usage is enforced by [FMU Importer Configuration](#configuring-the-fmu-and-the-fmu-importer) file AlwaysUseStructuredNamingConvention [option](#available-options-in-configuration) set to true the SIL Kit FMU Importer automatically maps FMU variables to SIL Kit structures.
+
+It is also possible to deviate from the default automatic mapping. This can make sense if you want to modify the mapping yourself. To do so you can generate, modify and pass a [Communication Interface Description](#the-communication-interface-description) file to the SIL Kit FMU Importer (see [Running the FMU Importer](#running-the-fmu-importer)).
+
+> Note: It is possible to manually 'map' a variable, which is not named like a structure member, by assigning it a topic name that corresponds to the name it should have based on the structured naming convention. This is done using [`VariableMappings`](#variablemappings) in the FMU Importer Configuration file.
 
 ---
 

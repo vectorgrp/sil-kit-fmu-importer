@@ -37,7 +37,7 @@ public class FmuImporter
   private FmuDataManager FmuDataManager { get; set; }
   private FmuCanManager FmuCanManager { get; set; }
 
-  private readonly Configuration _fmuImporterConfig;
+  private readonly Configuration _fmuImporterConfig = null!;
   private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
 
   private readonly Dictionary<string, Parameter>? _configuredParameters;
@@ -111,7 +111,7 @@ public class FmuImporter
       if (!string.IsNullOrEmpty(fmuImporterCommInterfaceFilePath))
       {
         _fmuImporterCommInterface =
-          CommunicationInterfaceDescriptionParser.LoadCommInterface(fmuImporterCommInterfaceFilePath);
+          CommunicationInterfaceDescriptionParser.Load(fmuImporterCommInterfaceFilePath);
       }
     }
     catch (Exception e)
@@ -126,6 +126,17 @@ public class FmuImporter
 
       _configuredParameters = _fmuImporterConfig.GetParameters();
       _configuredStructuralParameters = new Dictionary<string, Parameter>();
+
+      if (_fmuImporterCommInterface is null)
+      {
+        if (FmuEntity.ModelDescription.VariableNamingConvention is ModelDescription.VariableNamingConventions
+              .Structured ||
+            _fmuImporterConfig?.AlwaysUseStructuredNamingConvention is true)
+        {
+          _fmuImporterCommInterface = CommunicationInterfaceDescriptionParser.Parse(
+            new Fmi.Supplements.CommInterfaceGenerator(FmuEntity.Binding).CommInterfaceText);
+        }
+      }
 
       var myStructParams = FmuEntity.ModelDescription.Variables
                                     .Where(kvp => kvp.Value.Causality == Variable.Causalities.StructuralParameter)
@@ -162,9 +173,11 @@ public class FmuImporter
             break;
           }
         }
+
         // process can variables and remove them from the modelDescriptionVariables
         ProcessCanVariables(ref modelDescriptionVariables);
       }
+
       // if no CanManager, use the default ctor to avoid making them nullable
       FmuCanManager ??= new FmuCanManager();
       SilKitCanManager ??= new SilKitCanManager();
@@ -244,7 +257,8 @@ public class FmuImporter
         // the parameter is an array
         if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new NotSupportedException($"FMI 2.0.x does not support arrays. Exception thrown by the following " +
+          throw new NotSupportedException(
+            $"FMI 2.0.x does not support arrays. Exception thrown by the following " +
             $"value reference: {refValue}");
         }
 
@@ -276,7 +290,8 @@ public class FmuImporter
         // binary type
         if (FmuEntity.FmiVersion == FmiVersions.Fmi2)
         {
-          throw new NotSupportedException($"FMI 2.0.x does not support the binary data type. Exception thrown by the " +
+          throw new NotSupportedException(
+            $"FMI 2.0.x does not support the binary data type. Exception thrown by the " +
             $"following value reference: {refValue}");
         }
 
@@ -362,20 +377,21 @@ public class FmuImporter
   }
 
   private static int canControllerId = 1;
+
   private void ProcessCanVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
     FmuCanManager.Initialize(ref modelDescriptionVariables);
 
     // if any, get the terminal names with their respective vRef in/out  
     var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
-    if (networkNamesValueRefs.Count == 0) 
+    if (networkNamesValueRefs.Count == 0)
     {
       return;
     }
 
-    for (int i = 0; i < FmuCanManager.OutputCanVariables.Count; i++)
+    for (var i = 0; i < FmuCanManager.OutputCanVariables.Count; i++)
     {
-      string networkName = "";
+      var networkName = "";
       foreach (var pairTerminalNameVrefs in networkNamesValueRefs)
       {
         if (pairTerminalNameVrefs.Value.Item2 == FmuCanManager.OutputCanVariables[i].ValueReference)
@@ -384,10 +400,16 @@ public class FmuImporter
           var vRefIn = pairTerminalNameVrefs.Value.Item1;
           networkName = pairTerminalNameVrefs.Key;
           SilKitCanManager.CreateCanController("SilKit_CAN_CTRL_" + canControllerId, networkName, vRefOut.Value);
-          SilKitCanManager.AddCanFrameHandler(vRefOut.Value, (long)vRefIn!.Value, SilKitCanManager.FuncCanFrameHandler, (int)TransmitDirection.RX);
+          SilKitCanManager.AddCanFrameHandler(
+            vRefOut.Value,
+            (long)vRefIn!.Value,
+            SilKitCanManager.FuncCanFrameHandler,
+            (int)TransmitDirection.RX);
           if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
           {
-            SilKitCanManager.AddFrameTransmitHandler(vRefOut.Value, SilKitCanManager.FuncCanFrameTransmitHandler,
+            SilKitCanManager.AddFrameTransmitHandler(
+              vRefOut.Value,
+              SilKitCanManager.FuncCanFrameTransmitHandler,
               (int)(CanTransmitStatus.Transmitted | CanTransmitStatus.Canceled | CanTransmitStatus.TransmitQueueFull));
           }
 
@@ -395,9 +417,11 @@ public class FmuImporter
           break;
         }
       }
+
       if (networkName == "")
       {
-        throw new InvalidConfigurationException($"An internal error occurred. The value reference " +
+        throw new InvalidConfigurationException(
+          $"An internal error occurred. The value reference " +
           $"{FmuCanManager.OutputCanVariables[i].ValueReference} with the mimeType application/org.fmi-standard.fmi-ls-bus.can does not have " +
           $"a corresponding variable in the TerminalsAndIcons.xml file.");
       }
@@ -473,10 +497,10 @@ public class FmuImporter
 
   private void OnSimulationStep(ulong nowInNs, ulong durationInNs)
   {
-    bool eventEncountered = false;
-    bool discreteStatesNeedUpdate = true;
-    double lastSuccesfullTime =  0;
-    bool terminateRequested = false;
+    var eventEncountered = false;
+    var discreteStatesNeedUpdate = true;
+    double lastSuccesfullTime = 0;
+    var terminateRequested = false;
 
     if (FmuDataManager == null)
     {
@@ -524,7 +548,7 @@ public class FmuImporter
     {
       _lastSimStep = nowInNs;
       _initialSimTime = nowInNs;
-      
+
       if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
       {
         do
@@ -569,7 +593,12 @@ public class FmuImporter
     var fmiNow = Helpers.Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
     try
     {
-      FmuEntity.DoStep(fmiNow, Helpers.Helpers.SilKitTimeToFmiTime(durationInNs), out lastSuccesfullTime, out eventEncountered, out terminateRequested);
+      FmuEntity.DoStep(
+        fmiNow,
+        Helpers.Helpers.SilKitTimeToFmiTime(durationInNs),
+        out lastSuccesfullTime,
+        out eventEncountered,
+        out terminateRequested);
 
       // Retrieve and publish non-structured variables
       var currentOutputDataEventMode = FmuDataManager.GetVariableOutputData();
@@ -587,7 +616,9 @@ public class FmuImporter
         return;
       }
 
-      if (FmuEntity.ModelDescription.CoSimulation.hasEventMode && eventEncountered && (FmuEntity.Binding.CurrentState != InternalFmuStates.Terminated))
+      if (FmuEntity.ModelDescription.CoSimulation.hasEventMode &&
+          eventEncountered &&
+          (FmuEntity.Binding.CurrentState != InternalFmuStates.Terminated))
       {
         FmuEntity.EnterEventMode();
 
@@ -611,7 +642,7 @@ public class FmuImporter
             return;
           }
         } while (discreteStatesNeedUpdate);
-        
+
         // Retrieve and publish non-structured variables
         var outputData = FmuDataManager.GetVariableOutputData();
         SilKitDataManager.PublishAll(outputData);

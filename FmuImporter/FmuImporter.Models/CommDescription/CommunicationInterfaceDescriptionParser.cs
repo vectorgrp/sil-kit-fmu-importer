@@ -77,7 +77,7 @@ public static class CommunicationInterfaceDescriptionParser
     }
   }
 
-  public static CommunicationInterfaceInternal LoadCommInterface(string path)
+  public static CommunicationInterfaceInternal Parse(string commInterfaceText)
   {
     var publisherTypeConverter = new PublisherTypeConverter();
     var subscriberTypeConverter = new SubscriberTypeConverter();
@@ -98,7 +98,7 @@ public static class CommunicationInterfaceDescriptionParser
     CommunicationInterfaceInternal? commInterface;
     try
     {
-      commInterface = deserializer.Deserialize<CommunicationInterfaceInternal?>(File.ReadAllText(path));
+      commInterface = deserializer.Deserialize<CommunicationInterfaceInternal?>(commInterfaceText);
       if (commInterface == null)
       {
         throw new InvalidCommunicationInterfaceException(
@@ -113,6 +113,11 @@ public static class CommunicationInterfaceDescriptionParser
     }
 
     return commInterface;
+  }
+
+  public static CommunicationInterfaceInternal Load(string path)
+  {
+    return Parse(File.ReadAllText(path));
   }
 
   private static Exception ProcessException(Exception e)

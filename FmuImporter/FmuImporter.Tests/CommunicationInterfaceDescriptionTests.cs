@@ -39,7 +39,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Basic/MinValid.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
   }
@@ -49,7 +49,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Basic/NoFile.yaml";
 
-    Assert.Throws<FileNotFoundException>(() => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+    Assert.Throws<FileNotFoundException>(() => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(0)]
@@ -58,7 +58,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Basic/InvalidEmpty.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(0)]
@@ -67,7 +67,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Basic/InvalidIncorrectFormat.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(0)]
@@ -76,7 +76,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Basic/InvalidNoVersionField.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(0)]
@@ -85,7 +85,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Basic/InvalidIncorrectVersionField.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(1)]
@@ -93,7 +93,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Basic/SampleCommunicationInterface.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
 
@@ -207,7 +207,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/PubSub/PubNoSub.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
     Assert.That(commInterface.Publishers?.Count, Is.EqualTo(1));
@@ -220,7 +220,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/PubNoEntries.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(11)]
@@ -229,7 +229,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/PubEntryNoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(11)]
@@ -238,7 +238,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/PubEntryTypeMissing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(11)]
@@ -247,7 +247,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/PubEntryTypeEmpty.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
 #endregion publisher tests
@@ -259,7 +259,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/PubSub/SubNoPub.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
     Assert.That(commInterface.Subscribers?.Count, Is.EqualTo(1));
@@ -272,7 +272,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/SubNoEntries.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(21)]
@@ -281,7 +281,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/SubEntryNoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(21)]
@@ -290,7 +290,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/SubEntryTypeMissing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(21)]
@@ -299,7 +299,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/PubSub/SubEntryTypeEmpty.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
 #endregion subscriber tests
@@ -311,7 +311,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Enum/Section_NoEntries.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
   }
@@ -322,7 +322,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_Missing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(31)]
@@ -331,7 +331,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_MissingInStructDef.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(31)]
@@ -340,7 +340,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_NoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(31)]
@@ -348,7 +348,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Enum/Def_IndexTypeMissing.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
   }
@@ -359,7 +359,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_NoItemsList.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(31)]
@@ -368,7 +368,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_NoItems.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(32)]
@@ -377,7 +377,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_Item_NoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(32)]
@@ -386,7 +386,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_Item_NoValue.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(32)]
@@ -395,7 +395,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Enum/Def_Item_EmptyValue.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
 #endregion enum tests
@@ -407,7 +407,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Struct/Section_NoEntries.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
   }
@@ -418,7 +418,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_Missing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(41)]
@@ -427,7 +427,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_NoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(41)]
@@ -436,7 +436,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_NoMembersList.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(41)]
@@ -445,7 +445,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_NoMembers.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(42)]
@@ -454,7 +454,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_Member_StructDefMissing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(42)]
@@ -463,7 +463,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_Member_EnumDefMissing.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(42)]
@@ -472,7 +472,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_Member_NoName.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
   [Test, Order(42)]
@@ -481,7 +481,7 @@ public class CommunicationInterfaceDescriptionTests
     var cidPath = "CIDs/Struct/Def_Member_NoType.yaml";
 
     Assert.Throws<InvalidCommunicationInterfaceException>(
-      () => CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath));
+      () => CommunicationInterfaceDescriptionParser.Load(cidPath));
   }
 
 #endregion struct tests
@@ -493,7 +493,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Optionals/Scalars.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
     // Boolean/Integers
@@ -591,7 +591,7 @@ public class CommunicationInterfaceDescriptionTests
   {
     var cidPath = "CIDs/Optionals/Lists.yaml";
 
-    var commInterface = CommunicationInterfaceDescriptionParser.LoadCommInterface(cidPath);
+    var commInterface = CommunicationInterfaceDescriptionParser.Load(cidPath);
 
     Assert.IsNotNull(commInterface);
     Assert.That(commInterface.Publishers, Is.Not.Null);

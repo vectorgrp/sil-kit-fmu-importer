@@ -2,51 +2,40 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Text;
-using Fmi;
 using Fmi.Binding;
-using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
-using Fmi.Supplements;
 
-namespace CommInterfaceGenerator;
+namespace Fmi.Supplements;
 
-internal class CommInterfaceGeneration
+public class CommInterfaceGenerator
 {
-  public static string GenerateFromFile(string fmuPath)
+  private readonly ModelDescription modelDescription;
+  private readonly TerminalsAndIcons? terminalsAndIcons;
+
+  public CommInterfaceGenerator(IFmiBindingCommon binding)
   {
-    try
+    modelDescription = binding.ModelDescription;
+    terminalsAndIcons = binding.TerminalsAndIcons;
+  }
+
+  public string CommInterfaceText
+  {
+    get
     {
-      var FmiVersion = ModelLoader.FindFmiVersion(fmuPath);
-      var binding = BindingFactory.CreateBinding(FmiVersion, fmuPath, false, LogCallback);
-      return GenerateFrom(binding.ModelDescription, binding.TerminalsAndIcons);
+      //TODO: step 2: rely on internal generated model Serialization instead of this
+      var result = new StringBuilder();
+
+      result.AppendLine("Version: 1");
+      result.AppendLine();
+
+      GenerateEnumDefinitions(modelDescription, result);
+
+      GenerateStructDefinitionsPubsAndSubs(modelDescription, terminalsAndIcons, result);
+
+      return result.ToString();
     }
-    catch (Exception e)
-    {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine(e);
-      Console.ResetColor();
-      throw;
-    }
   }
 
-  private static void LogCallback(LogSeverity arg1, string arg2)
-  {
-    Console.WriteLine(arg2);
-  }
-
-  private static string GenerateFrom(ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons)
-  {
-    var result = new StringBuilder();
-
-    result.AppendLine("Version: 1");
-    result.AppendLine();
-
-    GenerateEnumDefinitions(modelDescription, result);
-
-    GenerateStructDefinitionsPubsAndSubs(modelDescription, terminalsAndIcons, result);
-
-    return result.ToString();
-  }
 
   private static string GenerateStructNameFromPath(string radical)
   {
@@ -100,7 +89,8 @@ internal class CommInterfaceGeneration
     }
   }
 
-  private static void GenerateStructDefinitionsPubsAndSubs(ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons, StringBuilder result)
+  private static void GenerateStructDefinitionsPubsAndSubs(
+    ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons, StringBuilder result)
   {
     var publishers = new StringBuilder();
     var subscribers = new StringBuilder();
@@ -126,7 +116,7 @@ internal class CommInterfaceGeneration
         continue;
       }
 
-      if (variable.Value.VariableType is VariableTypes.TriggeredClock /* TODO: && optimizeClockedVarHandling */ )
+      if (variable.Value.VariableType is VariableTypes.TriggeredClock /* TODO: && optimizeClockedVarHandling */)
       {
         // TriggeredClocks are not bound to a pubSub topic when optimizeClockedVarHandling is enabled
         continue;
@@ -239,15 +229,17 @@ internal class CommInterfaceGeneration
     }
   }
 
-  private static void FindLsBusCanValueRefs(TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusCan)
+  private static void FindLsBusCanValueRefs(
+    TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusCan)
   {
     modelVariablesUsedForLsBusCan = new List<uint>();
 
     var valuesToAdd = terminalsAndIcons?.Terminals
-     .Where(t => t.Value.InternalTerminalKind == InternalTerminalKind.CAN)
-     .SelectMany(t => t.Value.TerminalMemberVariables
-       .Where(m => m.Value.CorrespondingValueReference != null)
-       .Select(m => m.Value.CorrespondingValueReference!.Value));
+                                       .Where(t => t.Value.InternalTerminalKind == InternalTerminalKind.CAN)
+                                       .SelectMany(
+                                         t => t.Value.TerminalMemberVariables
+                                               .Where(m => m.Value.CorrespondingValueReference != null)
+                                               .Select(m => m.Value.CorrespondingValueReference!.Value));
 
     if (valuesToAdd != null)
     {

@@ -26,7 +26,7 @@ public class CommInterfaceExporter : BaseExporter
   public void Export()
   {
     var commInterface =
-      CommunicationInterfaceDescriptionParser.LoadCommInterface(CommunicationInterfaceDescriptionPath);
+      CommunicationInterfaceDescriptionParser.Load(CommunicationInterfaceDescriptionPath);
 
     var sb = new StringBuilder();
 

@@ -4,7 +4,7 @@
 using System.CommandLine;
 using System.Globalization;
 
-namespace CommInterfaceGenerator;
+namespace CommInterfaceExporter;
 
 internal class Program
 {
@@ -35,7 +35,7 @@ internal class Program
       {
         Console.WriteLine("Converting " + fmuPath + " into a communication interface.");
 
-        File.WriteAllText(outputPath, CommInterfaceGeneration.GenerateFromFile(fmuPath));
+        File.WriteAllText(outputPath, CommInterfaceGenerationWrapper.GenerateFromFile(fmuPath));
         Console.WriteLine("Output written to " + outputPath);
       },
       fmuPathOption,
