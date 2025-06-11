@@ -9,8 +9,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
-        <FileVersion>1.0</FileVersion>
-        <Version>1.0</Version>
+        <Version>1.5</Version>
     </PropertyGroup>
 
   <ItemGroup>
