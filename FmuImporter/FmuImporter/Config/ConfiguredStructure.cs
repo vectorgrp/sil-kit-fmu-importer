@@ -17,7 +17,14 @@ public class ConfiguredStructure
   {
     Name = structureName;
     IsOptional = isOptional;
-    StructureId = long.MaxValue - sStructureId++;
+    if (Environment.Is64BitProcess)
+    {
+      StructureId = long.MaxValue - sStructureId++;
+    }
+    else
+    {
+      StructureId = int.MaxValue - sStructureId++;
+    }
     _structureMembers = new Dictionary<string, ConfiguredVariable?>();
     foreach (var expectedMemberName in expectedMemberNames)
     {

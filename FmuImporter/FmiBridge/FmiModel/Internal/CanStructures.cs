@@ -110,6 +110,18 @@ public class CanTransmitOperation : TransmitOperation
     Data = data;
   }
 
+  public void SetData(byte[] bytes)
+  {
+    if (Data != IntPtr.Zero)
+    {
+      Marshal.FreeHGlobal(Data);
+      Data = IntPtr.Zero;
+    }
+
+    Data = Marshal.AllocHGlobal(GetDataLength());
+    Marshal.Copy(bytes, 0, Data, GetDataLength());
+  }
+
   public IntPtr GetData()
   {
     return Data;

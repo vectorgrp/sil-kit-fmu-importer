@@ -8,6 +8,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+    <Platforms>x64;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

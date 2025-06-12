@@ -430,7 +430,8 @@ public class FmuDataManager
   {
     foreach (var dataKvp in silKitDataMap)
     {
-      if (dataKvp.Key <= uint.MaxValue)
+      if ((Environment.Is64BitProcess && dataKvp.Key <= uint.MaxValue) ||
+          (!Environment.Is64BitProcess && dataKvp.Key <= ushort.MaxValue))
       {
         // key is refValue
         SetVariable((uint)dataKvp.Key, dataKvp.Value);

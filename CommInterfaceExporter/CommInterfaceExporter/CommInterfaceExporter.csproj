@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <FmuImporterSolutionDir>../../FmuImporter</FmuImporterSolutionDir>
+        <Platforms>x64;x86</Platforms>
     </PropertyGroup>
 
     <Import Project="$(FmuImporterSolutionDir)/build.props" />

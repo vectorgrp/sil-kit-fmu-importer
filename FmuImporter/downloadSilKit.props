@@ -9,7 +9,8 @@
           Condition="!Exists('$(SilKitWinLibPath)')">
     <PropertyGroup>
       <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/v$(SilKitVersion)/</SilKitUrl>
-      <SilKitWinName>SilKit-$(SilKitVersion)-Win-x86_64-VS2017</SilKitWinName>
+      <SilKitWinName Condition="'$(Platform)' == 'x64'">SilKit-$(SilKitVersion)-Win-x86_64-VS2017</SilKitWinName>
+      <SilKitWinName Condition="'$(Platform)' == 'x86'">SilKit-$(SilKitVersion)-Win-x86-VS2017</SilKitWinName>
       <SilKitUbuntuName>SilKit-$(SilKitVersion)-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
     </PropertyGroup>
 

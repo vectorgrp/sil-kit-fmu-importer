@@ -21,36 +21,36 @@
 
         <!-- win-x64 -->
         <Exec
-            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:PublishProfile=publishStandalone_win-x64 -p:RuntimeIdentifier=win-x64 --no-build"
+            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:PublishProfile=publishStandalone_win-x64 -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64 --no-build"
             EnvironmentVariables="$(EnvVar)" />
 
         <!-- linux-x64 -->
         <Exec
-            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:PublishProfile=publishStandalone_linux-x64 -p:RuntimeIdentifier=linux-x64 --no-build"
+            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:PublishProfile=publishStandalone_linux-x64 -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64 --no-build"
             EnvironmentVariables="$(EnvVar)" />
 
         <!-- osx-x64 -->
@@ -86,22 +86,22 @@
 
         <!-- cross-platform x64 -->
         <Exec
-            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64"
+            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec Command="chmod a+x $(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/FmuImporter"
               Condition="$([MSBuild]::IsOSPlatform('Linux'))"
               EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:PublishProfile=publishCrossPlatform-x64 -p:RuntimeIdentifier=linux-x64 --no-build"
+            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:PublishProfile=publishCrossPlatform-x64 -p:RuntimeIdentifier=linux-x64 -p:Platform=x64 -p:PlatformTarget=x64 --no-build"
             EnvironmentVariables="$(EnvVar)" />
         <Move SourceFiles="$(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/FmuImporter"
               OverwriteReadOnlyFiles="true"
@@ -110,10 +110,10 @@
               OverwriteReadOnlyFiles="true"
               DestinationFiles="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/FmuImporter.tmp" />
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=win-x64"
+            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild) -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64"
             EnvironmentVariables="$(EnvVar)" />
         <Exec
-            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:PublishProfile=publishCrossPlatform-x64  -p:RuntimeIdentifier=win-x64 --no-build"
+            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(CrossPlatformBuild) -p:PublishProfile=publishCrossPlatform-x64  -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PlatformTarget=x64 --no-build"
             EnvironmentVariables="$(EnvVar)" />
         <Move SourceFiles="$(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/FmuImporter.tmp"
               OverwriteReadOnlyFiles="true"

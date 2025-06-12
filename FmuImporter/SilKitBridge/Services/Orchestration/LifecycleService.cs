@@ -137,6 +137,7 @@ public class LifecycleService : ILifecycleService
       SimulationStepHandler handler,
       UInt64 initialStepSize);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void SimulationStepHandler(
       IntPtr context,
       IntPtr timeSyncService,
@@ -313,6 +314,7 @@ public class LifecycleService : ILifecycleService
     [Out] out IntPtr context,
     CommunicationReadyHandler handler);
 
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void CommunicationReadyHandler(
     IntPtr context,
     IntPtr lifecycleService);
@@ -341,6 +343,7 @@ public class LifecycleService : ILifecycleService
     _startingHandler?.Invoke();
   }
 
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void StartingHandler(
     IntPtr context,
     IntPtr lifecycleService);
@@ -391,6 +394,7 @@ public class LifecycleService : ILifecycleService
     [Out] out IntPtr context,
     StopHandler handler);
 
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void StopHandler(IntPtr context, IntPtr lifecycleService);
 
 
@@ -430,6 +434,7 @@ public class LifecycleService : ILifecycleService
     [Out] out IntPtr context,
     ShutdownHandler handler);
 
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void ShutdownHandler(IntPtr context, IntPtr lifecycleService);
 
 #endregion callback handling

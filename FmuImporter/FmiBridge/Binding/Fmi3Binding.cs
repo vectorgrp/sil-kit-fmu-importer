@@ -15,6 +15,7 @@ using Fmi.FmiModel.Internal;
 
 namespace Fmi.Binding;
 
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void Fmi3LogMessageCallback(
   IntPtr instanceEnvironment,
   FmiStatus status,
@@ -31,7 +32,11 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        return "/binaries/x86_64-windows";
+        if (Environment.Is64BitProcess)
+        {
+          return "/binaries/x86_64-windows";
+        }
+        return "/binaries/x86-windows";
       }
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))

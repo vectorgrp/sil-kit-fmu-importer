@@ -90,6 +90,7 @@ public class DataSubscriber : IDataSubscriber
     [In] IntPtr context,
     [In] DataMessageHandler dataHandler);
 
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void DataMessageHandler(
     IntPtr context,
     IntPtr subscriber,

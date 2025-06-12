@@ -9,6 +9,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <RootNamespace>$(MSBuildProjectName.Replace("Bridge", ""))</RootNamespace>
+        <Platforms>x64;x86</Platforms>
     </PropertyGroup>
 
     <ItemGroup>

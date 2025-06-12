@@ -19,7 +19,7 @@
 
         <!-- cross-platform x64 -->
         <Exec
-            Command="dotnet build $(BuildPath)FmuImporter.Tests/FmuImporter.Tests.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(CrossPlatformBuild)"
+            Command="dotnet build $(BuildPath)FmuImporter.Tests/FmuImporter.Tests.csproj $(DefaultProperties) -p:BuildProjectReferences=false -p:Platform=x64 -p:PlatformTarget=x64 $(CrossPlatformBuild)"
             EnvironmentVariables="$(EnvVar)" />
     </Target>
     

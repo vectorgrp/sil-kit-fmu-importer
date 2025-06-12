@@ -85,11 +85,15 @@ public struct CanFrameTransmitEvent
   public UInt32 canId;
 }
 
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void CanFrameTransmitHandler(
   IntPtr context,
   IntPtr controller,
   IntPtr frameTransmitEvent);
 
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void CanFrameHandler(
   IntPtr context,
   IntPtr controller,

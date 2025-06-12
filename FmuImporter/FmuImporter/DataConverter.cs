@@ -406,7 +406,7 @@ public class DataConverter
         $"{LSCanFrame}");
       return new CanFrame();
     }
- 
+
     CanTransmitOperation canTransmitOp = (CanTransmitOperation)ptrToStruct;
 
     CanFrame silkitCanFrame = new CanFrame();
@@ -433,15 +433,17 @@ public class DataConverter
     silkitCanFrame.vcid = 0;
     silkitCanFrame.af = 0;
 
-    var handle = GCHandle.Alloc(canTransmitOp.GetData(), GCHandleType.Pinned);
-    var dataPtr = handle.AddrOfPinnedObject();
+    // handle data field. Starts from the 17th byte
+    var bytes = LSCanFrame.AsSpan(16, dataLength);
+    var dataptr = Marshal.AllocHGlobal(dataLength);
+    Marshal.Copy(bytes.ToArray(), 0, dataptr, dataLength);
+
     silkitCanFrame.data = new ByteVector
     {
-      data = dataPtr,
+      data = dataptr,
       size = (IntPtr)dataLength
     };
-    handle.Free();
-
+    
     return silkitCanFrame;
   }
 

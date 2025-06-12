@@ -9,6 +9,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Platforms>x64;x86</Platforms>
         <PostBuildEnvVar Condition="('$(GITHUB_ACTIONS)' == 'true')">$(GITHUB_WORKSPACE)/FmuImporter/</PostBuildEnvVar>
         <PostBuildEnvVar Condition="('$(GITHUB_ACTIONS)' != 'true')">$(MSBuildProjectDirectory)/../</PostBuildEnvVar>
     </PropertyGroup>

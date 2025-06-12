@@ -333,12 +333,24 @@ public class FmuImporter
     // create subscribers for input structures
     foreach (var configuredStructure in FmuDataManager.InputConfiguredStructures.Values)
     {
-      SilKitDataManager.CreateSubscriber(
-        configuredStructure.Name,
-        configuredStructure.Name,
-        _fmuImporterConfig.Instance,
-        _fmuImporterConfig.Namespace,
-        new IntPtr(configuredStructure.StructureId));
+      if (Environment.Is64BitProcess)
+      {
+        SilKitDataManager.CreateSubscriber(
+          configuredStructure.Name,
+          configuredStructure.Name,
+          _fmuImporterConfig.Instance,
+          _fmuImporterConfig.Namespace,
+          new IntPtr(configuredStructure.StructureId));
+      }
+      else
+      {
+        SilKitDataManager.CreateSubscriber(
+          configuredStructure.Name,
+          configuredStructure.Name,
+          _fmuImporterConfig.Instance,
+          _fmuImporterConfig.Namespace,
+          new IntPtr((int)configuredStructure.StructureId));
+      }
     }
 
     // create publishers for output variables
@@ -367,13 +379,26 @@ public class FmuImporter
     // create publishers for output structures
     foreach (var configuredStructure in FmuDataManager.OutputConfiguredStructures.Values)
     {
-      SilKitDataManager.CreatePublisher(
-        configuredStructure.Name,
-        configuredStructure.Name,
-        _fmuImporterConfig.Instance,
-        _fmuImporterConfig.Namespace,
-        new IntPtr(configuredStructure.StructureId),
-        0);
+      if (Environment.Is64BitProcess)
+      {
+        SilKitDataManager.CreatePublisher(
+          configuredStructure.Name,
+          configuredStructure.Name,
+          _fmuImporterConfig.Instance,
+          _fmuImporterConfig.Namespace,
+          new IntPtr(configuredStructure.StructureId),
+          0);
+      }
+      else
+      {
+        SilKitDataManager.CreatePublisher(
+          configuredStructure.Name,
+          configuredStructure.Name,
+          _fmuImporterConfig.Instance,
+          _fmuImporterConfig.Namespace,
+          new IntPtr((int)configuredStructure.StructureId),
+          0);
+      }
     }
   }
 
