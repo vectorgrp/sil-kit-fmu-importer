@@ -123,6 +123,9 @@ To export a vCDL based on an FMU, you can run the following command from the fol
 `VcdlExporter fmu --input-path <Path/To/FMU> --output-path <Path/To/Exported/vCDL>`
 > Only FMU containers are supported (not already extracted FMUs).
 
+> By default the VcdlExporter does not export the clocks associated with the clocked variables. To export them you can pass the following argument: --use-clock-pub-sub-elements
+> This argument only applies to the VcdlExporter based on an FMU. VcdlExporter based on a communication interface description always exports all variables, including clocks.
+
 > Note: An FMU with a model description that includes variables named according to the structured naming convention (i.e. containing a `.`) will generate an incorrect vCDL file. To generate a proper one, use a matching communication interface description (e.g. generated with the [Communication Interface Exporter](#communication-interface-exporter) below) and use the following feature to generate the vCDL from it:
 
 To export a vCDL based on a communication interface description, you can run the following command from the folder where your vCDL Exporter binary resides:
@@ -155,6 +158,8 @@ To export a communication interface description you can run the following comman
 
 > Only FMU containers are supported (not already extracted FMUs).
 
+> By default the CommInterfaceExporter does not export the clocks associated with the clocked variables. To export them you can pass the following argument: --use-clock-pub-sub-elements
+
 ---
 
 ## **Running the FMU Importer**
@@ -179,6 +184,7 @@ Available options are:
 | --time-sync-mode \<synchronized \| unsynchronized>                               | Choose the [time synchronization mode](#time-and-lifecycle-management). [default: synchronized] |
 | --persist                                                                        | Unpack the FMU into a persisted FMU directory. [default: False] |
 | --use-persisted                                                                  | Use a persisted FMU directory (created with "--persist" option). [default: False] |
+| --use-clock-pub-sub-elements                                                     | Handle clocks and clocked variables separately. |
 | --version                                                                        | Show version information |
 | -?, -h, --help                                                                   | Show help and usage information |
 

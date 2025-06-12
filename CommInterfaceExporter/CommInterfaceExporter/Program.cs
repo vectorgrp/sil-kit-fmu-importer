@@ -30,16 +30,23 @@ internal class Program
     outputPathOption.IsRequired = true;
     rootCommand.AddOption(outputPathOption);
 
+    var useClockPubSubElementsOption = new Option<bool>(
+      "--use-clock-pub-sub-elements",
+    description: "Handle clocks and clocked variables separately.",
+    getDefaultValue: () => false);
+    rootCommand.AddOption(useClockPubSubElementsOption);
+
     rootCommand.SetHandler(
-      (fmuPath, outputPath) =>
+      (fmuPath, outputPath, useClockPubSubElements) =>
       {
         Console.WriteLine("Converting " + fmuPath + " into a communication interface.");
 
-        File.WriteAllText(outputPath, CommInterfaceGenerationWrapper.GenerateFromFile(fmuPath));
+        File.WriteAllText(outputPath, CommInterfaceGenerationWrapper.GenerateFromFile(fmuPath, useClockPubSubElements));
         Console.WriteLine("Output written to " + outputPath);
       },
       fmuPathOption,
-      outputPathOption);
+      outputPathOption,
+      useClockPubSubElementsOption);
 
     rootCommand.Invoke(args);
   }

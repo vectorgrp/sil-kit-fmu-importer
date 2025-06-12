@@ -7,13 +7,13 @@ namespace CommInterfaceExporter;
 
 internal class CommInterfaceGenerationWrapper
 {
-  public static string GenerateFromFile(string fmuPath)
+  public static string GenerateFromFile(string fmuPath, bool useClockPubSubElements)
   {
     try
     {
       var FmiVersion = Fmi.FmiModel.ModelLoader.FindFmiVersion(fmuPath);
       var binding = Fmi.Binding.BindingFactory.CreateBinding(FmiVersion, fmuPath, false, LogCallback);
-      return (new Fmi.Supplements.CommInterfaceGenerator(binding)).CommInterfaceText;
+      return (new Fmi.Supplements.CommInterfaceGenerator(binding, useClockPubSubElements)).CommInterfaceText;
     }
     catch (Exception e)
     {

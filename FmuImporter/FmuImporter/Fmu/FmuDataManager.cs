@@ -32,14 +32,18 @@ public class FmuDataManager
 
   private readonly Action<LogSeverity, string> _logCallback;
 
+  public bool UseClockPubSubElements { get; }
+
   public FmuDataManager(
     IFmiBindingCommon binding,
     ModelDescription modelDescription,
-    Action<LogSeverity, string> logCallback)
+    Action<LogSeverity, string> logCallback,
+    bool useClockPubSubElements)
   {
     Binding = binding;
     ModelDescription = modelDescription;
     _logCallback = logCallback;
+    UseClockPubSubElements = useClockPubSubElements;
 
     ParameterConfiguredVariables = new List<ConfiguredVariable>();
     ParameterConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
@@ -193,6 +197,11 @@ public class FmuDataManager
 
   private void AddConfiguredVariable(ConfiguredVariable c)
   {
+    if ((c.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) && !UseClockPubSubElements)
+    {
+      return;
+    }
+
     switch (c.FmuVariableDefinition.Causality)
     {
       case Variable.Causalities.Output:
@@ -270,7 +279,7 @@ public class FmuDataManager
       targetStructure.Add(configuredStructure.StructureId, configuredStructure);
     }
 
-    configuredStructure!.AddMember(configuredVariable);
+    configuredStructure!.AddMember(configuredVariable, UseClockPubSubElements);
   }
 
   private void ValidateCommInterfaceMapping()
@@ -437,6 +446,22 @@ public class FmuDataManager
   {
     var fmuData = TransformSilKitToFmuData(refValue, data.ToList(), out var binSizes);
 
+    if (fmuData is null) 
+    {
+      return;
+    }
+
+    if (!UseClockPubSubElements)
+    {
+      var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
+      if (success && (configuredVariable != null))
+      {
+        if ((configuredVariable.FmuVariableDefinition.Clocks != null))
+        {
+          Binding.SetValue(configuredVariable.FmuVariableDefinition.Clocks.FirstOrDefault(), new byte[] { 1 });
+        }
+      }
+    }
     SetBinding(refValue, fmuData, binSizes);
   }
 
@@ -466,14 +491,17 @@ public class FmuDataManager
           $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
       }
 
-      if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) /*&& TODO: optimizeClockedVarHandling */)
+      if (!UseClockPubSubElements)
       {
-        continue;
-      }
+        if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock))
+        {
+          continue;
+        }
 
-      if ((structureMember.FmuVariableDefinition.Clocks != null) /*&& TODO: optimizeClockedVarHandling */)
-      {
-        Binding.SetValue(structureMember.FmuVariableDefinition.Clocks.FirstOrDefault(), new byte[] { 1 });
+        if ((structureMember.FmuVariableDefinition.Clocks != null))
+        {
+          Binding.SetValue(structureMember.FmuVariableDefinition.Clocks.FirstOrDefault(), new byte[] { 1 });
+        }
       }
 
       var data = fmuData[index];
@@ -511,7 +539,7 @@ public class FmuDataManager
     if (success && (configuredStructure != null))
     {
       var dc = new DataConverter();
-      return dc.TransformSilKitToStructuredFmuData(configuredStructure, silKitData.ToList(), out binSizes);
+      return dc.TransformSilKitToStructuredFmuData(configuredStructure, silKitData.ToList(), out binSizes, UseClockPubSubElements);
     }
 
     throw new ArgumentOutOfRangeException(
@@ -524,7 +552,7 @@ public class FmuDataManager
     if (success && (configuredVariable != null))
     {
       var dc = new DataConverter();
-      return dc.TransformSilKitToFmuData(configuredVariable, silKitData, out binSizes);
+      return dc.TransformSilKitToFmuData(configuredVariable, silKitData, out binSizes, UseClockPubSubElements);
     }
 
     throw new ArgumentOutOfRangeException(

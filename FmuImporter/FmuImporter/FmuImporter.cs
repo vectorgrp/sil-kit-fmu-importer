@@ -52,7 +52,8 @@ public class FmuImporter
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
     TimeSyncModes timeSyncMode,
-    bool usePersistedFmu)
+    bool usePersistedFmu,
+    bool useClockPubSubElements)
   {
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>
@@ -134,7 +135,7 @@ public class FmuImporter
             _fmuImporterConfig?.AlwaysUseStructuredNamingConvention is true)
         {
           _fmuImporterCommInterface = CommunicationInterfaceDescriptionParser.Parse(
-            new Fmi.Supplements.CommInterfaceGenerator(FmuEntity.Binding).CommInterfaceText);
+            new Fmi.Supplements.CommInterfaceGenerator(FmuEntity.Binding, useClockPubSubElements).CommInterfaceText);
         }
       }
 
@@ -156,7 +157,7 @@ public class FmuImporter
       FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
 
       // Initialize FmuDataManager
-      FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog);
+      FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog, useClockPubSubElements);
 
       // create a temporary copy to avoid modifying the FmuEntity's ModelDescription
       var modelDescriptionVariables = new Dictionary<uint, Variable>(FmuEntity.ModelDescription.Variables);

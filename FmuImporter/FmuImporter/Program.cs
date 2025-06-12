@@ -94,6 +94,12 @@ internal class Program
       getDefaultValue: () => false);
     rootCommand.AddOption(usePersistedFmuOption);
 
+    var useClockPubSubElementsOption = new Option<bool>(
+      "--use-clock-pub-sub-elements",
+    description: "Handle clocks and clocked variables separately.",
+    getDefaultValue: () => false);
+    rootCommand.AddOption(useClockPubSubElementsOption);
+
     rootCommand.SetHandler((context) =>
     {
       var fmuPath = context.ParseResult.GetValueForOption(fmuPathOption);
@@ -105,6 +111,7 @@ internal class Program
       var timeSyncMode = context.ParseResult.GetValueForOption(timeSyncModeOption);
       var createPersitentFmu = context.ParseResult.GetValueForOption(createPersistedFmuOption);
       var usePersistedFmu = context.ParseResult.GetValueForOption(usePersistedFmuOption);
+      var useClockPubSubElements = context.ParseResult.GetValueForOption(useClockPubSubElementsOption);
 
       try
       {
@@ -183,7 +190,8 @@ internal class Program
             participantName,
             parsedLifecycleMode,
             parsedTimeSyncMode,
-            usePersistedFmu
+            usePersistedFmu,
+            useClockPubSubElements
             );
 
           instance.StartSimulation();

@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.CommandLine;
@@ -57,13 +57,19 @@ internal class Program
     interfaceNameOption.IsRequired = true;
     communicationInterfaceCommand.AddOption(interfaceNameOption);
 
+    var useClockPubSubElementsOption = new Option<bool>(
+      "--use-clock-pub-sub-elements",
+    description: "Handle clocks and clocked variables separately.",
+    getDefaultValue: () => false);
+    fmuCommand.AddOption(useClockPubSubElementsOption);
+
     fmuCommand.SetHandler(
-      (fmuPath, vcdlPath) =>
+      (fmuPath, vcdlPath, useClockPubSubElements) =>
       {
         try
         {
           var fmuExporter = new FmuExporter(fmuPath, vcdlPath);
-          fmuExporter.Export();
+          fmuExporter.Export(useClockPubSubElements);
         }
         catch (Exception e)
         {
@@ -75,7 +81,8 @@ internal class Program
         }
       },
       fmuPathOption,
-      vcdlPathOption);
+      vcdlPathOption,
+      useClockPubSubElementsOption);
 
     communicationInterfaceCommand.SetHandler(
       (commInterfacePath, vcdlPath, interfaceName) =>

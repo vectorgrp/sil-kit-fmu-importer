@@ -35,7 +35,7 @@ public class FmuExporter : BaseExporter
   }
 
 
-  public void Export()
+  public void Export(bool useClockPubSubElements)
   {
     var commonTextSb = new StringBuilder();
     var interfaceSb = new StringBuilder();
@@ -66,6 +66,11 @@ public class FmuExporter : BaseExporter
       if (File.Exists(FmuVcdlPath))
       {
         Console.WriteLine("The imported FMU has been identified as a Vector vVIRTUALtarget FMU. The .vCDL file included in this FMU will be extracted to the defined output path.");
+        if (useClockPubSubElements)
+        {
+          Console.WriteLine("The \"--use-clock-pub-sub-elements\" option will be ignored.");
+        }
+
         // Copy FMU vCDL file instead of parsing
         File.Copy(FmuVcdlPath, VcdlPath, overwrite: true);
         return;
@@ -82,7 +87,7 @@ public class FmuExporter : BaseExporter
         ParseFmi2(modelDescription, interfaceSb, objectsSb);
         break;
       case FmiVersions.Fmi3:
-        ParseFmi3(modelDescription, interfaceSb, objectsSb);
+        ParseFmi3(modelDescription, interfaceSb, objectsSb, useClockPubSubElements);
         break;
     }
 
@@ -180,7 +185,7 @@ public class FmuExporter : BaseExporter
       objectsSb);
   }
 
-  private void ParseFmi3(ModelDescription modelDescription, StringBuilder interfaceSb, StringBuilder objectsSb)
+  private void ParseFmi3(ModelDescription modelDescription, StringBuilder interfaceSb, StringBuilder objectsSb, bool useClockPubSubElements)
   {
     var vcdlProviderVariables = new HashSet<VcdlVariable>();
     var vcdlConsumerVariables = new HashSet<VcdlVariable>();
@@ -194,6 +199,12 @@ public class FmuExporter : BaseExporter
 
     foreach (var variable in modelDescription.Variables)
     {
+      if (variable.Value.VariableType is VariableTypes.TriggeredClock && !useClockPubSubElements)
+      {
+        // TriggeredClocks are not bound to a pubSub topic when useClockPubSubElements is disabled
+        continue;
+      }
+
       var vValue = variable.Value;
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU

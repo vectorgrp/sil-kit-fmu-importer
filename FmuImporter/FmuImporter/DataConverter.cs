@@ -24,7 +24,8 @@ public class DataConverter
   public List<byte[]?>? TransformSilKitToStructuredFmuData(
     ConfiguredStructure configuredStructure,
     List<byte> silKitData,
-    out List<List<int>> binSizes)
+    out List<List<int>> binSizes,
+    bool useClockPubSubElements)
   {
     binSizes = new List<List<int>>();
     var result = new List<byte[]?>();
@@ -47,7 +48,7 @@ public class DataConverter
           $"The currently transformed struct ({configuredStructure.Name}) has unmapped members.");
       }
 
-      if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) /*&& TODO: optimizeClockedVarHandling */)
+      if ((structureMember.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) && !useClockPubSubElements)
       {
         continue;
       }
@@ -70,10 +71,18 @@ public class DataConverter
   public byte[]? TransformSilKitToFmuData(
     ConfiguredVariable configuredVariable,
     List<byte> silKitData,
-    out List<int> binSizes)
+    out List<int> binSizes,
+    bool useClockPubSubElements)
   {
     binSizes = new List<int>();
     var deserializer = new Deserializer(silKitData);
+
+    // Extra check since the clock variables were not added to configuredVariable
+    if ((configuredVariable.FmuVariableDefinition.VariableType == VariableTypes.TriggeredClock) && !useClockPubSubElements)
+    {
+      return null;
+    }
+
     return TransformSilKitToFmuData(deserializer, configuredVariable, binSizes);
   }
 

@@ -36,7 +36,7 @@ public class CommInterfaceExporter : BaseExporter
     // Add enum definitions
     AddEnumerationDefinitions(commInterface, sb);
 
-    // Add struct defintiions
+    // Add struct definitions
     AddStructDefinitions(commInterface, sb);
 
     var vcdlProviderVariables = new HashSet<VcdlVariable>();

@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Text;
@@ -11,11 +11,13 @@ public class CommInterfaceGenerator
 {
   private readonly ModelDescription modelDescription;
   private readonly TerminalsAndIcons? terminalsAndIcons;
+  private readonly bool useClockPubSubElements;
 
-  public CommInterfaceGenerator(IFmiBindingCommon binding)
+  public CommInterfaceGenerator(IFmiBindingCommon binding, bool _useClockPubSubElements)
   {
     modelDescription = binding.ModelDescription;
     terminalsAndIcons = binding.TerminalsAndIcons;
+    useClockPubSubElements = _useClockPubSubElements;
   }
 
   public string CommInterfaceText
@@ -30,12 +32,11 @@ public class CommInterfaceGenerator
 
       GenerateEnumDefinitions(modelDescription, result);
 
-      GenerateStructDefinitionsPubsAndSubs(modelDescription, terminalsAndIcons, result);
+      GenerateStructDefinitionsPubsAndSubs(modelDescription, terminalsAndIcons, result, useClockPubSubElements);
 
       return result.ToString();
     }
   }
-
 
   private static string GenerateStructNameFromPath(string radical)
   {
@@ -88,9 +89,8 @@ public class CommInterfaceGenerator
         throw new NotImplementedException();
     }
   }
-
   private static void GenerateStructDefinitionsPubsAndSubs(
-    ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons, StringBuilder result)
+    ModelDescription modelDescription, TerminalsAndIcons? terminalsAndIcons, StringBuilder result, bool useClockPubSubElements)
   {
     var publishers = new StringBuilder();
     var subscribers = new StringBuilder();
@@ -116,9 +116,9 @@ public class CommInterfaceGenerator
         continue;
       }
 
-      if (variable.Value.VariableType is VariableTypes.TriggeredClock /* TODO: && optimizeClockedVarHandling */)
+      if (variable.Value.VariableType is VariableTypes.TriggeredClock && !useClockPubSubElements)
       {
-        // TriggeredClocks are not bound to a pubSub topic when optimizeClockedVarHandling is enabled
+        // TriggeredClocks are not bound to a pubSub topic when useClockPubSubElements is disabled
         continue;
       }
 
