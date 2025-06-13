@@ -23,6 +23,7 @@ Its behavior is configured by configuration files that are passed during launch.
           2. [vCDL Exporter](#vcdl-exporter)
           3. [Communication Interface Exporter](#communication-interface-exporter)
   3. [Running the FMU Importer](#running-the-fmu-importer)
+     1. [Example setup with a FMU exported by Vector vVIRTUALtarget](#example-setup-with-a-fmu-exported-by-vector-vvirtualtarget)
   4. [Data, Time, and Lifecycle Handling](#data-time-and-lifecycle-handling)
      1. [Variable Representation](#variable-representation)
      2. [Time and Lifecycle Management](#time-and-lifecycle-management)
@@ -46,6 +47,7 @@ Its behavior is configured by configuration files that are passed during launch.
         5. [Supported Data Types](#supported-data-types)
   7. [Supported FMUs](#supported-fmus)
      1. [General Co-Simulation settings](#general-co-simulation-settings)
+     2. [FMI-LS-BUS CAN support](#fmi-ls-bus-can-support)
   8. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
@@ -68,7 +70,7 @@ The SIL Kit FMU Importer has two roles
 The SIL Kit FMU Importer ships as prebuilt portable packages.
 This means that the FMU Importer requires an installed .NET Runtime on the target machine.
 The package itself provides executables for Windows and Linux.
-The Linux distributables are tested on Ubuntu 22.04, but they should also run on other similar distributions.
+The Linux artifacts are tested on Ubuntu 22.04, but they should also run on other similar distributions.
 
 Please refer to the section [Build Instructions](#build-instructions) if you want to build the FMU Importer yourself.
 
@@ -171,7 +173,7 @@ To export a communication interface description you can run the following comman
 
 >If you built the FMU Importer yourself, you may need to copy the SilKit.dll/libSilKit.so file from a SIL Kit release package (we recommend the version given in FmuImporter/common.props) to the root folder of your build directory (the same folder where FmuImporter[.exe] is located).
 
-To run the FMU Importer, you need to run the following command from the directory your built execuable resides in:
+To run the FMU Importer, you need to run the following command from the directory your built executable resides in:
 
 `FmuImporter [options]`
 
@@ -194,9 +196,32 @@ Available options are:
 After running the command, the FMU Importer will internally create a SIL Kit participant and connect to the SIL Kit registry configured in the SIL Kit configuration file.
 If no configuration was provided or if it did not specify a registry URI, the default URI `silkit://localhost:8500` will be used.
 The FMU Importer uses the SIL Kit logger for its output.
-Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer.
+Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer. The FmuImporter defaults to loading this configuration file from ./Config.silkit.yaml, but a different one can be provided by the corresponding command line option (-s).
 The FMU Importer prints most of its logs on the `Info` level, but in case an error occurs, there is one log message on the `Error` level that contains the error message and a log message on the `Debug` level that contains the error message including further information (such as a stack trace) to track the error's origin more easily.
 > Persistence allows the FMU to be extracted once and reused across runs by storing it in a known folder (that has the same name as the FMU itself) and validating it with a hash.
+
+### **Example setup with a FMU exported by Vector vVIRTUALtarget**
+* Export the FMU with vVIRTUALtarget 9 or newer (refer to the tools help section `Functional Mock-up Unit` for further details).
+* Optionally create a CANoe configuration if you want to interact with the FMU.
+  * Load the vVIRTUALtarget generated FMU specific .vCDL file (*_FMU.vCDL) into the CANoe configurations Communication Setup (use CANoe 19 or newer for the best experience).
+  * If not in possession of the .vCDL file, you can also use the VcdlExporter to extract it from the FMU.
+  * Enable SIL Kit and keep the default settings.
+  * In the CANoe Options set the `Working mode` to `Custom` and the `Time Source` to `External: SIL Kit`.
+  * If FMI LS-BUS CAN is used, make sure that the terminal names and the CAN network names in CANoe are the same and mapped accordingly to SIL Kit.
+  
+* Make sure a SIL Kit Registry is already running, if not start one manually with the default URI:
+
+      ./sil-kit-registry --listen-uri 'silkit://0.0.0.0:8500'
+
+* Start the SIL Kit FMU Importer with the FMU e.g.:
+
+      ./FmuImporter -f ./anySutFolder/anySut.fmu
+
+* If you want a synchronized simulation start a SIL Kit System Controller listing all the participants e.g. with the following parameters which reflect the default participant names:
+      
+      ./sil-kit-system-controller "sil-kit-fmu-importer" "CANoe""
+
+* Start any other participants and/or the simulation in CANoe.
 
 ## **Data, Time, and Lifecycle Handling**
 
@@ -204,7 +229,6 @@ From an FMU's point of view, the FMU Importer acts as a master (FMI 2.0)/importe
 As such, the Importer will handle the data exchange via SIL Kit, the time management, and the lifecycle of the FMU.
 The FMU Importer does not provide any numeric solvers or interpolation mechanisms.
 Therefore, it only supports FMUs that can run in `co-simulation` mode.
-In addition, the FMU Importer does not support `Event Mode`. As a result `Clocks` are currently also not supported. That means, if your FMU is defining `hasEventMode="true"` (but is not defining `Clocks`) you must take care of the events in your FMU internally.
 
 ### **Variable Representation**
 
@@ -514,7 +538,7 @@ The `Value` attribute may be one of the following:
 
 If the `VariableName` designates a variable whose type is an enumeration, integer values are interpreted as the the enumerator's underlying value. If it is a string, it is interpreted as an enumerator's name and the value is taken from the Model Description.
 
-In the case where the `VariableName` designates a variable whose type is a multi-dimensional array, the `Value` attribute is the flattened array which will be used to initialise the variable.
+In the case where the `VariableName` designates a variable whose type is a multi-dimensional array, the `Value` attribute is the flattened array which will be used to initialize the variable.
 
 Syntax:
 ```yaml
@@ -624,17 +648,28 @@ However, it is still important to declare the structure's data types correctly, 
 
 ---
 
-## **Supported FMU Settings**
-The FMU Importer expects FMUs in Co-Simulation mode with some specific settings defined in `modelDescription.xml`, in a way to guarantee compatibility and synchronisation with other SIL Kit participants. These settings are shown below. 
+## **Supported FMU settings and features**
+The FMU Importer expects FMUs in Co-Simulation mode with some specific settings defined in `modelDescription.xml`, in a way to guarantee compatibility and synchronization with other SIL Kit participants. These settings are shown below. 
 
 ### **General Co-Simulation settings**
-These settings garantee synchronization on the SIL Kit network and avoid disruptions.
+These settings guarantee synchronization on the SIL Kit network and avoid disruptions.
 
 |    **Model Description Attribute**     | **Required value**                |
 |----------------------------------------|-----------------------------------|
 | providesIntermediateUpdate             | false                             |
 | mightReturnEarlyFromDoStep             | false                             |
 | canReturnEarlyAfterIntermediateUpdate  | false                             |
+
+### **FMI-LS-BUS CAN support**
+The SIL Kit FMU Importer supports FMI-LS-BUS CAN according to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut). Clocks are essential for synchronizing events between the FMU Importer and the FMUs and needed for LS-BUS CAN support. Because Clocks are closely tied to Event Mode support from the importer, in LS-BUS enabled FMUs the following setting must be respected by the FMU.
+
+|    **Model Description Attribute**     | **Required value**                |
+|----------------------------------------|-----------------------------------|
+| hasEventMode                           | true                              |
+
+Please be aware that currently the SIL Kit FMU Importer does only support Triggered Clocks.
+
+Also be aware that currently the SIL Kit FMU Importer only supports CAN Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-can-operations).
 
 ---
 
@@ -655,7 +690,7 @@ The following table lists the meaning of the current exit codes:
 
 | Code | Origin          | Description |
 |------|-----------------|-------------|
-|  0   | FMU Importer    | The application terminated successfuly |
+|  0   | FMU Importer    | The application terminated successfully |
 |  1   | FMU Importer    | Error during initialization |
 |  2   | FMU Importer    | Error during simulation |
 |  3   | FMU Importer    | Error during FMU's simulation step execution |
