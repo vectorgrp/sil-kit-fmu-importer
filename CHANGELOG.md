@@ -16,6 +16,7 @@ This version introduces support for the CAN Network Abstraction (Low-Cut) part o
   * The FMU importer now parses the `terminalsAndIcons.xml` file.
 * Support of persistence of unpacked FMUs for e.g. FMUs with persisted data.
 * Support of Binary data with `vcdl.struct`-like MimeType attribute used for optimization with vVIRTUALtarget-exported FMUs.
+* Support for Win-x86 including a pre-built package.
 
 ### Changed
 

@@ -69,6 +69,16 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
+  <PropertyGroup
+    Condition="$(Standalone) == 'True' AND 
+                   ($(RuntimeIdentifier)=='win-x86' OR 
+                   ($(RuntimeIdentifier)=='' AND $([MSBuild]::IsOSPlatform('Windows'))))">
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\win-$(Platform)-$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\..\_build\win-$(Platform)-$(Configuration)</OutputPath>
+    <PublishDir>$(MSBuildProjectDirectory)\..\_publish\win-$(Platform)\SilKitFmuImporter-$(Version)-win-$(Platform)</PublishDir>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+  </PropertyGroup>
+
   <PropertyGroup Condition="$(Standalone) != 'True'">
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\_obj\crossplatform-$(Platform)-$(Configuration)</IntermediateOutputPath>
     <OutputPath>$(MSBuildProjectDirectory)\..\_build\crossplatform-$(Platform)-$(Configuration)</OutputPath>

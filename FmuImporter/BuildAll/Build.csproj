@@ -129,16 +129,52 @@
             DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
     </Target>
 
+    <Target Name="BuildWinX86Package" AfterTargets="BuildXPlatform">
+        <ItemGroup>
+            <ThirdPartyFiles Include="$(MSBuildProjectDirectory)/../../ThirdParty/**/*.*" />
+        </ItemGroup>
+        <PropertyGroup>
+            <BuildPath>$(MSBuildThisFileDirectory)/../</BuildPath>
+            <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release -p:Version=$(Version) -v:m </DefaultProperties>
+            <StandaloneBuild>-p:Standalone=True </StandaloneBuild>
+            <EnvVar>MSBuildSDKsPath=; MSBuildExtensionsPath=</EnvVar>
+            <PublishPath>$(MSBuildProjectDirectory)/../_publish/</PublishPath>
+            <WinX86TargetFolderName>SilKitFmuImporter-$(Version)-win-x86</WinX86TargetFolderName>
+        </PropertyGroup>
+        <Message Text="Building FmuImporter for win-x86..." Importance="High" />
+        <Exec
+            Command="dotnet build $(BuildPath)SilKitBridge/SilKitBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x86  -p:Platform=x86 -p:PlatformTarget=x86"
+            EnvironmentVariables="$(EnvVar)" />
+        <Exec
+            Command="dotnet build $(BuildPath)FmiBridge/FmiBridge.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x86 -p:Platform=x86 -p:PlatformTarget=x86"
+            EnvironmentVariables="$(EnvVar)" />
+        <Exec
+            Command="dotnet build $(BuildPath)FmuImporter.Models/FmuImporter.Models.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x86  -p:Platform=x86 -p:PlatformTarget=x86"
+            EnvironmentVariables="$(EnvVar)" />
+        <Exec
+            Command="dotnet build $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) -p:BuildProjectReferences=false $(StandaloneBuild) -p:RuntimeIdentifier=win-x86 -p:Platform=x86  -p:PlatformTarget=x86"
+            EnvironmentVariables="$(EnvVar)" />
+        <Exec
+            Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x86 -p:Platform=x86 -p:PlatformTarget=x86 --no-build"
+			EnvironmentVariables="$(EnvVar)" />
+        <Copy
+            SourceFiles="$(SilKitDirBase)/x86_dll/SilKit.dll"
+            DestinationFolder="$(MSBuildProjectDirectory)/../_build/win-x86-Release/" />
+        <Copy
+            SourceFiles="$(SilKitDirBase)/x86_dll/SilKit.dll"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
+	</Target>
+
     <Target Name="PrepareReleasePackage"
-            AfterTargets="BuildXPlatform">
+            AfterTargets="BuildXPlatform;BuildWinX86Package">
         <ItemGroup>
             <ThirdPartyFiles Include="$(MSBuildProjectDirectory)/../../ThirdParty/**/*.*" />
         </ItemGroup>
         <PropertyGroup>
             <PublishPath>$(MSBuildProjectDirectory)/../_publish/</PublishPath>
             <CrossPlatformTargetFolderName>SilKitFmuImporter-$(Version)-xPlatform-x64</CrossPlatformTargetFolderName>
+            <WinX86TargetFolderName>SilKitFmuImporter-$(Version)-win-x86</WinX86TargetFolderName>
         </PropertyGroup>
-        <Message Text="Adding license information to cross-platform build..." Importance="High" />
         <Copy
             SourceFiles="$(MSBuildProjectDirectory)/../../CHANGELOG.md"
             DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
@@ -154,11 +190,33 @@
         <Copy
             SourceFiles="@(ThirdPartyFiles)"
             DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/ThirdParty/%(RecursiveDir)" />
+        
+        <Copy
+            SourceFiles="$(MSBuildProjectDirectory)/../../CHANGELOG.md"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
+        <Copy
+            SourceFiles="$(MSBuildProjectDirectory)/../../LICENSE"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
+        <Copy
+            SourceFiles="$(MSBuildProjectDirectory)/../../FmuImporter/FmuImporter.Models/Config/FmuImporterConfiguration.schema.json"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
+		<Copy
+            SourceFiles="$(SilKitDirBase)/Config.silkit.yaml"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
+        <Copy
+            SourceFiles="@(ThirdPartyFiles)"
+            DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/ThirdParty/%(RecursiveDir)" />
 
         <Message Text="Zipping cross-platform build to '$(PublishPath)$(CrossPlatformTargetFolderName).zip'..."
                  Importance="High" />
         <ZipDirectory SourceDirectory="$(PublishPath)crossplatform-x64/"
                       DestinationFile="$(PublishPath)/$(CrossPlatformTargetFolderName).zip"
+                      Overwrite="True" />
+
+        <Message Text="Zipping win x86 build to '$(PublishPath)$(WinX86TargetFolderName).zip'..."
+                 Importance="High" />
+        <ZipDirectory SourceDirectory="$(PublishPath)win-x86/"
+                      DestinationFile="$(PublishPath)/$(WinX86TargetFolderName).zip"
                       Overwrite="True" />
     </Target>
 </Project>

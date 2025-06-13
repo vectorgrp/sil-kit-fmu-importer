@@ -56,3 +56,4 @@ jobs:
         draft: true
         files: |
           ./FmuImporter/_publish/SilKitFmuImporter-*-xPlatform-x64.zip
+          ./FmuImporter/_publish/SilKitFmuImporter-*-win-x86.zip
