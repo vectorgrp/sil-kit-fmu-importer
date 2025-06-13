@@ -88,6 +88,9 @@ The FMU Importer comes with preconfigured projects.
 The following sections provide instructions which projects you may build and what they do.
 Manually built binaries of the projects usually build into the folder `_build/crossplatform-x64-{Configuration}`.
 
+> Note that the build instructions are given for x64 platforms but you can choose `win-86` runtime identifier if you use 32-bit FMUs.
+> The only limitation of the current 32-bit version of the FMU Importer is the maximum number of FMU variables it can handle, which is restricted to the ushort limit of 65,535.
+
 ---
 
 #### **FMU Importer**
