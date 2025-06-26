@@ -219,7 +219,7 @@ The FMU Importer prints most of its logs on the `Info` level, but in case an err
 
 * If you want a synchronized simulation start a SIL Kit System Controller listing all the participants e.g. with the following parameters which reflect the default participant names:
       
-      ./sil-kit-system-controller "sil-kit-fmu-importer" "CANoe""
+      ./sil-kit-system-controller "sil-kit-fmu-importer" "CANoe"
 
 * Start any other participants and/or the simulation in CANoe.
 
