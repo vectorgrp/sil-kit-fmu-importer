@@ -13,6 +13,7 @@ public class ModelDescription
     Flat,
     Structured
   }
+
   public enum GenerationTools
   {
     Vector_vVIRTUALtarget,
@@ -63,10 +64,10 @@ public class ModelDescription
     Description = input.description;
     InstantiationToken = input.instantiationToken.Normalize();
     GenerationTool = string.IsNullOrEmpty(input.generationTool)
-      ? GenerationTools.Unset
-      : input.generationTool.Normalize().Contains("Vector vVIRTUALtarget")
-        ? GenerationTools.Vector_vVIRTUALtarget
-        : GenerationTools.Other;
+                       ? GenerationTools.Unset
+                       : input.generationTool.Normalize().Contains("Vector vVIRTUALtarget")
+                         ? GenerationTools.Vector_vVIRTUALtarget
+                         : GenerationTools.Other;
     FmiVersion = input.fmiVersion;
     Version = input.version;
     VariableNamingConvention =
@@ -155,7 +156,8 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat64.unit))
         {
-          throw new ModelDescriptionException($"The type definition 'Float64' in the model description has a unit " +
+          throw new ModelDescriptionException(
+            $"The type definition 'Float64' in the model description has a unit " +
             $"'{typeDefFloat64.unit}' that does not match.");
         }
 
@@ -170,7 +172,8 @@ public class ModelDescription
       {
         if (!IsUnitInMap(typeDefFloat32.unit))
         {
-          throw new ModelDescriptionException($"The type definition 'Float32' in the model description has a unit " +
+          throw new ModelDescriptionException(
+            $"The type definition 'Float32' in the model description has a unit " +
             $"'{typeDefFloat32.unit}' that does not match.");
         }
 
@@ -211,9 +214,21 @@ public class ModelDescription
 
       if (fmi2SimpleType.Item is Fmi2.fmi2SimpleTypeReal typeDefReal)
       {
+        if (typeDefReal.unit is null)
+        {
+          TypeDefinitions.Add(
+            fmi2SimpleType.name,
+            new TypeDefinition
+            {
+              Name = fmi2SimpleType.name
+            });
+          continue;
+        }
+
         if (!IsUnitInMap(typeDefReal.unit))
         {
-          throw new ModelDescriptionException($"The type definition 'Real' in the model description has a unit " +
+          throw new ModelDescriptionException(
+            $"The type definition 'Real' in the model description has a unit " +
             $"'{typeDefReal.unit}' that does not match.");
         }
 
