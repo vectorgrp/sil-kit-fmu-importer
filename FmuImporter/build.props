@@ -20,4 +20,8 @@
     <Nullable>enable</Nullable>
     <OutDir>$(OutputPath)</OutDir>
   </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
 </Project>

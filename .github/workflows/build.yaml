@@ -2,113 +2,101 @@ name: Build the SIL Kit FMU Importer (internal)
 
 # Define the triggers for this workflow
 on:
-  push:
-    # only trigger on branches, not on tags
-    branches: '**'
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: build-fmu-importer
+  cancel-in-progress: true
 
 jobs:
   build-windows:
-    runs-on: windows
+    runs-on: [self-hosted, Windows, ska]
 
     steps:
     # Check out this Git repo
     - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
+
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+    
     - name: Upload test results
       uses: actions/upload-artifact@v3
+      env:
+        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
         name: fmu-importer-win-x64-test-result
         retention-days: 14
         path: ./FmuImporter/_testResults
 
-
-  # Get environment variable for docker image URI and provide it to next build step
-  prep-linux:
-    runs-on: [Linux]
-    outputs:
-      image: ${{ steps.set_image.outputs.image }}
-    environment: build-action
-    steps:
-      - id: set_image
-        env: 
-          DOCKER_IMAGE_URI: ${{ vars.DOCKER_IMAGE_URI }} 
-        run: echo "image=${{vars.DOCKER_IMAGE_URI}}" >> "$GITHUB_OUTPUT"
-
-
   # Build the project, then remove the built artifacts
   build-linux:
-    runs-on: [Linux, Docker, self-hosted, ska-runner]
-    needs: prep-linux
+    runs-on: [Linux, self-hosted, ska]
     container:
-      image: ${{ needs.prep-linux.outputs.image }}
-      volumes:
-        - /opt/store/ca/:/tmp/ca/
-    env:
-      HTTP_PROXY: ""
-      HTTPS_PROXY: ""
+      image: pnd-sil-kit-adapters-docker-prod.vegistry.vg.vector.int/sil_kit_adapters_ci_workflow:ubuntu2404_build
+      credentials:
+        username: ${{ secrets.ARTIFACTORY_USERNAME }}
+        password: ${{ secrets.ARTIFACTORY_TOKEN }}
+      options: --privileged
 
     steps:
-    - run: rm -rfv ./FmuImporter/_obj
-    - run: rm -rfv ./FmuImporter/_build
+    - name: cleanup
+      run: |
+        rm -rf ./*
+
     # Check out this Git repo
     - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+
+    - name: Restore packages
+      run: dotnet restore ./FmuImporter/BuildAll/Build.csproj
+
     - name: Build & Publish
-      run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+      run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m --no-restore -p:RestoreDuringBuild=false -p:Restore=false
+
+    - name: Restore test packages
+      run: dotnet restore ./FmuImporter/BuildAll/BuildTests.csproj
+
     - name: Build Tests
-      run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
+      run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m --no-restore -p:RestoreDuringBuild=false -p:Restore=false
+
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+    
     - name: Upload build artifact
       uses: actions/upload-artifact@v3
       env:
-        NODE_EXTRA_CA_CERTS: ${{ secrets.CERT_PATH }}
         http_proxy: ""  # Explicitly disable the proxy for Node.js
         https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
         name: fmu-importer-x64-build
         retention-days: 14
         path: ./FmuImporter/_publish/*.zip
+    
     - name: Upload test results
       uses: actions/upload-artifact@v3
       env:
-        NODE_EXTRA_CA_CERTS: ${{ secrets.CERT_PATH }}
         http_proxy: ""  # Explicitly disable the proxy for Node.js
         https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
         name: fmu-importer-linux-x64-test-result
         retention-days: 14
         path: ./FmuImporter/_testResults
+    
     - if: always()
       run: rm -rfv * .??*
 
-
   run-integration-tests:
-    env:
-        GH_ENTERPRISE_TOKEN: ${{ secrets.PAT }}
-        GH_HOST: ${{ vars.GHE_HOST }}
-    runs-on: windows
     needs: [build-windows, build-linux]
-    steps: 
-      - name: Trigger integration tests
-        run: |
-          gh workflow run testAutomation.yaml -R ${{ vars.SUPPLEMENTS_LOC }} -F fmu-importer-version=1.5.0 -F fmu-importer-run-id=${{ github.run_id }} -F branch-name=${{ github.ref_name }} -F commit-full-sha=${{ github.sha }}
-
-
-  # Prune any dangling docker images
-  cleanup-linux:
-    runs-on: [Linux, Docker, self-hosted, ska-runner]
-    needs: build-linux
-    steps:
-      - name: Prune Docker Images
-        run: docker image prune --force
+    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomation.yaml@main
+    with:
+      fmu-importer-version: 1.5.0
+      branch-name: ${{ github.ref_name }}
+      commit-full-sha: ${{ github.sha }}
+    secrets: inherit
