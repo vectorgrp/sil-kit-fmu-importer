@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: build-fmu-importer
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-windows:

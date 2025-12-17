@@ -1,50 +1,70 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using Fmi.Binding;
 using System.Text;
-
 namespace Common;
 
 internal static class Helpers
 {
-  public static Tuple<bool, StringBuilder?> ProcessReturnCode(
+  // ---- Domain specific implementations ----
+  public static Tuple<bool, StringBuilder?> ProcessFmiReturnCode(
     HashSet<int> okResultCodes,
     int resultCode,
     string returnCodeName,
     RuntimeMethodHandle? methodHandle,
     bool statusIsDiscardAndError)
   {
+    // OK / Pending etc.
     if (okResultCodes.Contains(resultCode))
     {
       return new Tuple<bool, StringBuilder?>(true, null);
     }
 
-    if ((resultCode == 1 /* warning */ || (resultCode == 2 /* discard */ && !statusIsDiscardAndError)) && methodHandle != null)
+    // FMI semantics: 1=Warning, 2=Discard (non-error unless explicitly treated as error)
+    if (((resultCode == (int)FmiStatus.Warning) || (resultCode == (int)FmiStatus.Discard && !statusIsDiscardAndError)) && methodHandle != null)
     {
       var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
       if (methodInfo != null)
       {
-        var stringBuilder = new StringBuilder(
-          $"FMU Importer encountered a call with return value '{resultCode}' ({returnCodeName})");
+        var sb = new StringBuilder(
+          $"FMU Importer encountered an error with code '{resultCode}' ({returnCodeName})");
         var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
 
         if (!string.IsNullOrEmpty(fullName))
         {
-          stringBuilder.AppendLine($" while calling '{fullName}'.");
+          sb.AppendLine($" while calling '{fullName}'.");
         }
         else
         {
-          stringBuilder.AppendLine(".");
+          sb.AppendLine(".");
         }
-
-        return new Tuple<bool, StringBuilder?>(true, stringBuilder);
+        return new Tuple<bool, StringBuilder?>(true, sb);
       }
-      else
-      {
-        return new Tuple<bool, StringBuilder?>(true, null);
-      }
+      return new Tuple<bool, StringBuilder?>(true, null);
     }
 
+    return BuildErrorTuple(resultCode, returnCodeName, methodHandle);
+  }
+
+  public static Tuple<bool, StringBuilder?> ProcessSilKitReturnCode(
+    HashSet<int> okResultCodes,
+    int resultCode,
+    string returnCodeName,
+    RuntimeMethodHandle? methodHandle)
+  {
+    if (okResultCodes.Contains(resultCode))
+    {
+      return new Tuple<bool, StringBuilder?>(true, null);
+    }
+    return BuildErrorTuple(resultCode, returnCodeName, methodHandle);
+  }
+
+  private static Tuple<bool, StringBuilder?> BuildErrorTuple(
+    int resultCode,
+    string returnCodeName,
+    RuntimeMethodHandle? methodHandle)
+  {
     var errorMessageBuilder = new StringBuilder();
     errorMessageBuilder.Append(
       $"FMU Importer encountered an error with code '{resultCode}' ({returnCodeName})");
@@ -52,7 +72,7 @@ internal static class Helpers
     if (methodHandle == null)
     {
       errorMessageBuilder.Append(
-        ". Failed to identify name of method that caused error in native code.");
+        ". Failed to identify name of method that caused the error.");
     }
     else
     {
@@ -60,12 +80,11 @@ internal static class Helpers
       if (methodInfo == null)
       {
         errorMessageBuilder.Append(
-          ". Failed to identify name of method that caused error in native code.");
+          ". Failed to identify name of method that caused the error.");
       }
       else
       {
         var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
-
         if (!string.IsNullOrEmpty(fullName))
         {
           errorMessageBuilder.AppendLine($" while calling '{fullName}'.");

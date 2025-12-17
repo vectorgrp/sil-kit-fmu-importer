@@ -285,7 +285,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
       }        
     }
 
-      var result = Common.Helpers.ProcessReturnCode(
+      var result = Common.Helpers.ProcessFmiReturnCode(
       sOkCodes,
       statusCode,
       ((FmiStatus)statusCode).ToString(),

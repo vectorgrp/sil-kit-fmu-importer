@@ -16,4 +16,8 @@
         <Compile Include="..\Common\CommonHelpers.cs" Link="CommonHelpers.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
+    </ItemGroup>
+
 </Project>

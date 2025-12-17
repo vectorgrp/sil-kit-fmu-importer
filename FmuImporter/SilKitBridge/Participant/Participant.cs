@@ -74,14 +74,61 @@ public class Participant : IDisposable
 
   public Participant(ParticipantConfiguration configuration, string participantName, string registryUri)
   {
-    Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_Participant_Create(
-        out _participantPtr,
+    IntPtr createdPtr = IntPtr.Zero;
+    try
+    {
+      var rc = SilKit_Participant_Create(
+        out createdPtr,
         configuration.ParticipantConfigurationPtr,
         participantName,
-        registryUri),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
-    Logger = new Logger(ParticipantPtr);
+        registryUri);
+
+      Helpers.ProcessReturnCode(
+        (Helpers.SilKit_ReturnCodes)rc,
+        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+
+      if (createdPtr == IntPtr.Zero)
+      {
+        throw new InvalidOperationException("SilKit_Participant_Create returned a null participant pointer.");
+      }
+
+      ParticipantPtr = createdPtr; // assign only after validation
+      createdPtr = IntPtr.Zero;
+
+      // Ensure the shared logger exists (idempotent)
+      EnsureLoggerCreated(ParticipantPtr);
+    }
+    catch (Exception)
+    {
+      if (createdPtr != IntPtr.Zero)
+      {
+        try 
+        { 
+          SilKit_Participant_Destroy(createdPtr);
+        } 
+        catch 
+        {
+          // swallow SilKit_Participant_Destroy exception (if any), not to cover previously thrown exceptions }
+        }
+      }
+      throw;
+    }
+  }
+
+  private static void EnsureLoggerCreated(IntPtr participantPtr)
+  {
+    if (Logger != null)
+    {
+      return;
+    }
+
+    var logger = new Logger(participantPtr);
+    if (logger == null)
+    {
+      throw new InvalidOperationException("Failed to create SIL Kit logger (constructor returned null).");
+    }
+
+    Logger = logger;
   }
 
   /*
@@ -98,7 +145,6 @@ public class Participant : IDisposable
     [MarshalAs(UnmanagedType.LPStr)] string participantName,
     [MarshalAs(UnmanagedType.LPStr)] string registryUri);
 
-
   ~Participant()
   {
     Dispose(false);
@@ -106,8 +152,11 @@ public class Participant : IDisposable
 
   private void ReleaseUnmanagedResources()
   {
-    SilKit_Participant_Destroy(ParticipantPtr);
-    ParticipantPtr = IntPtr.Zero;
+    if (ParticipantPtr != IntPtr.Zero)
+    {
+      SilKit_Participant_Destroy(ParticipantPtr);
+      ParticipantPtr = IntPtr.Zero;
+    }
   }
 
   private bool _disposedValue;
@@ -138,7 +187,7 @@ public class Participant : IDisposable
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
   private static extern int SilKit_Participant_Destroy([In] IntPtr participant);
 
-#endregion ctor & dtor
+  #endregion ctor & dtor
 
   public ILifecycleService CreateLifecycleService(LifecycleService.LifecycleConfiguration lc)
   {
@@ -168,9 +217,15 @@ public class Participant : IDisposable
   {
     if (Logger == null)
     {
-      throw new NullReferenceException("GetLogger failed to retrieve a logger object");
+      // In case someone calls GetLogger extremely early or logger was not yet constructed
+      if (ParticipantPtr == IntPtr.Zero)
+      {
+        throw new InvalidOperationException("Cannot initialize logger: participant pointer is not set.");
+      }
+      EnsureLoggerCreated(ParticipantPtr);
     }
 
-    return Logger;
+    return Logger!;
   }
 }
+

@@ -1,9 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using SilKit.Services.Logger;
 
 namespace SilKit;
 
@@ -29,44 +27,27 @@ internal static class Helpers
 
   public static void ProcessReturnCode(SilKit_ReturnCodes statusCode, RuntimeMethodHandle? methodHandle)
   {
-    var result = Common.Helpers.ProcessReturnCode(
+    var (success, errorBuilder) = Common.Helpers.ProcessSilKitReturnCode(
       sOkCodes,
       (int)statusCode,
       statusCode.ToString(),
-      methodHandle,
-      false);
-    if (!result.Item1)
+      methodHandle);
+
+    if (success)
     {
-      var sb = result.Item2!;
-      var errorMessage = SilKit_GetLastErrorString();
-      sb.AppendLine("Provided error message: " + errorMessage);
-
-      try
-      {
-        throw new ApplicationException(sb.ToString());
-      }
-      catch (Exception e)
-      {
-        if (Participant.Logger != null)
-        {
-          Participant.Logger.Log(LogLevel.Error, e.Message);
-          Participant.Logger.Log(LogLevel.Debug, e.ToString());
-        }
-        else
-        {
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine(
-            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
-          Debug.WriteLine($"Encountered exception: {e}.");
-          Console.ResetColor();
-        }
-
-        throw;
-      }
+      return; // success
     }
+
+    var sb = errorBuilder!;
+    var nativeMsg = SilKit_GetLastErrorString();
+    if (!string.IsNullOrWhiteSpace(nativeMsg))
+    {
+      sb.AppendLine("Provided error message: " + nativeMsg);
+    }
+
+    throw new SilKitReturnCodeException(statusCode, sb.ToString());
   }
 
-  /*SilKitAPI const char* SilKitCALL SilKit_GetLastErrorString();*/
   [DllImport("SilKit", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
   private static extern string SilKit_GetLastErrorString();
 }

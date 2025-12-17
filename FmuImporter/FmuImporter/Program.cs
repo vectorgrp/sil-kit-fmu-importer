@@ -205,6 +205,10 @@ internal class Program
             {
               Environment.ExitCode = ExitCodes.FileNotFound;
             }
+            else if (e is InvalidOperationException)
+            {
+              Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
+            }
             else
             {
               Environment.ExitCode = ExitCodes.UnhandledException;

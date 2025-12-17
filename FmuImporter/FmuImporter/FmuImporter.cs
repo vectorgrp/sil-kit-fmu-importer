@@ -78,13 +78,28 @@ public class FmuImporter
         Console.ResetColor();
       };
 
-    SilKitEntity = new SilKitEntity(
-      silKitConfigurationPath,
-      participantName,
-      lifecycleMode,
-      timeSyncMode);
-    SilKitDataManager = new SilKitDataManager(SilKitEntity);
-    CurrentSilKitStatus = SilKitStatus.Initialized;
+    try
+    {
+      SilKitEntity = new SilKitEntity(
+        silKitConfigurationPath,
+        participantName,
+        lifecycleMode,
+        timeSyncMode);
+      SilKitDataManager = new SilKitDataManager(SilKitEntity);
+      CurrentSilKitStatus = SilKitStatus.Initialized;
+    }
+    catch (Exception ex)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.WriteLine($"An error occurred: {ex.Message}.\nMore information was written to the debug console.");
+      Debug.WriteLine($"An error occurred: {ex}.");
+      Console.ResetColor();
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
+      }
+      throw;
+    }
 
     try
     {
