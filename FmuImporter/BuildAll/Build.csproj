@@ -3,6 +3,17 @@
 
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildOsDependent;BuildXPlatform;PrepareReleasePackage">
     <Import Project="../common.props" Condition="$(CommonImported) == ''" />
+    <Import Project="../downloadSilKit.props" />
+
+    <PropertyGroup>
+        <SilKitDirBase Condition="'$(SilKitDirBase)'==''">$(MSBuildProjectDirectory)\..\_silkit\</SilKitDirBase>
+    </PropertyGroup>
+
+    
+    <Target Name="EnsureSilKit" BeforeTargets="BuildXPlatform;BuildWinX86Package">
+        <CallTarget Targets="PrepareSilKitWinX64;PrepareSilKitWinX86;PrepareSilKitLinux" />
+        <Message Text="EnsureSilKit: Win64=$(SilKitWinLibPath) Exists=$(Exists('$(SilKitWinLibPath)')); Win32=$(SilKitWinLibPathX86) Exists=$(Exists('$(SilKitWinLibPathX86)')); Linux=$(SilKitLinuxLibPath) Exists=$(Exists('$(SilKitLinuxLibPath)'))" Importance="High" />
+    </Target>
 
     <!--Currently disabled-->
     <Target Name="BuildOsDependent" BeforeTargets="Build" Condition="'1' == '0'">
@@ -70,8 +81,8 @@
             Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:PublishProfile=publishStandalone_osx-x64 -p:RuntimeIdentifier=osx-x64 --no-build"
             EnvironmentVariables="$(EnvVar)" />
     </Target>
-
-    <Target Name="BuildXPlatform" BeforeTargets="Build">
+    
+    <Target Name="BuildXPlatform" BeforeTargets="Build" DependsOnTargets="EnsureSilKit">
         <PropertyGroup>
             <BuildPath>$(MSBuildThisFileDirectory)/../</BuildPath>
             <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release -p:Version=$(Version) -v:m </DefaultProperties>
@@ -121,12 +132,18 @@
         <Move SourceFiles="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/FmuImporter.tmp"
               OverwriteReadOnlyFiles="true"
               DestinationFiles="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/FmuImporter" />
-        <Copy
-            SourceFiles="$(SilKitDirBase)/libSilKit.so;$(SilKitDirBase)/SilKit.dll"
-            DestinationFolder="$(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/" />
-        <Copy
-            SourceFiles="$(SilKitDirBase)/libSilKit.so;$(SilKitDirBase)/SilKit.dll"
-            DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
+        <Copy SourceFiles="$(SilKitLinuxLibPath)" 
+              Condition="Exists('$(SilKitLinuxLibPath)')" 
+              DestinationFolder="$(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/" />
+        <Copy SourceFiles="$(SilKitWinLibPath)" 
+              Condition="Exists('$(SilKitWinLibPath)')" 
+              DestinationFolder="$(MSBuildProjectDirectory)/../_build/crossplatform-x64-Release/" />
+        <Copy SourceFiles="$(SilKitLinuxLibPath)" 
+              Condition="Exists('$(SilKitLinuxLibPath)')" 
+              DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
+        <Copy SourceFiles="$(SilKitWinLibPath)" 
+              Condition="Exists('$(SilKitWinLibPath)')" 
+              DestinationFolder="$(PublishPath)crossplatform-x64/$(CrossPlatformTargetFolderName)/" />
     </Target>
 
     <Target Name="BuildWinX86Package" AfterTargets="BuildXPlatform">
@@ -158,10 +175,12 @@
             Command="dotnet publish $(BuildPath)FmuImporter/FmuImporter.csproj $(DefaultProperties) $(StandaloneBuild) -p:RuntimeIdentifier=win-x86 -p:Platform=x86 -p:PlatformTarget=x86 --no-build"
 			EnvironmentVariables="$(EnvVar)" />
         <Copy
-            SourceFiles="$(SilKitDirBase)/x86_dll/SilKit.dll"
+            SourceFiles="$(SilKitWinLibPathX86)"
+            Condition="Exists('$(SilKitWinLibPathX86)')"
             DestinationFolder="$(MSBuildProjectDirectory)/../_build/win-x86-Release/" />
         <Copy
-            SourceFiles="$(SilKitDirBase)/x86_dll/SilKit.dll"
+            SourceFiles="$(SilKitWinLibPathX86)"
+            Condition="Exists('$(SilKitWinLibPathX86)')"
             DestinationFolder="$(PublishPath)win-x86/$(WinX86TargetFolderName)/" />
 	</Target>
 

@@ -46,7 +46,7 @@ jobs:
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: actions-mirror/softprops-action-gh-release@v2
       env:
         NODE_EXTRA_CA_CERTS: ${{ secrets.CERT_PATH }}
         http_proxy: ""  # Explicitly disable the proxy for Node.js

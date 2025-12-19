@@ -22,6 +22,14 @@
 bin/
 obj/
 TestResults/
+
+########################
+# Handle SIL Kit files #
+########################
+FmuImporter/_silkit/**/*.dll
+FmuImporter/_silkit/**/*.so
+!FmuImporter/_silkit/*.yaml
+
 #############
 # Resharper #
 #############

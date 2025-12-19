@@ -99,9 +99,10 @@ Manually built binaries of the projects usually build into the folder `_build/cr
 
 To build the FMU Importer itself, open a terminal in the project's root directory (the one that contains FmuImporter.sln) and run the .NET build command
 
-- Windows: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r win-x64`
-
-- Linux: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64`
+- Windows: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r <runtime-identifier> -p:Platform=<platform>`
+  > Use `-r win-x86 -p:Platform=x86` or `-r win-x64 -p:Platform=x64` to ensure compatibility between the target runtime and platform architecture when building for Windows.
+  
+- Linux: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64 -p:Platform=x64`
 
 This builds the FMU Importer with a `Debug` configuration (`-c Debug`) and the Importer will need an installed DotNet 8.0 (`--no-self-contained`).
 

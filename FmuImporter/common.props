@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <Version>1.5.0</Version>
-    <SilKitVersion>4.0.56</SilKitVersion>
+    <SilKitVersion>5.0.1</SilKitVersion>
     <Copyright>Copyright (c) Vector Informatik GmbH. All rights reserved.</Copyright>
   </PropertyGroup>
 
@@ -35,8 +35,9 @@
     <OutputPathBase>$(MSBuildProjectDirectory)/../_build/</OutputPathBase>
     <PublishDirBase>$(MSBuildProjectDirectory)/../_publish/</PublishDirBase>
     <SilKitDirBase>$([System.IO.Path]::GetFullPath($(MSBuildProjectDirectory)/../_silkit/))</SilKitDirBase>
-    <SilKitWinLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit.dll"))</SilKitWinLibPath>
-    <SilKitLinuxLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "libSilKit.so"))</SilKitLinuxLibPath>
+    <SilKitWinLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit-win-x64", "SilKit.dll"))</SilKitWinLibPath>
+    <SilKitLinuxLibPath>$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit-linux","libSilKit.so"))</SilKitLinuxLibPath>
+    <SilKitWinLibPathX86 Condition="'$(SilKitWinLibPathX86)'==''">$([System.IO.Path]::Combine($(SilKitDirBase), "SilKit-win-x86", "SilKit.dll"))</SilKitWinLibPathX86>
   </PropertyGroup>
 
   <PropertyGroup

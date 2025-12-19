@@ -1,57 +1,128 @@
-<?xml version="1.0" encoding="utf-8"?>
-
+<!-- SPDX-License-Identifier: MIT -->
 <!-- Copyright (c) Vector Informatik GmbH. All rights reserved. -->
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-<Project ToolsVersion="12.0" DefaultTargets="CheckSilKitVersion;PrepareSilKit"
-         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<!-- Canonical base + library paths -->
+	<PropertyGroup>
+		<SilKitDirBase Condition="'$(SilKitDirBase)'==''">$(MSBuildThisFileDirectory)_silkit\</SilKitDirBase>
+	</PropertyGroup>
 
-  <Target Name="PrepareSilKit" AfterTargets="BuildAll;Build"
-          Condition="!Exists('$(SilKitWinLibPath)')">
-    <PropertyGroup>
-      <SilKitUrl Condition="'$(SilKitUrl)' == ''">https://github.com/vectorgrp/sil-kit/releases/download/v$(SilKitVersion)/</SilKitUrl>
-      <SilKitWinName Condition="'$(Platform)' == 'x64'">SilKit-$(SilKitVersion)-Win-x86_64-VS2017</SilKitWinName>
-      <SilKitWinName Condition="'$(Platform)' == 'x86'">SilKit-$(SilKitVersion)-Win-x86-VS2017</SilKitWinName>
-      <SilKitUbuntuName>SilKit-$(SilKitVersion)-ubuntu-18.04-x86_64-gcc</SilKitUbuntuName>
-    </PropertyGroup>
+	<!-- Prefer a locally installed SIL Kit on Windows when SilKit_InstallDir is set and valid.
+	     On Windows the layout is: SilKit_InstallDir\x86_64\bin\SilKit.dll (and x86\bin for 32-bit). -->
+	<PropertyGroup Condition="'$(SilKit_InstallDir)' != '' and '$(OS)' == 'Windows_NT'">
+		<SilKitInstalledWinLibPath>$([System.IO.Path]::Combine($(SilKit_InstallDir), 'x86_64', 'bin', 'SilKit.dll'))</SilKitInstalledWinLibPath>
+		<SilKitInstalledWinLibPathX86>$([System.IO.Path]::Combine($(SilKit_InstallDir), 'x86', 'bin', 'SilKit.dll'))</SilKitInstalledWinLibPathX86>
+	</PropertyGroup>
+	<PropertyGroup Condition="Exists('$(SilKitInstalledWinLibPath)')">
+		<SilKitWinLibPath>$(SilKitInstalledWinLibPath)</SilKitWinLibPath>
+	</PropertyGroup>
+	<PropertyGroup Condition="Exists('$(SilKitInstalledWinLibPathX86)')">
+		<SilKitWinLibPathX86>$(SilKitInstalledWinLibPathX86)</SilKitWinLibPathX86>
+	</PropertyGroup>
 
-    <Message Text="Downloading SIL Kit (Windows) archive from '$(SilKitUrl)'..." Importance="High" />
-    <DownloadFile
-      SourceUrl="$(SilKitUrl)$(SilKitWinName).zip"
-      DestinationFolder="$(SilKitDirBase)">
-      <Output TaskParameter="DownloadedFile" ItemName="Content" />
-    </DownloadFile>
+	<!-- Prefer a locally installed SIL Kit on Linux, check for libSilKit.so in /usr/lib/x86_64-linux-gnu. -->
+	<!-- First, prefer an exact versioned file matching the current SilKitVersion, e.g. libSilKit.so.5.0.1 -->
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and Exists('/usr/lib/x86_64-linux-gnu/libSilKit.so.$(SilKitVersion)')">
+		<SilKitLinuxLibPath>/usr/lib/x86_64-linux-gnu/libSilKit.so.$(SilKitVersion)</SilKitLinuxLibPath>
+	</PropertyGroup>
+	<!-- Then fall back to an unversioned libSilKit.so if present and no Linux path was set yet -->
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(SilKitLinuxLibPath)' == '' and Exists('/usr/lib/x86_64-linux-gnu/libSilKit.so')">
+		<SilKitLinuxLibPath>/usr/lib/x86_64-linux-gnu/libSilKit.so</SilKitLinuxLibPath>
+	</PropertyGroup>
 
-    <Message Text="Extracting SIL Kit (Windows) library for later use..." Importance="High" />
-    <Unzip
-      SourceFiles="$(SilKitDirBase)$(SilKitWinName).zip"
-      DestinationFolder="$(SilKitDirBase)/win"
-      OverwriteReadOnlyFiles="true" />
-    <Move SourceFiles="$(SilKitDirBase)/win/$(SilKitWinName)/SilKit/bin/SilKit.dll"
-          OverwriteReadOnlyFiles="true"
-          DestinationFiles="$(SilKitWinLibPath)" />
+	<!-- Fallbacks to repo-local _silkit layout when no installed SIL Kit is available -->
+	<PropertyGroup>
+		<SilKitWinLibPath Condition="'$(SilKitWinLibPath)'==''">$(SilKitDirBase)SilKit-win-x64\SilKit.dll</SilKitWinLibPath>
+		<SilKitWinLibPathX86 Condition="'$(SilKitWinLibPathX86)'==''">$(SilKitDirBase)SilKit-win-x86\SilKit.dll</SilKitWinLibPathX86>
+		<SilKitLinuxLibPath Condition="'$(SilKitLinuxLibPath)'==''">$(SilKitDirBase)SilKit-linux\libSilKit.so</SilKitLinuxLibPath>
+		<SilKitUrl Condition="'$(SilKitUrl)'==''">https://github.com/vectorgrp/sil-kit/releases/download/v$(SilKitVersion)/</SilKitUrl>
+		<!-- Upstream archive names -->
+		<SilKitWinArchiveNameX64>SilKit-$(SilKitVersion)-Win-x86_64-VS2019</SilKitWinArchiveNameX64>
+		<SilKitWinArchiveNameX86>SilKit-$(SilKitVersion)-Win-x86-VS2019</SilKitWinArchiveNameX86>
+		<SilKitLinuxArchiveName>SilKit-$(SilKitVersion)-ubuntu-22.04-x86_64-gcc</SilKitLinuxArchiveName>
+	</PropertyGroup>
 
-    <Message Text="Cleaning up SIL Kit (Windows) download artifacts..." Importance="High" />
-    <RemoveDir Directories="$(SilKitDirBase)/win" />
-    <Delete Files="$(SilKitDirBase)$(SilKitWinName).zip" />
+	<!-- Entry target to ensure SIL Kit is present before building any importing project -->
+	<Target Name="PrepareSilKit" BeforeTargets="Build">
+		<!-- On Windows hosts, ensure the Windows libraries are present -->
+		<CallTarget Condition="$([MSBuild]::IsOSPlatform('Windows'))" Targets="PrepareSilKitWinX64;PrepareSilKitWinX86" />
+		<!-- On Linux hosts, ensure the Linux library is present -->
+		<CallTarget Condition="$([MSBuild]::IsOSPlatform('Linux'))" Targets="PrepareSilKitLinux" />
+	</Target>
 
-    <Message Text="Downloading SIL Kit (Ubuntu) archive from '$(SilKitUrl)'..." Importance="High" />
-    <DownloadFile
-      SourceUrl="$(SilKitUrl)$(SilKitUbuntuName).zip"
-      DestinationFolder="$(SilKitDirBase)">
-      <Output TaskParameter="DownloadedFile" ItemName="Content" />
-    </DownloadFile>
-    <Message Text="Extracting SIL Kit (Ubuntu) library for later use..." Importance="High" />
-    <Unzip
-      SourceFiles="$(SilKitDirBase)$(SilKitUbuntuName).zip"
-      DestinationFolder="$(SilKitDirBase)/ubuntu"
-      OverwriteReadOnlyFiles="true" />
-    <Move SourceFiles="$(SilKitDirBase)/ubuntu/$(SilKitUbuntuName)/SilKit/lib/libSilKit.so"
-          OverwriteReadOnlyFiles="true"
-          DestinationFiles="$(SilKitLinuxLibPath)" />
-    <Message Text="Cleaning up SIL Kit (Ubuntu) download artifacts..." Importance="High" />
-    <RemoveDir Directories="$(SilKitDirBase)/ubuntu" />
-    <Delete Files="$(SilKitDirBase)$(SilKitUbuntuName).zip" />
-  </Target>
-  <!--Note that there is no target for OSX yet as SIL Kit does not provide packages for OSX-->
+	<!-- Report which SIL Kit library is used (installed vs downloaded) -->
+	<Target Name="ReportSilKitUsage" AfterTargets="PrepareSilKit" Condition="'$(MSBuildProjectName)' == 'FmuImporter'">
+		<!-- Windows x64: installed vs bundled in _silkit -->
+		<Message Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(SilKitWinLibPath)' != '' and '$(SilKitWinLibPath)' != '$(SilKitDirBase)SilKit-win-x64\SilKit.dll'"
+		         Text="Using installed SIL Kit library (Win x64) at '$(SilKitWinLibPath)'." Importance="High" />
+		<Message Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(SilKitWinLibPath)' == '$(SilKitDirBase)SilKit-win-x64\SilKit.dll'"
+		         Text="Using downloaded SIL Kit library (Win x64) at '$(SilKitWinLibPath)'." Importance="High" />
+
+		<!-- Windows x86: installed vs bundled in _silkit -->
+		<Message Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(Platform)' == 'x86' and '$(SilKitWinLibPathX86)' != '' and '$(SilKitWinLibPathX86)' != '$(SilKitDirBase)SilKit-win-x86\SilKit.dll'"
+		         Text="Using installed SIL Kit library (Win x86) at '$(SilKitWinLibPathX86)'." Importance="High" />
+		<Message Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(Platform)' == 'x86' and '$(SilKitWinLibPathX86)' == '$(SilKitDirBase)SilKit-win-x86\SilKit.dll'"
+		         Text="Using downloaded SIL Kit library (Win x86) at '$(SilKitWinLibPathX86)'." Importance="High" />
+
+		<!-- Linux: installed (system path) vs bundled in _silkit -->
+		<Message Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(SilKitLinuxLibPath)' != '' and '$(SilKitLinuxLibPath)' != '$(SilKitDirBase)SilKit-linux\libSilKit.so'"
+		         Text="Using installed SIL Kit library (Linux) at '$(SilKitLinuxLibPath)'." Importance="High" />
+		<Message Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(SilKitLinuxLibPath)' == '$(SilKitDirBase)SilKit-linux\libSilKit.so'"
+		         Text="Using downloaded SIL Kit library (Linux) at '$(SilKitLinuxLibPath)'." Importance="High" />
+	</Target>
+
+	<!-- Download + extract Windows x64 -->
+	<Target Name="PrepareSilKitWinX64" Condition="!Exists('$(SilKitWinLibPath)')">
+		<PropertyGroup>
+			<SilKitWinTmpDir>$(SilKitDirBase)win64_tmp</SilKitWinTmpDir>
+		</PropertyGroup>
+		<Message Text="SIL Kit native library not found at '$(SilKitWinLibPath)'. Downloading SIL Kit (Win x64) now..." Importance="High"/>
+		<Message Text="Downloading SIL Kit (Win x64) from '$(SilKitUrl)$(SilKitWinArchiveNameX64).zip'..." Importance="High" />
+		<DownloadFile SourceUrl="$(SilKitUrl)$(SilKitWinArchiveNameX64).zip" DestinationFolder="$(SilKitDirBase)">
+			<Output TaskParameter="DownloadedFile" ItemName="_DlWinX64" />
+		</DownloadFile>
+		<Message Text="Extracting SIL Kit (Win x64)..." Importance="High" />
+		<Unzip SourceFiles="$(SilKitDirBase)$(SilKitWinArchiveNameX64).zip" DestinationFolder="$(SilKitWinTmpDir)" OverwriteReadOnlyFiles="true" />
+		<MakeDir Directories="$(SilKitDirBase)SilKit-win-x64" Condition="!Exists('$(SilKitDirBase)SilKit-win-x64')" />
+		<Move SourceFiles="$(SilKitWinTmpDir)/$(SilKitWinArchiveNameX64)/SilKit/bin/SilKit.dll" DestinationFiles="$(SilKitWinLibPath)" OverwriteReadOnlyFiles="true" />
+		<RemoveDir Directories="$(SilKitWinTmpDir)" />
+		<Delete Files="$(SilKitDirBase)$(SilKitWinArchiveNameX64).zip" />
+	</Target>
+
+	<!-- Download + extract for Windows x86 -->
+	<Target Name="PrepareSilKitWinX86" Condition="'$(Platform)'=='x86' and !Exists('$(SilKitWinLibPathX86)')">
+		<PropertyGroup>
+			<SilKitWinTmpDirX86>$(SilKitDirBase)win32_tmp</SilKitWinTmpDirX86>
+		</PropertyGroup>
+		<Message Text="SIL Kit native library not found at '$(SilKitWinLibPathX86)'. Downloading SIL Kit (Win x86) now..." Importance="High"/>
+		<Message Text="Downloading SIL Kit (Win x86) from '$(SilKitUrl)$(SilKitWinArchiveNameX86).zip'..." Importance="High" />
+		<DownloadFile SourceUrl="$(SilKitUrl)$(SilKitWinArchiveNameX86).zip" DestinationFolder="$(SilKitDirBase)">
+			<Output TaskParameter="DownloadedFile" ItemName="_DlWinX86" />
+		</DownloadFile>
+		<Message Text="Extracting SIL Kit (Win x86)..." Importance="High" />
+		<Unzip SourceFiles="$(SilKitDirBase)$(SilKitWinArchiveNameX86).zip" DestinationFolder="$(SilKitWinTmpDirX86)" OverwriteReadOnlyFiles="true" />
+		<MakeDir Directories="$(SilKitDirBase)SilKit-win-x86" Condition="!Exists('$(SilKitDirBase)SilKit-win-x86')" />
+		<Move SourceFiles="$(SilKitWinTmpDirX86)/$(SilKitWinArchiveNameX86)/SilKit/bin/SilKit.dll" DestinationFiles="$(SilKitWinLibPathX86)" OverwriteReadOnlyFiles="true" />
+		<RemoveDir Directories="$(SilKitWinTmpDirX86)" />
+		<Delete Files="$(SilKitDirBase)$(SilKitWinArchiveNameX86).zip" />
+	</Target>
+
+	<!-- Download + extract Linux .so -->
+	<Target Name="PrepareSilKitLinux" Condition="!Exists('$(SilKitLinuxLibPath)')">
+		<PropertyGroup>
+			<SilKitLinuxTmpDir>$(SilKitDirBase)linux_tmp</SilKitLinuxTmpDir>
+		</PropertyGroup>
+		<Message Text="SIL Kit native library not found at '$(SilKitLinuxLibPath)'. Downloading SIL Kit (Linux) now..." Importance="High"/>
+		<Message Text="Downloading SIL Kit (Linux) from '$(SilKitUrl)$(SilKitLinuxArchiveName).zip'..." Importance="High" />
+		<DownloadFile SourceUrl="$(SilKitUrl)$(SilKitLinuxArchiveName).zip" DestinationFolder="$(SilKitDirBase)">
+			<Output TaskParameter="DownloadedFile" ItemName="_DlLinux" />
+		</DownloadFile>
+		<Message Text="Extracting SIL Kit (Linux)..." Importance="High" />
+		<Unzip SourceFiles="$(SilKitDirBase)$(SilKitLinuxArchiveName).zip" DestinationFolder="$(SilKitLinuxTmpDir)" OverwriteReadOnlyFiles="true" />
+		<MakeDir Directories="$(SilKitDirBase)SilKit-linux" Condition="!Exists('$(SilKitDirBase)SilKit-linux')" />
+		<Move SourceFiles="$(SilKitLinuxTmpDir)/$(SilKitLinuxArchiveName)/SilKit/lib/libSilKit.so" DestinationFiles="$(SilKitLinuxLibPath)" OverwriteReadOnlyFiles="true" />
+		<RemoveDir Directories="$(SilKitLinuxTmpDir)" />
+		<Delete Files="$(SilKitDirBase)$(SilKitLinuxArchiveName).zip" />
+	</Target>
 
 </Project>

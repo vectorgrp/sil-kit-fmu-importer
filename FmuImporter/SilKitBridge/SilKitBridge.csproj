@@ -4,6 +4,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\build.props" />
+    <!-- Ensure native SIL Kit download targets are available for this project too -->
+    <Import Project="..\downloadSilKit.props" />
 
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -17,7 +19,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
+        <ProjectReference Include="..\FmiBridge\FmiBridge.csproj" />
     </ItemGroup>
-
+  
+    <!-- Copy the downloaded native SIL Kit library into the project's output directory, so DllImport("SilKit") resolves before PATH check. -->
+    <Target Name="CopySilKitNative" AfterTargets="Build">
+        <ItemGroup>
+            <_SilKitNative Include="$(SilKitWinLibPath)" Condition="'$(OS)'=='Windows_NT' and '$(Platform)'=='x64' and Exists('$(SilKitWinLibPath)')" />
+            <_SilKitNative Include="$(SilKitWinLibPathX86)" Condition="'$(OS)'=='Windows_NT' and '$(Platform)'=='x86' and Exists('$(SilKitWinLibPathX86)')" />
+            <_SilKitNative Include="$(SilKitLinuxLibPath)" Condition="'$(OS)'!='Windows_NT' and Exists('$(SilKitLinuxLibPath)')" />
+        </ItemGroup>
+        <Message Text="CopySilKitNative: @(_SilKitNative) -> $(TargetDir) (Platform=$(Platform))" Importance="Low" Condition="@(_SilKitNative) != ''" />
+        <Copy SourceFiles="@(_SilKitNative)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="@(_SilKitNative) != ''" />
+        <Warning Text="SIL Kit native library not found for Platform=$(Platform). Checked: $(SilKitWinLibPath); $(SilKitWinLibPathX86)" Condition="'$(OS)'=='Windows_NT' and @(_SilKitNative)==''" />
+    </Target>
+  
 </Project>

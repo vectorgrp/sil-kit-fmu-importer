@@ -58,6 +58,10 @@ jobs:
       run: dotnet restore ./FmuImporter/BuildAll/Build.csproj
 
     - name: Build & Publish
+      env:
+        HTTP_PROXY: ${{ secrets.PROXY }}
+        HTTPS_PROXY: ${{ secrets.PROXY }}
+        NO_PROXY: ${{ secrets.NO_PROXY }}
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m --no-restore -p:RestoreDuringBuild=false -p:Restore=false
 
     - name: Restore test packages
