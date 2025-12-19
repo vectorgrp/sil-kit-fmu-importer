@@ -195,18 +195,28 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   private IntPtr LoadFmiLibrary(string libraryPath)
   {
+    var extension = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".dll" :
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".so" :
+                    throw new NotSupportedException();
+
+    var fullLibraryPath = libraryPath + extension;
+
+    if (!File.Exists(fullLibraryPath))
+    {
+      throw new FileLoadException(
+        $"FMU library not found. " +
+        $"This may indicate an architecture mismatch between the FMU and the FMU importer " +
+        $"(x86 vs x64). Current process is {(Environment.Is64BitProcess ? "64-bit" : "32-bit")}.");
+    }
+
     IntPtr res;
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {
-      res = NativeMethods.LoadLibrary(libraryPath);
-    }
-    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-    {
-      res = NativeMethods.dlopen(libraryPath + ".so", 0x00002 /* RTLD_NOW */);
+      res = NativeMethods.LoadLibrary(fullLibraryPath);
     }
     else
     {
-      throw new NotSupportedException();
+      res = NativeMethods.dlopen(fullLibraryPath, 0x00002 /* RTLD_NOW */);
     }
 
     if (res == IntPtr.Zero)
