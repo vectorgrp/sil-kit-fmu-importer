@@ -76,9 +76,9 @@ Please refer to the section [Build Instructions](#build-instructions) if you wan
 
 ### **Requirements**
 
-- .NET 8
-  - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) has guides on how to get .NET 8 for your OS
-  - May also be installed as part of a Visual Studio (v17.8+ / 2022) installation
+- .NET 10
+  - [.NET's download site](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) has guides on how to get .NET 10 for your OS
+  - May also be installed as part of a Visual Studio (v18.1+ / 2026) installation
 - SIL Kit* (only needed to run the FMU Importer; not required for build step)
   - Package can be downloaded from [GitHub (SIL Kit)](https://github.com/vectorgrp/sil-kit/releases)
 - FMU Importer Source Code
@@ -104,7 +104,7 @@ To build the FMU Importer itself, open a terminal in the project's root director
   
 - Linux: `dotnet build ./FmuImporter/FmuImporter.csproj -c Debug --no-self-contained -r linux-x64 -p:Platform=x64`
 
-This builds the FMU Importer with a `Debug` configuration (`-c Debug`) and the Importer will need an installed DotNet 8.0 (`--no-self-contained`).
+This builds the FMU Importer with a `Debug` configuration (`-c Debug`) and the Importer will need an installed DotNet 10.0 (`--no-self-contained`).
 
 You can find a separate section below on how to use the importer.
 

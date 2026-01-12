@@ -10,7 +10,6 @@
             <DefaultProperties>-p:ConfigurationOverride=Release -p:BuildProjectReferences=true -p:Configuration=Release -p:Version=$(Version) -v:m </DefaultProperties>
             <StandaloneBuild>-p:Standalone=True </StandaloneBuild>
             <CrossPlatformBuild>-p:Standalone=False</CrossPlatformBuild>
-            <EnvVar>MSBuildSDKsPath=; MSBuildExtensionsPath=</EnvVar>
         </PropertyGroup>
         <PropertyGroup>
             <PublishPath>$(MSBuildProjectDirectory)/../_publish/</PublishPath>
@@ -20,7 +19,7 @@
         <!-- cross-platform x64 -->
         <Exec
             Command="dotnet build $(BuildPath)FmuImporter.Tests/FmuImporter.Tests.csproj $(DefaultProperties) -p:BuildProjectReferences=false -p:Platform=x64 -p:PlatformTarget=x64 $(CrossPlatformBuild)"
-            EnvironmentVariables="$(EnvVar)" />
+        />
     </Target>
     
 </Project>

@@ -37,10 +37,10 @@ jobs:
 
     steps:
     # Check out this Git repo
-    - name: Install .Net 8
+    - name: Install .Net 10
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
       
     - uses: actions/checkout@v4
     - name: Build & Publish

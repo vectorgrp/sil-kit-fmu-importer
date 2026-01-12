@@ -22,7 +22,6 @@ jobs:
 
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
-
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
     
@@ -69,7 +68,6 @@ jobs:
 
     - name: Build Tests
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m --no-restore -p:RestoreDuringBuild=false -p:Restore=false
-
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
     
