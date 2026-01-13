@@ -113,7 +113,7 @@ public partial class fmi3Unknown {
     }
     
     /// <remarks/>
-    [System.Xml.Serialization.XmlAttributeAttribute()]
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
     public uint[] dependencies {
         get {
             return this.dependenciesField;
@@ -122,7 +122,27 @@ public partial class fmi3Unknown {
             this.dependenciesField = value;
         }
     }
-    
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute("dependencies")]
+    public string dependenciesString
+    {
+        get => dependencies == null ? "" : string.Join(" ", dependencies);
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                dependencies = Array.Empty<uint>();
+            }
+            else
+            {
+                dependencies = value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                              .Select(uint.Parse)
+                              .ToArray();
+            }
+        }
+    }
+
     /// <remarks/>
     [System.Xml.Serialization.XmlAttributeAttribute()]
     public fmi3UnknownDependenciesKind dependenciesKind {
