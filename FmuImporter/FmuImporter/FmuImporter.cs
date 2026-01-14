@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Diagnostics;
 using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
@@ -14,6 +13,9 @@ using FmuImporter.SilKit;
 using SilKit.Services.Can;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
+using SilKit.Services.Rpc;
+using System.Data;
+using System.Diagnostics;
 
 namespace FmuImporter;
 
@@ -36,6 +38,10 @@ public class FmuImporter
   private FmuEntity FmuEntity { get; }
   private FmuDataManager FmuDataManager { get; set; }
   private FmuCanManager FmuCanManager { get; set; }
+  private FmuRpcManager FmuRpcClientManager { get; set; }
+  private SilKitRpcClientManager SilKitRpcClientManager { get; set; }
+  private FmuRpcManager FmuRpcServerManager { get; set; }
+  private SilKitRpcServerManager SilKitRpcServerManager { get; set; }
 
   private readonly Configuration _fmuImporterConfig = null!;
   private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
@@ -184,19 +190,52 @@ public class FmuImporter
           // handle CAN terminal if any
           if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.CAN)
           {
-            FmuCanManager = new FmuCanManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
-            SilKitCanManager = new SilKitCanManager(SilKitEntity);
-            break;
+            FmuCanManager ??= new FmuCanManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitCanManager ??= new SilKitCanManager(SilKitEntity);
+          }
+          // handle RPC terminal if any
+          else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.RPC_CLIENT)
+          {
+            FmuRpcClientManager ??= new FmuRpcManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitRpcClientManager ??= new SilKitRpcClientManager(SilKitEntity);
+
+            var (vRef_RxId, vRef_RxArgs) = pairNameTerminal.Value.GetRpcValueRefsByIdArgs("Rx_ReturnId", "Rx_ReturnArgs");
+            var (vRef_TxId, vRef_TxArgs) = pairNameTerminal.Value.GetRpcValueRefsByIdArgs("Tx_CallId", "Tx_CallArgs");
+
+            FmuRpcClientManager.AddRxValueRefs((vRef_RxId, vRef_RxArgs));
+            FmuRpcClientManager.AddTxValueRefs((vRef_TxId, vRef_TxArgs));
+
+            SilKitRpcClientManager.AddTxRxMapping(vRef_TxId, vRef_RxId);
+          }
+          else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.RPC_SERVER)
+          {
+            FmuRpcServerManager ??= new FmuRpcManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitRpcServerManager ??= new SilKitRpcServerManager(SilKitEntity);
+
+            var (vRef_RxId, vRef_RxArgs) = pairNameTerminal.Value.GetRpcValueRefsByIdArgs("Rx_CallId", "Rx_CallArgs");
+            var (vRef_TxId, vRef_TxArgs) = pairNameTerminal.Value.GetRpcValueRefsByIdArgs("Tx_ReturnId", "Tx_ReturnArgs");
+
+            FmuRpcServerManager.AddRxValueRefs((vRef_RxId, vRef_RxArgs));
+            FmuRpcServerManager.AddTxValueRefs((vRef_TxId, vRef_TxArgs));
+
+            SilKitRpcServerManager.AddTxRxMapping(vRef_TxId, vRef_RxId);
           }
         }
 
         // process can variables and remove them from the modelDescriptionVariables
-        ProcessCanVariables(ref modelDescriptionVariables);
+        if (FmuCanManager != null) ProcessCanVariables(ref modelDescriptionVariables);
+
+        if (FmuRpcClientManager != null) ProcessRpcClientVariables(ref modelDescriptionVariables);
+        if (FmuRpcServerManager != null) ProcessRpcServerVariables(ref modelDescriptionVariables);
       }
 
-      // if no CanManager, use the default ctor to avoid making them nullable
+      // if no CanManager, FmuRpcClientManager or FmuRpcServerManager: use the default ctor to avoid making them nullable
       FmuCanManager ??= new FmuCanManager();
       SilKitCanManager ??= new SilKitCanManager();
+      FmuRpcClientManager ??= new FmuRpcManager();
+      SilKitRpcClientManager ??= new SilKitRpcClientManager();
+      FmuRpcServerManager ??= new FmuRpcManager();
+      SilKitRpcServerManager ??= new SilKitRpcServerManager();
 
       PrepareConfiguredVariables(modelDescriptionVariables.Values.ToList());
 
@@ -443,7 +482,7 @@ public class FmuImporter
           SilKitCanManager.CreateCanController("SilKit_CAN_CTRL_" + canControllerId, networkName, vRefOut.Value);
           SilKitCanManager.AddCanFrameHandler(
             vRefOut.Value,
-            (long)vRefIn!.Value,
+            vRefIn!.Value,
             SilKitCanManager.FuncCanFrameHandler,
             (int)TransmitDirection.RX);
           if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
@@ -466,6 +505,40 @@ public class FmuImporter
           $"{FmuCanManager.OutputCanVariables[i].ValueReference} with the mimeType application/org.fmi-standard.fmi-ls-bus.can does not have " +
           $"a corresponding variable in the TerminalsAndIcons.xml file.");
       }
+    }
+  }
+
+  private static int rpcClientId = 1;
+  private void ProcessRpcClientVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  {
+    FmuRpcClientManager.Initialize(ref modelDescriptionVariables);
+
+    foreach (var idVar in FmuRpcClientManager.InputIdVariables)
+    {
+      var rpcSpec = new RpcSpec()
+      {
+        functionName = idVar.Value.Name.Split('.')[0], // extract the operation name
+        mediaType = RpcTypes.MediaTypeRpc()
+      };
+      SilKitRpcClientManager.CreateRpcClient("SilKit_RPC_Client_CTRL_" + rpcClientId, rpcSpec, (IntPtr)idVar.Key, SilKitRpcClientManager.FuncRpcCallResultHandler);
+      ++rpcClientId;
+    }
+  }
+
+  private static int rpcServerId = 1;
+  private void ProcessRpcServerVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  {
+    FmuRpcServerManager.Initialize(ref modelDescriptionVariables);
+
+    foreach (var idVar in FmuRpcServerManager.InputIdVariables)
+    {
+      var rpcSpec = new RpcSpec()
+      {
+        functionName = idVar.Value.Name.Split('.')[0], // extract the operation name
+        mediaType = RpcTypes.MediaTypeRpc()
+      };
+      SilKitRpcServerManager.CreateRpcServer("SilKit_RPC_Server_CTRL_" + rpcServerId, rpcSpec, (IntPtr)idVar.Key, SilKitRpcServerManager.FuncRpcCallHandler);
+      ++rpcServerId;
     }
   }
 
@@ -622,6 +695,14 @@ public class FmuImporter
     var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
     FmuCanManager.SetCanData(receivedSilKitCanData);
 
+    // handle client RPC results
+    var receivedRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
+    FmuRpcClientManager.SetData(receivedRpcResults);
+
+    // handle server RPC calls
+    var receivedRpcCalls = SilKitRpcServerManager.RetrieveReceivedRpcCalls(_lastSimStep!.Value);
+    FmuRpcServerManager.SetData(receivedRpcCalls);
+
     _lastSimStep = nowInNs;
 
     if (_initialSimTime > 0)
@@ -671,6 +752,14 @@ public class FmuImporter
         var receivedSilKitCanDataEventMode = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
         FmuCanManager.SetCanData(receivedSilKitCanDataEventMode);
 
+        // handle client RPC results
+        var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
+        FmuRpcClientManager.SetData(recvRpcResults);
+
+        // handle server RPC calls
+        var recvRpcCalls = SilKitRpcServerManager.RetrieveReceivedRpcCalls(_lastSimStep!.Value);
+        FmuRpcServerManager.SetData(recvRpcCalls);
+
         do
         {
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
@@ -682,6 +771,13 @@ public class FmuImporter
             ExitFmuImporter();
             return;
           }
+
+          var rpcCalls = FmuRpcServerManager.GetOperations();
+          SilKitRpcServerManager.SubmitResult(rpcCalls);
+
+          var futureRpcCalls = FmuRpcClientManager.GetOperations();
+          SilKitRpcClientManager.Call(futureRpcCalls);
+
         } while (discreteStatesNeedUpdate);
 
         // Retrieve and publish non-structured variables

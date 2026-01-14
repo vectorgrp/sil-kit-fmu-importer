@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using SilKit.Services.PubSub;
 using System.Runtime.InteropServices;
 using static SilKit.SilKitVersion;
 

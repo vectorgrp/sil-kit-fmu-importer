@@ -222,9 +222,10 @@ internal static class SilKitVersion
 
     // // Rpc
     // // Rpc data type IDs
-    // #define SilKit_RpcCallEvent_DATATYPE_ID 1
-    // #define SilKit_RpcCallResultEvent_DATATYPE_ID 2
-    // #define SilKit_RpcSpec_DATATYPE_ID 3
+    RpcCallEvent = 1,
+    RpcCallResultEvent = 2,
+    RpcSpec = 3,
+
     // 
     // // Rpc data type Versions
     // #define SilKit_RpcCallEvent_VERSION 1

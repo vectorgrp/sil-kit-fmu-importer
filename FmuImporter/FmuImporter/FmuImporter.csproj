@@ -14,6 +14,10 @@
         <PostBuildEnvVar Condition="('$(GITHUB_ACTIONS)' != 'true')">$(MSBuildProjectDirectory)/../</PostBuildEnvVar>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Platform)' == 'x86'">
+        <DefineConstants>$(DefineConstants);X86</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
         <PackageReference Include="YamlDotNet" Version="13.0.2" />

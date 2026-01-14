@@ -7,6 +7,7 @@ using SilKit.Services.Can;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
+using SilKit.Services.Rpc;
 
 namespace SilKit;
 
@@ -192,6 +193,17 @@ public class Participant : IDisposable
   public ILifecycleService CreateLifecycleService(LifecycleService.LifecycleConfiguration lc)
   {
     return new LifecycleService(this, lc);
+  }
+
+  public IRpcServer CreateRpcServer(string controllerName, RpcSpec dataSpec, IntPtr context, RpcCallHandler callHandler)
+  {
+    return new RpcServer(this, controllerName, dataSpec, context, callHandler);
+  }
+
+  public IRpcClient CreateRpcClient(string controllerName, RpcSpec dataSpec, IntPtr resultHandlerContext,
+    RpcCallResultHandler handler)
+  {
+    return new RpcClient(this, controllerName, dataSpec, resultHandlerContext, handler);
   }
 
   public ICanController CreateCanController(string controllerName, string networkName)

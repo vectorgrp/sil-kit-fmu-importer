@@ -7,7 +7,9 @@ using SilKit.Services.Can;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
+using SilKit.Services.Rpc;
 using SilKit.Supplements.VendorData;
+using System;
 
 namespace FmuImporter.SilKit;
 
@@ -61,7 +63,17 @@ public class SilKitEntity : IDisposable
     config.Dispose();
   }
 
-#region service creation
+  #region service creation
+  public IRpcClient CreateRpcClient(string controllerName, RpcSpec dataSpec, IntPtr resultHandlerContext,
+    RpcCallResultHandler handler)
+  {
+    return _participant.CreateRpcClient(controllerName, dataSpec, resultHandlerContext, handler);
+  }
+
+  public IRpcServer CreateRpcServer(string controllerName, RpcSpec dataSpec, IntPtr context, RpcCallHandler callHandler)
+  {
+    return _participant.CreateRpcServer(controllerName, dataSpec, context, callHandler);
+  }
 
   public ICanController CreateCanController(string controllerName, string networkName)
   {

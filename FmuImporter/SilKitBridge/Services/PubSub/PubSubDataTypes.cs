@@ -39,10 +39,3 @@ internal struct DataMessageEventInternal
   public UInt64 timestampInNs;
   public ByteVector data;
 }
-
-[StructLayout(LayoutKind.Sequential, Pack = 8)]
-public struct ByteVector
-{
-  public IntPtr data;
-  public IntPtr /*size_t*/ size;
-}

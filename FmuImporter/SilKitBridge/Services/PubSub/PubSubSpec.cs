@@ -121,18 +121,3 @@ internal struct DataSpec
   [MarshalAs(UnmanagedType.LPStr)] internal string mediaType;
   internal LabelList labelList;
 }
-
-[StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
-internal struct LabelList
-{
-  internal IntPtr /* size_t */ numLabels;
-  internal IntPtr labels;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 8, CharSet = CharSet.Ansi)]
-internal struct Label
-{
-  [MarshalAs(UnmanagedType.LPStr)] internal string key;
-  [MarshalAs(UnmanagedType.LPStr)] internal string value;
-  internal int kind;
-}

@@ -62,7 +62,7 @@ public class SilKitCanManager
     }
   }
 
-  public UInt64 AddCanFrameHandler(uint vRef, long vRefIn, CanFrameHandler handler, byte directionMask)
+  public UInt64 AddCanFrameHandler(uint vRef, uint vRefIn, CanFrameHandler handler, byte directionMask)
   {
     CanControllers.TryGetValue(vRef, out var canController);
     if (canController == null)

@@ -8,9 +8,9 @@ using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using FmuImporter.Models.Exceptions;
 using FmuImporter.Models.Helpers;
+using SilKit.Services;
 using SilKit.Services.Can;
 using SilKit.Services.Logger;
-using SilKit.Services.PubSub;
 using SilKit.Supplements;
 
 namespace FmuImporter;
