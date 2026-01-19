@@ -2671,13 +2671,33 @@ public partial class fmiModelDescriptionModelStructureInitialUnknownsUnknown {
     }
     
     /// <remarks/>
-    [System.Xml.Serialization.XmlAttributeAttribute()]
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
     public uint[] dependencies {
         get {
             return this.dependenciesField;
         }
         set {
             this.dependenciesField = value;
+        }
+    }
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute("dependencies")]
+    public string dependenciesString
+    {
+        get => dependencies == null ? "" : string.Join(" ", dependencies);
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                dependencies = Array.Empty<uint>();
+            }
+            else
+            {
+                dependencies = value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                              .Select(uint.Parse)
+                              .ToArray();
+            }
         }
     }
     
