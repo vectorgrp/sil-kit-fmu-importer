@@ -71,7 +71,7 @@ public class ModelDescription
     FmiVersion = input.fmiVersion;
     Version = input.version;
     VariableNamingConvention =
-      input.variableNamingConvention == Fmi3.fmiModelDescriptionVariableNamingConvention.structured
+      input.variableNamingConvention == Fmi3.fmiModelDescriptionvariableNamingConvention.structured
         ? VariableNamingConventions.Structured
         : VariableNamingConventions.Flat;
 
@@ -113,18 +113,19 @@ public class ModelDescription
     FmiVersion = input.fmiVersion;
     Version = input.version;
     VariableNamingConvention =
-      input.variableNamingConvention == Fmi2.fmiModelDescriptionVariableNamingConvention.structured
+      input.variableNamingConvention == Fmi2.fmiModelDescriptionvariableNamingConvention.structured
         ? VariableNamingConventions.Structured
         : VariableNamingConventions.Flat;
 
     // Node init
-    if (input.CoSimulation.Length < 1)
+    if (input.CoSimulation == null || input.CoSimulation.Count < 1)
     {
       throw new ModelDescriptionException("The model description does not provide a CoSimulation description.");
     }
 
     CoSimulation = new CoSimulation(input.CoSimulation[0]);
     DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
+
     if (input.UnitDefinitions != null)
     {
       InitUnitMap(input.UnitDefinitions);
@@ -145,75 +146,86 @@ public class ModelDescription
 
   private void InitTypeDefMap(Fmi3.fmiModelDescriptionTypeDefinitions input)
   {
-    foreach (var typeDefinitionBase in input.Items)
+    // Float64 typedefs
+    foreach (var typeDefFloat64 in input.Float64Type)
     {
-      if (typeDefinitionBase == null)
+      if (typeDefFloat64 == null)
       {
         continue;
       }
 
-      if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsFloat64Type typeDefFloat64)
+      if (!string.IsNullOrEmpty(typeDefFloat64.unit) && !IsUnitInMap(typeDefFloat64.unit))
       {
-        if (!IsUnitInMap(typeDefFloat64.unit))
-        {
-          throw new ModelDescriptionException(
-            $"The type definition 'Float64' in the model description has a unit " +
-            $"'{typeDefFloat64.unit}' that does not match.");
-        }
-
-        var typeDef = new TypeDefinition()
-        {
-          Name = typeDefinitionBase.name,
-          Unit = UnitDefinitions[typeDefFloat64.unit]
-        };
-        TypeDefinitions.Add(typeDef.Name, typeDef);
+        throw new ModelDescriptionException(
+          $"The type definition 'Float64' in the model description has a unit '{typeDefFloat64.unit}' that does not match.");
       }
-      else if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsFloat32Type typeDefFloat32)
+
+      var typeDef = new TypeDefinition
       {
-        if (!IsUnitInMap(typeDefFloat32.unit))
-        {
-          throw new ModelDescriptionException(
-            $"The type definition 'Float32' in the model description has a unit " +
-            $"'{typeDefFloat32.unit}' that does not match.");
-        }
+        Name = typeDefFloat64.name,
+        Unit = string.IsNullOrEmpty(typeDefFloat64.unit) ? null : UnitDefinitions[typeDefFloat64.unit]
+      };
+      TypeDefinitions.Add(typeDef.Name, typeDef);
+    }
 
-        var typeDef = new TypeDefinition
-        {
-          Name = typeDefinitionBase.name,
-          Unit = UnitDefinitions[typeDefFloat32.unit]
-        };
-        TypeDefinitions.Add(typeDef.Name, typeDef);
-      }
-      else if (typeDefinitionBase is Fmi3.fmiModelDescriptionTypeDefinitionsEnumerationType typeDefEnum)
+    // Float32 typedefs
+    foreach (var typeDefFloat32 in input.Float32Type)
+    {
+      if (typeDefFloat32 == null)
       {
-        var typeDef = new TypeDefinition
-        {
-          Name = typeDefinitionBase.name,
-          EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Length]
-        };
-
-        for (var i = 0; i < typeDefEnum.Item.Length; i++)
-        {
-          var enumValue = typeDefEnum.Item[i];
-          typeDef.EnumerationValues[i] = new Tuple<string, long>(enumValue.name, enumValue.value);
-        }
-
-        TypeDefinitions.Add(typeDef.Name, typeDef);
+        continue;
       }
+
+      if (!string.IsNullOrEmpty(typeDefFloat32.unit) && !IsUnitInMap(typeDefFloat32.unit))
+      {
+        throw new ModelDescriptionException(
+          $"The type definition 'Float32' in the model description has a unit '{typeDefFloat32.unit}' that does not match.");
+      }
+
+      var typeDef = new TypeDefinition
+      {
+        Name = typeDefFloat32.name,
+        Unit = string.IsNullOrEmpty(typeDefFloat32.unit) ? null : UnitDefinitions[typeDefFloat32.unit]
+      };
+      TypeDefinitions.Add(typeDef.Name, typeDef);
+    }
+
+    // Enumeration typedefs
+    foreach (var typeDefEnum in input.EnumerationType)
+    {
+      if (typeDefEnum == null)
+      {
+        continue;
+      }
+
+      var typeDef = new TypeDefinition
+      {
+        Name = typeDefEnum.name,
+        EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Count]
+      };
+
+      for (var i = 0; i < typeDefEnum.Item.Count; i++)
+      {
+        var enumValue = typeDefEnum.Item[i];
+        typeDef.EnumerationValues[i] = new Tuple<string, long>(enumValue.name, enumValue.value);
+      }
+
+      TypeDefinitions.Add(typeDef.Name, typeDef);
     }
   }
 
-  private void InitTypeDefMap(Fmi2.fmiModelDescriptionTypeDefinitions input)
+  private void InitTypeDefMap(System.Collections.ObjectModel.Collection<Fmi2.fmi2SimpleType> simpleTypes)
   {
-    foreach (var fmi2SimpleType in input.SimpleType)
+    foreach (var fmi2SimpleType in simpleTypes)
     {
       if (fmi2SimpleType == null)
       {
         continue;
       }
 
-      if (fmi2SimpleType.Item is Fmi2.fmi2SimpleTypeReal typeDefReal)
+      if (fmi2SimpleType.Real != null)
       {
+        var typeDefReal = fmi2SimpleType.Real;
         if (typeDefReal.unit is null)
         {
           TypeDefinitions.Add(
@@ -228,8 +240,7 @@ public class ModelDescription
         if (!IsUnitInMap(typeDefReal.unit))
         {
           throw new ModelDescriptionException(
-            $"The type definition 'Real' in the model description has a unit " +
-            $"'{typeDefReal.unit}' that does not match.");
+            $"The type definition 'Real' in the model description has a unit '{typeDefReal.unit}' that does not match.");
         }
 
         var typeDef = new TypeDefinition
@@ -239,15 +250,16 @@ public class ModelDescription
         };
         TypeDefinitions.Add(typeDef.Name, typeDef);
       }
-      else if (fmi2SimpleType.Item is Fmi2.fmi2SimpleTypeEnumeration typeDefEnum)
+      else if (fmi2SimpleType.Enumeration != null)
       {
+        var typeDefEnum = fmi2SimpleType.Enumeration;
         var typeDef = new TypeDefinition
         {
           Name = fmi2SimpleType.name,
-          EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Length]
+          EnumerationValues = new Tuple<string, long>[typeDefEnum.Item.Count]
         };
 
-        for (var i = 0; i < typeDefEnum.Item.Length; i++)
+        for (var i = 0; i < typeDefEnum.Item.Count; i++)
         {
           var enumValue = typeDefEnum.Item[i];
           typeDef.EnumerationValues[i] = new Tuple<string, long>(enumValue.name, enumValue.value);
@@ -258,14 +270,9 @@ public class ModelDescription
     }
   }
 
-  private void InitUnitMap(Fmi3.fmiModelDescriptionUnitDefinitions input)
+  private void InitUnitMap(System.Collections.ObjectModel.Collection<Fmi3.fmi3Unit> units)
   {
-    if (input.Unit == null)
-    {
-      return;
-    }
-
-    foreach (var fmi3Unit in input.Unit)
+    foreach (var fmi3Unit in units)
     {
       var unitDefinition = new UnitDefinition
       {
@@ -282,14 +289,9 @@ public class ModelDescription
     }
   }
 
-  private void InitUnitMap(Fmi2.fmiModelDescriptionUnitDefinitions input)
+  private void InitUnitMap(System.Collections.ObjectModel.Collection<Fmi2.fmi2Unit> units)
   {
-    if (input.Unit == null)
-    {
-      return;
-    }
-
-    foreach (var fmi2Unit in input.Unit)
+    foreach (var fmi2Unit in units)
     {
       var unitDefinition = new UnitDefinition
       {
@@ -313,50 +315,63 @@ public class ModelDescription
 
   private void InitVariableMap(Fmi3.fmiModelDescriptionModelVariables input, Action<LogSeverity, string> logCallback)
   {
-    if (input.Items == null)
+    void Process<T>(System.Collections.ObjectModel.Collection<T> vars) where T : Fmi3.fmi3AbstractVariable
     {
-      return;
+      if (vars == null)
+      {
+        return;
+      }
+
+      foreach (var fmiVar in vars)
+      {
+        var v = new Variable(fmiVar, TypeDefinitions, logCallback);
+        if (v.VariableType == VariableTypes.TimeBasedClock)
+        {
+          continue;
+        }
+
+        var result = Variables.TryAdd(v.ValueReference, v);
+        if (!result)
+        {
+          logCallback.Invoke(
+            LogSeverity.Warning,
+            $"Variable {v.Name} has the same value reference ({v.ValueReference}) than a previous variable entry. Discarding duplicate.");
+        }
+
+        if (!v.IsScalar)
+        {
+          ArrayVariables.Add(v.ValueReference, v);
+        }
+
+        result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
+        if (!result)
+        {
+          throw new ModelDescriptionException(
+            $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing {v.Name} with the following value reference: {v.ValueReference}");
+        }
+      }
     }
 
-    foreach (var fmiModelDescriptionModelVariable in input.Items)
-    {
-      var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions, logCallback);
-      if (v.VariableType == VariableTypes.TimeBasedClock)
-      {
-        continue;
-      }
-
-      var result = Variables.TryAdd(v.ValueReference, v);
-      if (!result)
-      {
-        logCallback.Invoke(
-          LogSeverity.Warning,
-          $"Variable {v.Name} has the same value reference ({v.ValueReference}) than a previous variable entry. Discarding duplicate.");
-      }
-
-      if (!v.IsScalar)
-      {
-        ArrayVariables.Add(v.ValueReference, v);
-      }
-
-      result = NameToValueReference.TryAdd(v.Name, v.ValueReference);
-      if (!result)
-      {
-        throw new ModelDescriptionException(
-          $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing " +
-          $"{v.Name} with the following value reference: {v.ValueReference}");
-      }
-    }
+    Process(input.Float32);
+    Process(input.Float64);
+    Process(input.Int8);
+    Process(input.UInt8);
+    Process(input.Int16);
+    Process(input.UInt16);
+    Process(input.Int32);
+    Process(input.UInt32);
+    Process(input.Int64);
+    Process(input.UInt64);
+    Process(input.Boolean);
+    Process(input.String);
+    Process(input.Binary);
+    Process(input.Enumeration);
+    Process(input.Clock);
   }
 
-  private void InitVariableMap(Fmi2.fmiModelDescriptionModelVariables input, Action<LogSeverity, string> logCallback)
+  private void InitVariableMap(System.Collections.ObjectModel.Collection<Fmi2.fmi2ScalarVariable> scalars, Action<LogSeverity, string> logCallback)
   {
-    if (input.ScalarVariable == null)
-    {
-      return;
-    }
-
-    foreach (var fmiModelDescriptionModelVariable in input.ScalarVariable)
+    foreach (var fmiModelDescriptionModelVariable in scalars)
     {
       var v = new Variable(fmiModelDescriptionModelVariable, TypeDefinitions);
       var result = Variables.TryAdd(v.ValueReference, v);
@@ -371,8 +386,7 @@ public class ModelDescription
       if (!result)
       {
         throw new ModelDescriptionException(
-          $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing " +
-          $"{v.Name} with the following value reference: {v.ValueReference}");
+          $"Failed to parse model description: multiple variables have the same name. Exception thrown when parsing {v.Name} with the following value reference: {v.ValueReference}");
       }
     }
   }

@@ -75,7 +75,10 @@ public class Variable
     Name = input.name;
     ValueReference = input.valueReference;
     Description = input.description;
-    Clocks = input.clocks;
+
+    Clocks = (input.clocks != null && input.clocks.Any())
+    ? input.clocks.ToArray()
+    : null;
 
     switch (input)
     {
@@ -145,7 +148,7 @@ public class Variable
         break;
 
       case fmi3Clock clock:
-        if (clock.intervalVariability.Equals(fmiModelDescriptionTypeDefinitionsClockTypeIntervalVariability.triggered))
+        if (clock.intervalVariability.Equals(Ifmi3ClockAttributesintervalVariability.triggered))
         {
           VariableType = VariableTypes.TriggeredClock;
         }
@@ -162,25 +165,25 @@ public class Variable
 
     switch (input.causality)
     {
-      case fmi3AbstractVariableCausality.parameter:
+      case fmi3AbstractVariablecausality.parameter:
         Causality = Causalities.Parameter;
         break;
-      case fmi3AbstractVariableCausality.calculatedParameter:
+      case fmi3AbstractVariablecausality.calculatedParameter:
         Causality = Causalities.CalculatedParameter;
         break;
-      case fmi3AbstractVariableCausality.input:
+      case fmi3AbstractVariablecausality.input:
         Causality = Causalities.Input;
         break;
-      case fmi3AbstractVariableCausality.output:
+      case fmi3AbstractVariablecausality.output:
         Causality = Causalities.Output;
         break;
-      case fmi3AbstractVariableCausality.local:
+      case fmi3AbstractVariablecausality.local:
         Causality = Causalities.Local;
         break;
-      case fmi3AbstractVariableCausality.independent:
+      case fmi3AbstractVariablecausality.independent:
         Causality = Causalities.Independent;
         break;
-      case fmi3AbstractVariableCausality.structuralParameter:
+      case fmi3AbstractVariablecausality.structuralParameter:
         Causality = Causalities.StructuralParameter;
         break;
       default:
@@ -191,19 +194,19 @@ public class Variable
     {
       switch (input.variability)
       {
-        case fmi3AbstractVariableVariability.constant:
+        case fmi3AbstractVariablevariability.constant:
           Variability = Variabilities.Constant;
           break;
-        case fmi3AbstractVariableVariability.@fixed:
+        case fmi3AbstractVariablevariability.Item_fixed:
           Variability = Variabilities.Fixed;
           break;
-        case fmi3AbstractVariableVariability.tunable:
+        case fmi3AbstractVariablevariability.tunable:
           Variability = Variabilities.Tunable;
           break;
-        case fmi3AbstractVariableVariability.discrete:
+        case fmi3AbstractVariablevariability.discrete:
           Variability = Variabilities.Discrete;
           break;
-        case fmi3AbstractVariableVariability.continuous:
+        case fmi3AbstractVariablevariability.continuous:
           Variability = Variabilities.Continuous;
           break;
         default:
@@ -221,33 +224,63 @@ public class Variable
       var res = propInfo.GetValue(input);
       if (res != null)
       {
-        int arrLength;
-        if (res is Array array)
+        switch (res)
         {
-          arrLength = array.Length;
-          Start = new object[arrLength];
-          for (var i = 0; i < arrLength; i++)
-          {
-            Start[i] = array.GetValue(i) ?? throw new InvalidOperationException($"Error while getting the start field" +
-              $"for {input.name} with the following reference: {input.valueReference}");
-          }
-        }
-        else if (res is List<byte> byteList)
-        {
-          // special case
-          Start = byteList.Select(v => (object)v).ToArray();
-        }
-        else
-        {
-          Start = new[] { res };
+          case Array array:
+            {
+              var arrLength = array.Length;
+              Start = new object[arrLength];
+              for (var i = 0; i < arrLength; i++)
+              {
+                Start[i] = array.GetValue(i) ?? throw new InvalidOperationException(
+                  $"Error while getting the start field for {input.name} with the following reference: {input.valueReference}");
+              }
+              break;
+            }
+
+          case System.Collections.IEnumerable enumerable when res.GetType().IsGenericType:
+            {
+              // Handles Collection<T>, List<T>, etc. into a flat object[]
+              var tmp = new List<object>();
+              foreach (var item in enumerable)
+              {
+                if (item != null)
+                {
+                  tmp.Add(item);
+                }
+              }
+
+              Start = tmp.Count > 0 ? tmp.ToArray() : null;
+              break;
+            }
+
+          case List<byte> byteList:
+            {
+              // special case
+              Start = byteList.Select(v => (object)v).ToArray();
+              break;
+            }
+
+          default:
+            {
+              Start = new[] { res };
+              break;
+            }
         }
       }
     }
 
-    IsScalar =
-      _originalVariable.GetType().GetProperty("Dimension")?.GetValue(_originalVariable) is not
-        fmi3ArrayableVariableDimension[];
-
+    // Determine scalar vs. array based on the presence of Dimension information
+    if (_originalVariable is Fmi3.Ifmi3Dimensions dimSource &&
+        dimSource.Dimension != null &&
+        dimSource.Dimension.Count > 0)
+    {
+      IsScalar = false;
+    }
+    else
+    {
+      IsScalar = true;
+    }
     if (VariableType is VariableTypes.Binary &&
         MimeType is not null &&
         input.GetType().GetProperty("maxSize")?.GetValue(input) is not null and var maxSize &&
@@ -263,60 +296,65 @@ public class Variable
     ValueReference = input.valueReference;
     Description = input.description;
 
-    switch (input.Item)
+    // Determine variable type based on concrete value property in regenerated FMI2 model
+    if (input.Integer != null)
     {
-      case fmi2ScalarVariableInteger:
-        VariableType = VariableTypes.Int32;
-        break;
-      case fmi2ScalarVariableReal inputVar:
-        VariableType = VariableTypes.Float64;
-        if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
-        {
-          TypeDefinition = typeDefinitions[inputVar.declaredType];
-        }
-
-        break;
-      case fmi2ScalarVariableBoolean:
-        VariableType = VariableTypes.Boolean;
-        break;
-      case fmi2ScalarVariableString:
-        VariableType = VariableTypes.String;
-        break;
-      case fmi2ScalarVariableEnumeration inputVar:
-        VariableType = VariableTypes.EnumFmi2;
-        if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
-        {
-          TypeDefinition = typeDefinitions[inputVar.declaredType];
-        }
-        else
-        {
-          throw new ModelDescriptionException(
-            $"The enumerator of variable '{Name}' is unknown.");
-        }
-
-        break;
-      default:
-        throw new InvalidDataException($"The variable '{input.name}' has an unknown variable type.");
+      VariableType = VariableTypes.Int32;
+    }
+    else if (input.Real != null)
+    {
+      var inputVar = input.Real;
+      VariableType = VariableTypes.Float64;
+      if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+      {
+        TypeDefinition = typeDefinitions[inputVar.declaredType];
+      }
+    }
+    else if (input.Boolean != null)
+    {
+      VariableType = VariableTypes.Boolean;
+    }
+    else if (input.String != null)
+    {
+      VariableType = VariableTypes.String;
+    }
+    else if (input.Enumeration != null)
+    {
+      var inputVar = input.Enumeration;
+      VariableType = VariableTypes.EnumFmi2;
+      if (!string.IsNullOrEmpty(inputVar.declaredType) && IsTypeDefInMap(inputVar.declaredType, typeDefinitions))
+      {
+        TypeDefinition = typeDefinitions[inputVar.declaredType];
+      }
+      else
+      {
+        throw new ModelDescriptionException(
+          $"The enumerator of variable '{Name}' is unknown.");
+      }
+    }
+    else
+    {
+      throw new InvalidDataException($"The variable '{input.name}' has an unknown variable type.");
     }
 
     switch (input.causality)
     {
-      case fmi2ScalarVariableCausality.parameter:
+      case fmi2ScalarVariablecausality.parameter:
         Causality = Causalities.Parameter;
         break;
-      case fmi2ScalarVariableCausality.calculatedParameter:
+      case fmi2ScalarVariablecausality.calculatedParameter:
         Causality = Causalities.CalculatedParameter;
         break;
-      case fmi2ScalarVariableCausality.input:
+      case fmi2ScalarVariablecausality.input:
         Causality = Causalities.Input;
         break;
-      case fmi2ScalarVariableCausality.output:
+      case fmi2ScalarVariablecausality.output:
         Causality = Causalities.Output;
         break;
-      case fmi2ScalarVariableCausality.local:
+      case fmi2ScalarVariablecausality.local:
         Causality = Causalities.Local;
         break;
-      case fmi2ScalarVariableCausality.independent:
+      case fmi2ScalarVariablecausality.independent:
         Causality = Causalities.Independent;
         break;
       default:
@@ -327,19 +365,19 @@ public class Variable
     {
       switch (input.variability)
       {
-        case fmi2ScalarVariableVariability.constant:
+        case fmi2ScalarVariablevariability.constant:
           Variability = Variabilities.Constant;
           break;
-        case fmi2ScalarVariableVariability.@fixed:
+        case fmi2ScalarVariablevariability.@Item_fixed:
           Variability = Variabilities.Fixed;
           break;
-        case fmi2ScalarVariableVariability.tunable:
+        case fmi2ScalarVariablevariability.tunable:
           Variability = Variabilities.Tunable;
           break;
-        case fmi2ScalarVariableVariability.discrete:
+        case fmi2ScalarVariablevariability.discrete:
           Variability = Variabilities.Discrete;
           break;
-        case fmi2ScalarVariableVariability.continuous:
+        case fmi2ScalarVariablevariability.continuous:
           Variability = Variabilities.Continuous;
           break;
         default:
@@ -352,13 +390,13 @@ public class Variable
     {
       switch (input.initial)
       {
-        case fmi2ScalarVariableInitial.exact:
+        case fmi2ScalarVariableinitial.exact:
           InitialValue = InitialValues.Exact;
           break;
-        case fmi2ScalarVariableInitial.approx:
+        case fmi2ScalarVariableinitial.approx:
           InitialValue = InitialValues.Approx;
           break;
-        case fmi2ScalarVariableInitial.calculated:
+        case fmi2ScalarVariableinitial.calculated:
           InitialValue = InitialValues.Calculated;
           break;
         default:
@@ -427,13 +465,19 @@ public class Variable
       }
     }
 
-    var propInfo = input.Item.GetType().GetProperty("start");
-    if (propInfo != null)
+    // read "start" property from concrete value container
+    object? valueContainer = input.Integer ?? input.Real ?? input.Boolean ?? input.String ?? (object?)input.Enumeration;
+
+    if (valueContainer != null)
     {
-      var res = propInfo.GetValue(input.Item);
-      if (res != null)
+      var propInfo2 = valueContainer.GetType().GetProperty("start");
+      if (propInfo2 != null)
       {
-        Start = new[] { res };
+        var res = propInfo2.GetValue(valueContainer);
+        if (res != null)
+        {
+          Start = new[] { res };
+        }
       }
     }
   }
@@ -452,71 +496,117 @@ public class Variable
     }
 
     var prop = _originalVariable.GetType().GetProperty("Dimension");
-    if (prop != null)
+    if (prop == null)
     {
-      var dimensions = prop.GetValue(_originalVariable);
-      if (dimensions == null)
+      Dimensions = null;
+      IsScalar = true;
+      FlattenedArrayLength = 1;
+      return;
+    }
+
+    var dimensions = prop.GetValue(_originalVariable);
+    if (dimensions == null)
+    {
+      Dimensions = null;
+      IsScalar = true;
+      FlattenedArrayLength = 1;
+      return;
+    }
+
+    // dimensions is expected to be a Collection<fmi3DimensionsDimension>
+    if (dimensions is System.Collections.ObjectModel.Collection<Fmi3.fmi3DimensionsDimension> dimCollection)
+    {
+      if (dimCollection.Count == 0)
       {
-        // this variable is a scalar -> ArraySize = 1; skip array processing
+        // No dimensions defined -> treat as scalar
         Dimensions = null;
+        IsScalar = true;
+        FlattenedArrayLength = 1;
         return;
       }
 
-      if (dimensions is fmi3ArrayableVariableDimension[] dims)
-      {
-        Dimensions = GetDimensionSizeArray(dims, variables);
-      }
-      else
-      {
-        throw new DataConversionException($"The dimension field did not contain the expected type. Exception thrown by" +
-          $"{_originalVariable.name} with the following value reference: {_originalVariable.valueReference}");
-      }
+      var dimsArray = dimCollection.ToArray();
+      Dimensions = GetDimensionSizeArray(dimsArray, variables);
 
       FlattenedArrayLength = 1;
       foreach (var dim in Dimensions)
       {
         FlattenedArrayLength *= dim;
       }
+
+      IsScalar = false;
+    }
+    else
+    {
+      throw new DataConversionException(
+        $"The dimension field did not contain the expected type. Exception thrown by " +
+        $"{_originalVariable.name} with the following value reference: {_originalVariable.valueReference}");
     }
   }
 
   private ulong[] GetDimensionSizeArray(
-    fmi3ArrayableVariableDimension[] originalDimensions,
+    Fmi3.fmi3DimensionsDimension[] originalDimensions,
     Dictionary<uint /* ValueReference */, Variable> variables)
   {
     var res = new ulong[originalDimensions.Length];
     for (var i = 0; i < originalDimensions.Length; i++)
     {
-      if (originalDimensions[i].startSpecified)
+      var dim = originalDimensions[i];
+
+      if (dim.startSpecified)
       {
-        res[i] = originalDimensions[i].start;
+        res[i] = dim.start;
       }
-      else if (originalDimensions[i].valueReferenceSpecified)
+      else if (dim.valueReferenceSpecified)
       {
-        var v = variables[originalDimensions[i].valueReference];
+        var v = variables[dim.valueReference];
 
         if (v.VariableType != VariableTypes.UInt64)
         {
-          throw new ModelDescriptionException($"The referenced dimension variable must be of type UInt64. Exception " +
+          throw new ModelDescriptionException(
+            $"The referenced dimension variable must be of type UInt64. Exception " +
             $"thrown by {v.Name} with the following value reference: {v.ValueReference}");
         }
 
         if (v.Causality == Causalities.StructuralParameter || v.Variability == Variabilities.Constant)
         {
-          if (v.Start != null)
+          if (v.Start != null && v.Start.Length > 0)
           {
-            if (v.Start[0] is string)
+            var raw = v.Start[0];
+
+            // If raw is a collection (e.g. Collection<ulong>), take its first element
+            if (raw is System.Collections.IEnumerable enumerable && raw is not string)
             {
-              res[i] = ulong.Parse((string)v.Start[0]);
+              var enumerator = enumerable.GetEnumerator();
+              if (enumerator.MoveNext())
+              {
+                raw = enumerator.Current;
+              }
+            }
+
+            if (raw is string s)
+            {
+              res[i] = ulong.Parse(s);
+            }
+            else if (raw is ulong u)
+            {
+              res[i] = u;
+            }
+            else if (raw is System.IConvertible)
+            {
+              res[i] = System.Convert.ToUInt64(raw);
             }
             else
             {
-              res[i] = (ulong)v.Start[0];
+              throw new ModelDescriptionException(
+                $"The referenced dimension variable start value is not convertible to UInt64. Exception thrown " +
+                $"by {v.Name} with the following value reference: {v.ValueReference}");
             }
           }
           else
           {
-            throw new ModelDescriptionException($"The referenced variable did not have a start value. Exception thrown " +
+            throw new ModelDescriptionException(
+              $"The referenced variable did not have a start value. Exception thrown " +
               $"by {v.Name} with the following value reference: {v.ValueReference}");
           }
         }
@@ -529,8 +619,9 @@ public class Variable
       }
       else
       {
-        throw new ModelDescriptionException($"The dimension contained neither a start value nor a value reference. " +
-          $"Exception thrown by the following value reference: {variables[originalDimensions[i].valueReference]}");
+        throw new ModelDescriptionException(
+          "The dimension contained neither a start value nor a value reference. " +
+          $"Exception thrown by the following value reference: {variables[dim.valueReference]}");
       }
     }
 

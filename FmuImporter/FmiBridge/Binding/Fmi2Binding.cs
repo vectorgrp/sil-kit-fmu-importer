@@ -718,10 +718,14 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
 
-      result[i] = str ??
-                  throw new NativeCallException(
-                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
-                    $"Exception thrown by the following value reference: {valueReferences[i]}");
+      if (str == null)
+      {
+        throw new NativeCallException(
+          $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
+          $"Exception thrown by the following value reference: {valueReferences[i]}");
+      }
+
+      result[i] = str;
     }
 
     return result;

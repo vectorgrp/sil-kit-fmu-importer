@@ -44,7 +44,7 @@ public class Terminal
   public Dictionary<string /* terminal name */, Terminal>? NestedTerminals;
 
 
-  public Terminal(fmi3Terminal input, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
+  public Terminal(Fmi3.fmi3Terminal input, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
   {
     TerminalMemberVariables = new Dictionary<string, TerminalMemberVariable>();
     NestedTerminals = new Dictionary<string, Terminal>();

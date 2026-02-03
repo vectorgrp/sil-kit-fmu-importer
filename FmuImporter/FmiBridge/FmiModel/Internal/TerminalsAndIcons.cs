@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using Fmi.Exceptions;
+using Fmi3;
 
 namespace Fmi.FmiModel.Internal;
 

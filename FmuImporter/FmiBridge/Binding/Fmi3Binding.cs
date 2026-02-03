@@ -450,328 +450,349 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     switch (type)
     {
       case VariableTypes.Float32:
-      {
-        var values = new float[arraySize];
-
-        if (isScalar)
         {
-          var value = BitConverter.ToSingle(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        var unit = mdVar.TypeDefinition?.Unit;
-        if (unit != null)
-        {
-          // Apply unit transformation
-          // FMU value = [SIL Kit value] * factor + offset
-          for (var i = 0; i < values.Length; i++)
+          var values = new float[arraySize];
+          if (isScalar)
           {
-            var value = values[i];
-            // first apply factor, then offset
-            if (unit.Factor.HasValue)
-            {
-              value = Convert.ToSingle(value * unit.Factor.Value);
-            }
-
-            if (unit.Offset.HasValue)
-            {
-              value = Convert.ToSingle(value + unit.Offset.Value);
-            }
-
-            values[i] = value;
+            var value = BitConverter.ToSingle(data, 0);
+            values[0] = value;
           }
+          else
+          {
+            var maxBytes = values.Length * sizeof(float);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+          var unit = mdVar.TypeDefinition?.Unit;
+          if (unit != null)
+          {
+            for (var i = 0; i < values.Length; i++)
+            {
+              var value = values[i];
+              if (unit.Factor.HasValue)
+              {
+                value = Convert.ToSingle(value * unit.Factor.Value);
+              }
+              if (unit.Offset.HasValue)
+              {
+                value = Convert.ToSingle(value + unit.Offset.Value);
+              }
+              values[i] = value;
+            }
+          }
+          SetFloat32(new[] { mdVar.ValueReference }, values);
+          return;
         }
-
-        SetFloat32(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
       case VariableTypes.Float64:
-      {
-        var values = new double[arraySize];
+        {
+          var values = new double[arraySize];
 
-        if (isScalar)
-        {
-          var value = BitConverter.ToDouble(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        var unit = mdVar.TypeDefinition?.Unit;
-        if (unit != null)
-        {
-          // Apply unit transformation
-          // FMU value = [SIL Kit value] * factor + offset
-          for (var i = 0; i < values.Length; i++)
+          if (isScalar)
           {
-            var value = values[i];
-            // first apply factor, then offset
-            if (unit.Factor.HasValue)
-            {
-              value *= unit.Factor.Value;
-            }
+            var value = BitConverter.ToDouble(data);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(double);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
 
-            if (unit.Offset.HasValue)
+          var unit = mdVar.TypeDefinition?.Unit;
+          if (unit != null)
+          {
+            for (var i = 0; i < values.Length; i++)
             {
-              value += unit.Offset.Value;
+              var value = values[i];
+              if (unit.Factor.HasValue)
+              {
+                value *= unit.Factor.Value;
+              }
+              if (unit.Offset.HasValue)
+              {
+                value += unit.Offset.Value;
+              }
+              values[i] = value;
             }
+          }
 
+          SetFloat64(new[] { mdVar.ValueReference }, values);
+          return;
+        }
+      case VariableTypes.Int8:
+        {
+          var values = new sbyte[arraySize];
+
+          if (isScalar)
+          {
+            if (data.Length == 1)
+            {
+              values[0] = unchecked((sbyte)data[0]);
+            }
+            else
+              throw new ArgumentOutOfRangeException(
+                nameof(data),
+                $"Expected exactly 1 byte for scalar Int8, but received {data.Length} bytes. " +
+                $"Exception thrown by {mdVar.Name} with the following value reference: {mdVar.ValueReference}");
+          }
+          else
+          {
+            var maxBytes = values.Length; // 1 byte per sbyte
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetInt8(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.Int16:
+        {
+          var values = new short[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToInt16(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(short);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetInt16(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.Int32:
+        {
+          var values = new int[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToInt32(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(int);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetInt32(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.Int64:
+        {
+          var values = new long[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToInt64(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(long);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetInt64(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.UInt8:
+        {
+          if (isScalar)
+          {
+            var values = new byte[1];
+            if (data.Length == 1)
+            {
+              values[0] = data[0];
+            }
+            else
+              throw new ArgumentOutOfRangeException(
+                nameof(data),
+                $"Expected exactly 1 byte for scalar UInt8, but received {data.Length} bytes. " +
+                $"Exception thrown by {mdVar.Name} with the following value reference: {mdVar.ValueReference}");
+            SetUInt8(new[] { mdVar.ValueReference }, values);
+          }
+          else
+          {
+            SetUInt8(new[] { mdVar.ValueReference }, data);
+          }
+          return;
+        }
+      case VariableTypes.UInt16:
+        {
+          var values = new ushort[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToUInt16(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(ushort);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetUInt16(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.UInt32:
+        {
+          var values = new uint[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToUInt32(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(uint);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetUInt32(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.UInt64:
+        {
+          var values = new ulong[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToUInt64(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(ulong);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetUInt64(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.Boolean:
+        {
+          var values = new bool[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToBoolean(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(bool);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetBoolean(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.TriggeredClock:
+        {
+          var values = new bool[arraySize];
+
+          if (isScalar)
+          {
+            var value = BitConverter.ToBoolean(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            var maxBytes = values.Length * sizeof(bool);
+            var bytesToCopy = Math.Min(data.Length, maxBytes);
+            Buffer.BlockCopy(data, 0, values, 0, bytesToCopy);
+          }
+
+          SetClock(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
+      case VariableTypes.String:
+        {
+          var values = new string[arraySize];
+
+          // arrays are encoded as arrays of characters and thus always have a leading length indicator of 32 bit
+          var dataOffset = 0;
+
+          for (var i = 0; i < arraySize; i++)
+          {
+            var byteLength = BitConverter.ToInt32(data, dataOffset);
+            dataOffset += 4; // 4 byte -> 32 bit
+            var value = Encoding.UTF8.GetString(data, dataOffset, byteLength);
+            dataOffset += byteLength;
             values[i] = value;
           }
+
+          SetString(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
         }
-
-        SetFloat64(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.Int8:
-      {
-        if (isScalar)
-        {
-          if (data.Length > 1)
-          {
-            throw new NotSupportedException($"Unexpected size of data type. Exception thrown by {mdVar.Name} with the " +
-              $"following value reference: {mdVar.ValueReference}");
-          }
-        }
-
-        var values = new sbyte[arraySize];
-        Buffer.BlockCopy(data, 0, values, 0, data.Length);
-
-        SetInt8(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.Int16:
-      {
-        var values = new short[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToInt16(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetInt16(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.Int32:
-      {
-        var values = new int[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToInt32(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetInt32(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.Int64:
-      {
-        var values = new long[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToInt64(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetInt64(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.UInt8:
-      {
-        if (isScalar)
-        {
-          if (data.Length > 1)
-          {
-            throw new NotSupportedException($"Unexpected size of data type. Exception thrown by {mdVar.Name} with the " +
-              $"following value reference: {mdVar.ValueReference}");
-          }
-        }
-
-        SetUInt8(
-          new[] { mdVar.ValueReference },
-          data);
-        return;
-      }
-      case VariableTypes.UInt16:
-      {
-        var values = new ushort[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToUInt16(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetUInt16(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.UInt32:
-      {
-        var values = new uint[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToUInt32(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetUInt32(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.UInt64:
-      {
-        var values = new ulong[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToUInt64(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetUInt64(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.Boolean:
-      {
-        var values = new bool[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToBoolean(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetBoolean(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.TriggeredClock:
-      {
-        var values = new bool[arraySize];
-
-        if (isScalar)
-        {
-          var value = BitConverter.ToBoolean(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
-
-        SetClock(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
-      case VariableTypes.String:
-      {
-        var values = new string[arraySize];
-
-        // arrays are encoded as arrays of characters and thus always have a leading length indicator of 32 bit
-        var dataOffset = 0;
-
-        for (var i = 0; i < arraySize; i++)
-        {
-          var byteLength = BitConverter.ToInt32(data, dataOffset);
-          dataOffset += 4; // 4 byte -> 32 bit
-          var value = Encoding.UTF8.GetString(data, dataOffset, byteLength);
-          dataOffset += byteLength;
-          values[i] = value;
-        }
-
-        SetString(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
       case VariableTypes.Binary:
-      {
-        throw new NotSupportedException($"Must be called with binSizes argument! Exception thrown by {mdVar.Name} with " +
-          $"the following value reference: {mdVar.ValueReference}");
-      }
+        {
+          throw new NotSupportedException($"Must be called with binSizes argument! Exception thrown by {mdVar.Name} with " +
+            $"the following value reference: {mdVar.ValueReference}");
+        }
       case VariableTypes.EnumFmi3:
-      {
-        var values = new long[arraySize];
-
-        if (isScalar)
         {
-          var value = BitConverter.ToInt64(data);
-          values = new[] { value };
-        }
-        else
-        {
-          Buffer.BlockCopy(data, 0, values, 0, data.Length);
-        }
+          var values = new long[arraySize];
 
-        SetInt64(
-          new[] { mdVar.ValueReference },
-          values);
-        return;
-      }
+          if (isScalar)
+          {
+            var value = BitConverter.ToInt64(data, 0);
+            values[0] = value;
+          }
+          else
+          {
+            Buffer.BlockCopy(data, 0, values, 0, data.Length);
+          }
+
+          SetInt64(
+            new[] { mdVar.ValueReference },
+            values);
+          return;
+        }
       default:
         break;
     }
 
-    throw new ArgumentOutOfRangeException($"The provided type '{type}' is not supported. Exception thrown by " +
+    throw new ArgumentOutOfRangeException(
+      $"The provided type '{type}' is not supported. Exception thrown by " +
       $"{mdVar.Name} with the following value reference: {mdVar.ValueReference}");
   }
+
+ 
 
   public override void SetValue(uint valueRef, byte[] data, int[] binSizes)
   {
@@ -1527,10 +1548,14 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     {
       var str = Marshal.PtrToStringUTF8(resultRaw[i]);
 
-      result[i] = str ??
-                  throw new NativeCallException(
-                    $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
-                    $"Exception thrown by the following value reference: {valueReferences[i]}");
+      if (str == null)
+      {
+        throw new NativeCallException(
+          $"Failed to retrieve data via {System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "(unknown method)"}. " +
+          $"Exception thrown by the following value reference: {valueReferences[i]}");
+      }
+
+      result[i] = str;
     }
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);

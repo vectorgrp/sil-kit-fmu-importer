@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Serialization;
 using Fmi.FmiModel.Internal;
+using Fmi3;
 
 namespace Fmi.FmiModel;
 
@@ -124,6 +125,16 @@ public class ModelLoader
     }
   }
 
+  private static string LoadAndNormalizeModelDescriptionXml(string modelDescriptionPath)
+  {
+    // Normalize empty dependencies / dependenciesKind attributes (e.g. dependencies="")
+    // which some generated XML classes cannot handle for collection-backed attributes.
+    var xml = File.ReadAllText(modelDescriptionPath);
+    xml = xml.Replace(" dependencies=\"\"", string.Empty)
+             .Replace(" dependenciesKind=\"\"", string.Empty);
+    return xml;
+  }
+
   internal static ModelDescription LoadModelFromExtractedPath(
     string extractedFmuPath, Action<LogSeverity, string> logCallback)
   {
@@ -137,14 +148,14 @@ public class ModelLoader
 
     ModelDescription? commonDescription = null;
 
-    using var fileStream = File.Open(modelDescriptionPath, FileMode.Open);
-    XmlSerializer ser;
     switch (fmiVersion)
     {
       case FmiVersions.Fmi2:
       {
-        ser = new XmlSerializer(typeof(Fmi2.fmiModelDescription));
-        var fmiModelDescription = ser.Deserialize(fileStream) as Fmi2.fmiModelDescription;
+        var xml = LoadAndNormalizeModelDescriptionXml(modelDescriptionPath);
+        using var stringReader = new StringReader(xml);
+        var ser = new XmlSerializer(typeof(Fmi2.fmiModelDescription));
+        var fmiModelDescription = ser.Deserialize(stringReader) as Fmi2.fmiModelDescription;
         if (fmiModelDescription != null)
         {
           commonDescription = new ModelDescription(fmiModelDescription, logCallback);
@@ -154,8 +165,10 @@ public class ModelLoader
       }
       case FmiVersions.Fmi3:
       {
-        ser = new XmlSerializer(typeof(Fmi3.fmiModelDescription));
-        var fmiModelDescription = ser.Deserialize(fileStream) as Fmi3.fmiModelDescription;
+        var xml = LoadAndNormalizeModelDescriptionXml(modelDescriptionPath);
+        using var stringReader = new StringReader(xml);
+        var ser = new XmlSerializer(typeof(fmiModelDescription));
+        var fmiModelDescription = ser.Deserialize(stringReader) as Fmi3.fmiModelDescription;
         if (fmiModelDescription != null)
         {
           commonDescription = new ModelDescription(fmiModelDescription, logCallback);
