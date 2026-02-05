@@ -110,6 +110,11 @@ public class ModelDescription
     ModelName = input.modelName;
     Description = input.description;
     InstantiationToken = input.guid.Normalize();
+    GenerationTool = string.IsNullOrEmpty(input.generationTool)
+                      ? GenerationTools.Unset
+                      : input.generationTool.Normalize().Contains("Vector vVIRTUALtarget")
+                        ? GenerationTools.Vector_vVIRTUALtarget
+                        : GenerationTools.Other;
     FmiVersion = input.fmiVersion;
     Version = input.version;
     VariableNamingConvention =
