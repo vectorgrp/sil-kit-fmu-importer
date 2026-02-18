@@ -1489,28 +1489,27 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     }
 
     var nValues = CalculateValueLength(ref valueReferences);
-    // bools are not blittable -> retrieve them as IntPtr and convert result afterwards
-    var tmpResult = new IntPtr[(int)nValues];
+    // bools are not blittable -> retrieve them as byte and convert result afterwards
+    var tmpResult = new byte[(int)nValues];
 
     ProcessReturnCode(
       _fmi3GetClock(
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
-        tmpResult,
-        nValues),
+        tmpResult),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
 
-    var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
+    var result = Array.ConvertAll(tmpResult, e => e != 0);
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
 
   /*
-    typedef fmi3Status fmi3GetBooleanTYPE(
+    typedef fmi3Status fmi3GetClockTYPE(
       fmi3Instance instance,
       const fmi3ValueReference valueReferences[],
       size_t nValueReferences,
-      fmi3Boolean values[]);
+      fmi3Clock values[]);
   */
   private readonly fmi3GetClockTYPE _fmi3GetClock;
 
@@ -1520,9 +1519,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
     fmi3ValueReference[] valueReferences,
     size_t nValueReferences,
-    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
-    IntPtr[] values,
-    size_t nValues);
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+    byte[] values);
 
   public ReturnVariable GetString(fmi3ValueReference[] valueReferences)
   {
@@ -2140,8 +2138,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
-        values,
-        (size_t)values.Length),
+        values),
       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
   }
 
@@ -2150,7 +2147,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       fmi3Instance instance,
       const fmi3ValueReference valueReferences[],
       size_t nValueReferences,
-      const fmi3Boolean values[]);
+      const fmi3Clock values[]);
   */
   private readonly fmi3SetClockTYPE _fmi3SetClock;
 
@@ -2160,9 +2157,8 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
     fmi3ValueReference[] valueReferences,
     size_t nValueReferences,
-    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)]
-    bool[] values,
-    size_t nValues);
+    [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+    bool[] values);
   
 #endregion Getters & Setters
 

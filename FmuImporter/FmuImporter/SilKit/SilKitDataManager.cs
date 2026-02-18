@@ -116,38 +116,45 @@ public class SilKitDataManager : IDisposable
   }
 
   /// <summary>
-  ///   Retrieve all received data up to a specific point in time.
+  ///   Retrieve specific received data up to a specific point in time.
   ///   The data will be removed from the buffer and the result is aggregated.
   /// </summary>
   /// <param name="currentTime">The time (included) up to which the data will be retrieved.</param>
+  /// <param name="valueRefsToRetrieve">Value references of the data to retrieve.</param>
   /// <returns>The aggregated data, divided by the value reference of the variable.</returns>
-  public Dictionary<long, byte[]> RetrieveReceivedData(ulong currentTime)
+  public Dictionary<long, byte[]> RetrieveReceivedData(ulong currentTime, HashSet<long> valueRefsToRetrieve)
   {
-    // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
-    var removeList = new List<ulong>();
     var valueUpdates = new Dictionary<long, byte[]>();
+    var emptyTimestamps = new List<ulong>();
+
     foreach (var timeDataPair in DataBuffer)
     {
       if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
       {
-        foreach (var dataBufferKvp in timeDataPair.Value)
+        // directly check and remove each value ref
+        foreach (var vRef in valueRefsToRetrieve)
         {
-          valueUpdates[dataBufferKvp.Key] = dataBufferKvp.Value;
+          if (timeDataPair.Value.Remove(vRef, out var clockData))
+          {
+            valueUpdates[vRef] = clockData;
+          }
         }
 
-        removeList.Add(timeDataPair.Key);
+        if (timeDataPair.Value.Count == 0)
+        {
+          emptyTimestamps.Add(timeDataPair.Key);
+        }
       }
       else
       {
-        // no need to iterate future events
         break;
       }
     }
 
-    // remove all processed entries from the buffer
-    foreach (var _ in removeList)
+    // clean up empty dictionaries
+    foreach (var timestamp in emptyTimestamps)
     {
-      DataBuffer.RemoveAt(0);
+      DataBuffer.Remove(timestamp);
     }
 
     return valueUpdates;
