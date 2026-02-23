@@ -81,7 +81,7 @@ public class Terminal
       }
     }
 
-    if (input.Terminal != null)
+    if (input.Terminal.Count > 0)
     {
       foreach (var nestedTerminal in input.Terminal)
       {       
@@ -97,7 +97,7 @@ public class Terminal
       logCallback.Invoke(LogSeverity.Warning, "TerminalGraphicalRepresentation found in TerminalsAndIcons.xml. This is currently not supported by the SIL Kit FMU Importer.");
     }
 
-    if (input.TerminalStreamMemberVariable != null)
+    if (input.TerminalStreamMemberVariable.Count > 0)
     {
       logCallback.Invoke(LogSeverity.Warning, "TerminalStreamMemberVariable found in TerminalsAndIcons.xml. This is currently not supported by the SIL Kit FMU Importer.");
     }

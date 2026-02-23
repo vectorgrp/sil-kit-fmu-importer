@@ -76,7 +76,7 @@ public class Variable
     ValueReference = input.valueReference;
     Description = input.description;
 
-    Clocks = (input.clocks != null && input.clocks.Any())
+    Clocks = (input.clocks.Count > 0)
     ? input.clocks.ToArray()
     : null;
 

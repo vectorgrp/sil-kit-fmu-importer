@@ -20,7 +20,7 @@ public class ModelStructure
     ValidateDependencies(fmiModelDescriptionModelStructure.InitialUnknowns);
     
     InitialUnknowns = new HashSet<uint>();
-    if (fmiModelDescriptionModelStructure.InitialUnknowns != null)
+    if (fmiModelDescriptionModelStructure.InitialUnknowns.Count > 0)
     {
       // convert to 0-based index
       var initialUnknownIndices =
@@ -41,7 +41,7 @@ public class ModelStructure
     ValidateDependencies(input.InitialUnknown);
     ValidateDependencies(input.EventIndicator);
 
-    if (input.InitialUnknown == null)
+    if (input.InitialUnknown.Count == 0)
     {
       InitialUnknowns = new HashSet<uint>();
     }

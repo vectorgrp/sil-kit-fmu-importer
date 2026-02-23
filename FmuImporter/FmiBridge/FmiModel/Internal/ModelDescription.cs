@@ -79,7 +79,7 @@ public class ModelDescription
     CoSimulation = new CoSimulation(input.CoSimulation);
 
     DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
-    if (input.UnitDefinitions != null)
+    if (input.UnitDefinitions.Count > 0)
     {
       InitUnitMap(input.UnitDefinitions);
     }
@@ -123,7 +123,7 @@ public class ModelDescription
         : VariableNamingConventions.Flat;
 
     // Node init
-    if (input.CoSimulation == null || input.CoSimulation.Count < 1)
+    if (input.CoSimulation.Count < 1)
     {
       throw new ModelDescriptionException("The model description does not provide a CoSimulation description.");
     }
@@ -131,17 +131,17 @@ public class ModelDescription
     CoSimulation = new CoSimulation(input.CoSimulation[0]);
     DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
 
-    if (input.UnitDefinitions != null)
+    if (input.UnitDefinitions.Count > 0)
     {
       InitUnitMap(input.UnitDefinitions);
     }
 
-    if (input.TypeDefinitions != null)
+    if (input.TypeDefinitions.Count > 0)
     {
       InitTypeDefMap(input.TypeDefinitions);
     }
 
-    if (input.ModelVariables != null)
+    if (input.ModelVariables.Count > 0)
     {
       InitVariableMap(input.ModelVariables, logCallback);
     }
@@ -322,7 +322,7 @@ public class ModelDescription
   {
     void Process<T>(System.Collections.ObjectModel.Collection<T> vars) where T : Fmi3.fmi3AbstractVariable
     {
-      if (vars == null)
+      if (vars.Count == 0)
       {
         return;
       }
