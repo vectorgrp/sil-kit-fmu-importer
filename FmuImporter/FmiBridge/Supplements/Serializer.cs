@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.Collections;
 using System.Text;
 using Fmi.Exceptions;
 using Fmi.FmiModel.Internal;
@@ -11,6 +12,18 @@ public class Serializer
 {
   public static byte[] Serialize(object data, Variable variable, List<int> binSizes)
   {
+    // handle nested lists recursively
+    if (data is IList and not Array)
+    {
+      var nestedList = (IList)data;
+      var result = new List<byte>();
+      foreach (var entry in nestedList)
+      {
+        result.AddRange(Serialize(entry!, variable, binSizes));
+      }
+      return result.ToArray();
+    }
+
     // there are no binSizes by default
     switch (variable.VariableType)
     {

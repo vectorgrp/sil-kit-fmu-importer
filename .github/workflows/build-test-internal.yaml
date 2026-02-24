@@ -99,6 +99,6 @@ jobs:
     uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomation.yaml@main
     with:
       fmu-importer-version: 1.5.0
-      branch-name: ${{ github.ref_name }}
+      branch-name: ${{ github.head_ref }}
       commit-full-sha: ${{ github.sha }}
     secrets: inherit

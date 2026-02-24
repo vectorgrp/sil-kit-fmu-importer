@@ -197,18 +197,30 @@ public class DataConverter
       };
     }
 
-    var result = new List<object?>();
+    // multidimensional array
+    var dimensions = configuredVariable.FmuVariableDefinition.Dimensions;
+    if (dimensions != null && dimensions.Length > 1)
+    {
+      var result = new List<object?>();
+      DeserializeMultidimensionalArray(
+        deserializer, type, dimensions, 0, result,
+        configuredVariable.FmuVariableDefinition.VcdlStructMaxSize);
+      return result;
+    }
+
+    // 1D array
+    var flatResult = new List<object?>();
     var objectCount = deserializer.BeginArray();
     for (var i = 0; i < objectCount; i++)
     {
-      result.Add(configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null
+      flatResult.Add(configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null
           ? deserializer.DeserializeRaw((int)configuredVariable.FmuVariableDefinition.VcdlStructMaxSize)
           : DeserializeFromSilKit(deserializer, type, type));
     }
 
     deserializer.EndArray();
 
-    return result;
+    return flatResult;
   }
 
   private List<object?>? DeserializeFromSilKit(
@@ -235,7 +247,9 @@ public class DataConverter
       if (att.InnerType == null)
       {
         throw new InvalidCommunicationInterfaceException(
-          "Warning: The parsed object contained a list without a type. This is not allowed.");
+          $"The parsed transmission type (IsOptional={att.IsOptional}, IsList={att.IsList}, " +
+          $"Type={att.Type?.Name ?? "null"}, CustomTypeName={att.CustomTypeName ?? "null"}) " +
+          $"with target variable type '{targetVariableType}' contained a list without an inner type. This is not allowed.");
       }
 
       if (!string.IsNullOrEmpty(att.InnerType.CustomTypeName))
@@ -246,24 +260,26 @@ public class DataConverter
       var l = new List<object?>();
       var entryCount = deserializer.BeginArray();
 
-      // NB: We currently do not support nested lists
       if (att.InnerType.IsList == true)
       {
-        // TODO use call below when introducing nested list support
-        //var result = DeserializeFromSilKit(deserializer, att.InnerType, targetType);
-        throw new NotSupportedException("Nested lists are currently not supported.");
+        for (var i = 0; i < entryCount; i++)
+        {
+          var result = DeserializeFromSilKit(deserializer, att.InnerType, targetVariableType);
+          if (result != null)
+          {
+            l.AddRange(result);
+          }
+        }
       }
-
-      for (var i = 0; i < entryCount; i++)
+      else
       {
-        l.Add(DeserializeFromSilKit(deserializer, att.InnerType.Type, targetType));
+        for (var i = 0; i < entryCount; i++)
+        {
+          l.Add(DeserializeFromSilKit(deserializer, att.InnerType.Type, targetType));
+        }
       }
 
-      if (att.IsOptional)
-      {
-        deserializer.EndOptional();
-      }
-
+      deserializer.EndArray();
       return l;
     }
     else
@@ -301,6 +317,40 @@ public class DataConverter
         deserializedData,
         targetType);
     }
+  }
+
+  // Recursively deserialize nested SIL Kit arrays
+  private void DeserializeMultidimensionalArray(
+    Deserializer deserializer,
+    Type elementType,
+    ulong[] dimensions,
+    int currentDimIndex,
+    List<object?> flatResult,
+    int? vcdlStructMaxSize)
+  {
+    var arraySize = deserializer.BeginArray();
+
+    if (currentDimIndex == dimensions.Length - 1)
+    {
+      // Innermost dimension: deserialize the actual elements
+      for (var i = 0; i < arraySize; i++)
+      {
+        flatResult.Add(vcdlStructMaxSize is not null
+            ? deserializer.DeserializeRaw((int)vcdlStructMaxSize)
+            : DeserializeFromSilKit(deserializer, elementType, elementType));
+      }
+    }
+    else
+    {
+      // Outer dimension: recurse into nested arrays
+      for (var i = 0; i < arraySize; i++)
+      {
+        DeserializeMultidimensionalArray(
+          deserializer, elementType, dimensions, currentDimIndex + 1, flatResult, vcdlStructMaxSize);
+      }
+    }
+
+    deserializer.EndArray();
   }
 
 #endregion SIL Kit -> FMU
@@ -343,7 +393,6 @@ public class DataConverter
 
 #region FMU -> SIL Kit (plain)
 
-  // NB: This method currently flattens multidimensional FMI 3.0 array data - this is a known limitation
   public byte[] TransformFmuToSilKitData(
     ReturnVariable.Variable variable,
     ConfiguredVariable configuredVariable)
@@ -365,18 +414,133 @@ public class DataConverter
         variable.Values,
         configuredVariable.ImporterVariableConfiguration.Transformation.ResolvedTransmissionType,
         Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
+        variable.Dimensions,
         serializer);
     }
     else
     {
-      SerializeToSilKit(
-        variable.Values,
-        variable.IsScalar,
-        configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null,
-        Helpers.Helpers.VariableTypeToType(variable.Type),
-        Array.ConvertAll(variable.ValueSizes, e => (Int32)e),
-        serializer);
+      var sourceType = Helpers.Helpers.VariableTypeToType(variable.Type);
+      var valueSizes = Array.ConvertAll(variable.ValueSizes, e => (Int32)e);
+      var isVcdlStruct = configuredVariable.FmuVariableDefinition.VcdlStructMaxSize is not null;
+
+      if (sourceType != typeof(IntPtr) && sourceType != typeof(byte[]))
+      {
+        SerializeToSilKit(variable.Values, variable.IsScalar, sourceType, serializer, variable.Dimensions);
+      }
+      else
+      {
+        SerializeToSilKit(
+          variable.Values,
+          variable.IsScalar,
+          isVcdlStruct,
+          sourceType,
+          valueSizes,
+          serializer);
+      }
     }
+  }
+
+  private void SerializeToSilKit(
+    object[] objectArray, 
+    bool isScalar, 
+    Type sourceType, 
+    Serializer serializer, 
+    ulong[]? dimensions)
+  {
+    // multidimensional array, nested BeginArray - EndArray
+    if (!isScalar && dimensions != null && dimensions.Length > 1)
+    {
+      SerializeMultidimensionalArray(objectArray, sourceType, dimensions, 0, 0, serializer);
+      return;
+    }
+
+    if (!isScalar)
+    {
+      serializer.BeginArray(objectArray.Length);
+    }
+
+    SerializeToSilKit(objectArray, sourceType, serializer);
+    if (!isScalar)
+    {
+      serializer.EndArray();
+    }
+  }
+
+  private int SerializeMultidimensionalArray(
+    object[] flatArray,
+    Type sourceType,
+    ulong[] dimensions,
+    int currentDimIndex,
+    int flatOffset,
+    Serializer serializer)
+  {
+    var dimSize = (int)dimensions[currentDimIndex];
+    serializer.BeginArray(dimSize);
+
+    if (currentDimIndex == dimensions.Length - 1)
+    {
+      // innermost dimension: serialize actual elements
+      var slice = new object[dimSize];
+      Array.Copy(flatArray, flatOffset, slice, 0, dimSize);
+      SerializeToSilKit(slice, sourceType, serializer);
+      flatOffset += dimSize;
+    }
+    else
+    {
+      // outer dimension: recurse
+      for (var i = 0; i < dimSize; i++)
+      {
+        flatOffset = SerializeMultidimensionalArray(
+          flatArray, sourceType, dimensions, currentDimIndex + 1, flatOffset, serializer);
+      }
+    }
+
+    serializer.EndArray();
+    return flatOffset;
+  }
+
+  // Serialize multidimensional array with optional type handling
+  private int SerializeMultidimensionalArrayWithOptional(
+    object[] flatArray,
+    OptionalType targetType,
+    int[]? valueSizes,
+    ulong[] dimensions,
+    int currentDimIndex,
+    int flatOffset,
+    Serializer serializer)
+  {
+    var dimSize = (int)dimensions[currentDimIndex];
+    serializer.BeginArray(dimSize);
+
+    if (currentDimIndex == dimensions.Length - 1)
+    {
+      // innermost dimension: serialize actual elements
+      var elementType = targetType;
+      while (elementType.IsList == true && elementType.InnerType != null)
+      {
+        elementType = elementType.InnerType;
+      }
+
+      for (var i = 0; i < dimSize; i++)
+      {
+        var entry = new object[] { flatArray[flatOffset + i] };
+        SerializeToSilKit(entry, elementType, valueSizes, null, serializer);
+      }
+      flatOffset += dimSize;
+    }
+    else
+    {
+      // outer dimension: recurse
+      var innerType = targetType.InnerType!;
+      for (var i = 0; i < dimSize; i++)
+      {
+        flatOffset = SerializeMultidimensionalArrayWithOptional(
+          flatArray, innerType, valueSizes, dimensions, currentDimIndex + 1, flatOffset, serializer);
+      }
+    }
+
+    serializer.EndArray();
+    return flatOffset;
   }
 
   private static ushort CalculateDlc(ushort dataFieldSize)
@@ -454,6 +618,7 @@ public class DataConverter
     object[] objectArray,
     OptionalType targetType,
     int[]? valueSizes,
+    ulong[]? dimensions,
     Serializer serializer)
   {
     // begin optional
@@ -465,20 +630,49 @@ public class DataConverter
 
     if (targetType.IsList == true)
     {
-      // check for multi-dimensional/nested data type
-      if (targetType.InnerType == null || targetType.InnerType.Type == null)
+      if (targetType.InnerType == null)
       {
-        throw new NotSupportedException(
-          $"Warning: detected nested list in communication interface in {nameof(objectArray)}. This is currently not supported.");
+        throw new InvalidCommunicationInterfaceException(
+          $"Warning: The parsed object '{nameof(objectArray)}' contained a list without an inner type. This is not allowed.");
       }
 
-      // if list -> add array header
-      serializer.BeginArray(objectArray.Length);
-      // serialize object array
-      foreach (var o in objectArray)
+      if (targetType.InnerType.IsList == true && dimensions != null && dimensions.Length > 1)
       {
-        var entry = new object[] { o };
-        SerializeToSilKit(entry, targetType.InnerType!, valueSizes, serializer);
+        SerializeMultidimensionalArrayWithOptional(objectArray, targetType, valueSizes, dimensions, 0, 0, serializer);
+      }
+      else
+      {
+        // if list -> add array header
+        serializer.BeginArray(objectArray.Length);
+
+        if (targetType.InnerType.IsList == true)
+        {
+          // nested list without dimensions - each element is already a subarray
+          foreach (var o in objectArray)
+          {
+            var entry = new object[] { o };
+            SerializeToSilKit(entry, targetType.InnerType, valueSizes, null, serializer);
+          }
+        }
+        else
+        {
+          if (targetType.InnerType.Type == null)
+          {
+            throw new NotSupportedException(
+              $"The serialization of non-built-in inner types is currently not supported. " +
+              $"Exception thrown by {nameof(objectArray)}");
+          }
+
+          // flat list: serialize each element directly
+          foreach (var o in objectArray)
+          {
+            var entry = new object[] { o };
+            SerializeToSilKit(entry, targetType.InnerType, valueSizes, null, serializer);
+          }
+        }
+
+        // if list -> end list
+        serializer.EndArray();
       }
 
       // if list -> end list
@@ -522,7 +716,7 @@ public class DataConverter
 
     if (sourceType != typeof(IntPtr) && sourceType != typeof(byte[]))
     {
-      SerializeToSilKit(objectArray, isScalar, sourceType, serializer);
+      SerializeToSilKit(objectArray, isScalar, sourceType, serializer, null);
       return;
     }
 
@@ -561,21 +755,6 @@ public class DataConverter
       }      
     }
 
-    if (!isScalar)
-    {
-      serializer.EndArray();
-    }
-  }
-
-  private void SerializeToSilKit(
-    object[] objectArray, bool isScalar, Type sourceType, Serializer serializer)
-  {
-    if (!isScalar)
-    {
-      serializer.BeginArray(objectArray.Length);
-    }
-
-    SerializeToSilKit(objectArray, sourceType, serializer);
     if (!isScalar)
     {
       serializer.EndArray();

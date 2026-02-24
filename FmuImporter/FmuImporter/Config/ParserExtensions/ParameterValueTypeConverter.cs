@@ -27,7 +27,7 @@ internal class ParameterValueTypeConverter : IYamlTypeConverter
       return new ParameterValue(ParseScalar(scalar));
     }
 
-    throw new NotSupportedException("A parameter's \"Value\" attribute supports scalars or list of scalars only.");
+    throw new NotSupportedException("A parameter's \"Value\" attribute supports scalars or arrays only.");
   }
 
   private static object ParseScalar(Scalar scalar)
@@ -64,21 +64,33 @@ internal class ParameterValueTypeConverter : IYamlTypeConverter
 
   private static ParameterValue StartParsingSequence(IParser parser)
   {
+    return new ParameterValue(ParseSequence(parser));
+  }
+
+  private static List<object> ParseSequence(IParser parser)
+  {
     var resultList = new List<object>();
     while (!parser.Accept<SequenceEnd>(out _))
     {
-      if (parser.TryConsume<Scalar>(out var scalar))
+      if (parser.TryConsume<SequenceStart>(out _))
+      {
+        resultList.Add(ParseSequence(parser));
+      }
+      else if (parser.TryConsume<Scalar>(out var scalar))
       {
         resultList.Add(ParseScalar(scalar));
       }
       else
       {
-        throw new NotSupportedException("A parameter's \"Value\" attribute supports scalars or list of scalars only.");
+        var current = parser.Current;
+        throw new NotSupportedException(
+          $"A parameter's \"Value\" attribute supports scalars or arrays only. " +
+          $"Unexpected member '{current?.GetType().Name}' at {current?.Start}.");
       }
     }
 
     parser.MoveNext();
-    return new ParameterValue(resultList);
+    return resultList;
   }
 
   public void WriteYaml(IEmitter emitter, object? value, Type type)

@@ -14,6 +14,7 @@ public class ReturnVariable
     public IntPtr[] ValueSizes;
     public bool IsScalar;
     public VariableTypes Type;
+    public ulong[]? Dimensions;
   }
 
   public Variable[] ResultArray;
@@ -47,7 +48,8 @@ public class ReturnVariable
         ValueSizes = Array.Empty<IntPtr>(),
         Values = new object[arrayLength],
         Type = modelVar.VariableType,
-        IsScalar = modelVar.IsScalar
+        IsScalar = modelVar.IsScalar,
+        Dimensions = modelVar.Dimensions
       };
       for (ulong j = 0; j < arrayLength; j++)
       {
@@ -88,7 +90,8 @@ public class ReturnVariable
         // T ~ Array of Binaries -> IntPtr[]
         Values = new object[arrayLength],
         Type = modelVar.VariableType,
-        IsScalar = modelVar.IsScalar
+        IsScalar = modelVar.IsScalar,
+        Dimensions = modelVar.Dimensions
       };
       for (ulong j = 0; j < arrayLength; j++)
       {
