@@ -590,6 +590,20 @@ public class FmuImporter
     }
   }
 
+  private void RecordClocksAndClockedVariables()
+  {
+    // retrieve and send CAN frames
+    var outputCan = FmuCanManager.GetCanData();
+    SilKitCanManager.SendAllFrames(outputCan);
+  }
+
+  private void ApplyClocksAndClockedInputs()
+  {
+    // handle received CAN frames
+    var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
+    FmuCanManager.SetCanData(receivedSilKitCanData);
+  }
+
   public void StartSimulation()
   {
     SilKitEntity.Logger.Log(LogLevel.Info, "Starting Simulation.");
@@ -713,8 +727,12 @@ public class FmuImporter
 
       if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
       {
+        RecordClocksAndClockedVariables();
+
         do
         {
+          ApplyClocksAndClockedInputs();
+
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           if (terminateRequested)
@@ -724,6 +742,9 @@ public class FmuImporter
             ExitFmuImporter();
             return;
           }
+
+          RecordClocksAndClockedVariables();
+
         } while (discreteStatesNeedUpdate);
 
         FmuEntity.EnterStepMode();
@@ -747,10 +768,6 @@ public class FmuImporter
     FmuDataManager.SetData(receivedSilKitClockedData);
     FmuDataManager.SetData(receivedSilKitDataStruct);
     FmuDataManager.SetData(receivedSilKitDataClockedStruct);
-
-    // handle received CAN frames
-    var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
-    FmuCanManager.SetCanData(receivedSilKitCanData);
 
     // handle client RPC results
     var receivedRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
@@ -813,6 +830,8 @@ public class FmuImporter
       {
         FmuEntity.EnterEventMode();
 
+        RecordClocksAndClockedVariables();
+
         // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
         var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputVariableRefs);
         var receivedSilKitClocksEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockRefs);
@@ -826,10 +845,6 @@ public class FmuImporter
         FmuDataManager.SetData(receivedSilKitDataStructEventMode);
         FmuDataManager.SetData(receivedSilKitDataClockedStructEventMode);
 
-        // Handle received CAN frames
-        var receivedSilKitCanDataEventMode = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
-        FmuCanManager.SetCanData(receivedSilKitCanDataEventMode);
-
         // handle client RPC results
         var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
         FmuRpcClientManager.SetData(recvRpcResults);
@@ -840,7 +855,11 @@ public class FmuImporter
 
         do
         {
+          ApplyClocksAndClockedInputs();
+
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
+
+          RecordClocksAndClockedVariables();
 
           if (terminateRequested)
           {
@@ -877,10 +896,6 @@ public class FmuImporter
 
         SilKitDataManager.PublishAll(currentStructureOutputDataEventMode);
         SilKitDataManager.PublishAll(currentClockedStructureOutputDataEventMode);
-
-        // Retrieve and send can frames
-        var outputCan = FmuCanManager.GetCanData();
-        SilKitCanManager.SendAllFrames(outputCan);
 
         FmuEntity.EnterStepMode();
       }
