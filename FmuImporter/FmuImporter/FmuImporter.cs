@@ -595,6 +595,14 @@ public class FmuImporter
     // retrieve and send CAN frames
     var outputCan = FmuCanManager.GetCanData();
     SilKitCanManager.SendAllFrames(outputCan);
+
+    // retrieve RPC server results from the FMU and submit them
+    var rpcServerResults = FmuRpcServerManager.GetOperations();
+    SilKitRpcServerManager.SubmitResult(rpcServerResults);
+
+    // retrieve RPC client calls from the FMU and send them
+    var rpcClientCalls = FmuRpcClientManager.GetOperations();
+    SilKitRpcClientManager.Call(rpcClientCalls);
   }
 
   private void ApplyClocksAndClockedInputs()
@@ -602,6 +610,14 @@ public class FmuImporter
     // handle received CAN frames
     var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
     FmuCanManager.SetCanData(receivedSilKitCanData);
+
+    // handle client RPC results
+    var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
+    FmuRpcClientManager.SetData(recvRpcResults);
+
+    // handle server RPC calls
+    var recvRpcCalls = SilKitRpcServerManager.RetrieveReceivedRpcCalls(_lastSimStep!.Value);
+    FmuRpcServerManager.SetData(recvRpcCalls);
   }
 
   public void StartSimulation()
@@ -735,6 +751,8 @@ public class FmuImporter
 
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
+          RecordClocksAndClockedVariables();
+
           if (terminateRequested)
           {
             SilKitCanManager.StopCanControllers();
@@ -742,8 +760,6 @@ public class FmuImporter
             ExitFmuImporter();
             return;
           }
-
-          RecordClocksAndClockedVariables();
 
         } while (discreteStatesNeedUpdate);
 
@@ -768,14 +784,6 @@ public class FmuImporter
     FmuDataManager.SetData(receivedSilKitClockedData);
     FmuDataManager.SetData(receivedSilKitDataStruct);
     FmuDataManager.SetData(receivedSilKitDataClockedStruct);
-
-    // handle client RPC results
-    var receivedRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
-    FmuRpcClientManager.SetData(receivedRpcResults);
-
-    // handle server RPC calls
-    var receivedRpcCalls = SilKitRpcServerManager.RetrieveReceivedRpcCalls(_lastSimStep!.Value);
-    FmuRpcServerManager.SetData(receivedRpcCalls);
 
     _lastSimStep = nowInNs;
 
@@ -845,14 +853,6 @@ public class FmuImporter
         FmuDataManager.SetData(receivedSilKitDataStructEventMode);
         FmuDataManager.SetData(receivedSilKitDataClockedStructEventMode);
 
-        // handle client RPC results
-        var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
-        FmuRpcClientManager.SetData(recvRpcResults);
-
-        // handle server RPC calls
-        var recvRpcCalls = SilKitRpcServerManager.RetrieveReceivedRpcCalls(_lastSimStep!.Value);
-        FmuRpcServerManager.SetData(recvRpcCalls);
-
         do
         {
           ApplyClocksAndClockedInputs();
@@ -868,12 +868,6 @@ public class FmuImporter
             ExitFmuImporter();
             return;
           }
-
-          var rpcCalls = FmuRpcServerManager.GetOperations();
-          SilKitRpcServerManager.SubmitResult(rpcCalls);
-
-          var futureRpcCalls = FmuRpcClientManager.GetOperations();
-          SilKitRpcClientManager.Call(futureRpcCalls);
 
         } while (discreteStatesNeedUpdate);
 
