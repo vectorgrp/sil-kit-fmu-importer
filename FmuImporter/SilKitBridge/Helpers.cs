@@ -25,13 +25,13 @@ internal static class Helpers
     (int)SilKit_ReturnCodes.SilKit_ReturnCode_SUCCESS
   };
 
-  public static void ProcessReturnCode(SilKit_ReturnCodes statusCode, RuntimeMethodHandle? methodHandle)
+  public static void ProcessReturnCode(SilKit_ReturnCodes statusCode, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
   {
     var (success, errorBuilder) = Common.Helpers.ProcessSilKitReturnCode(
       sOkCodes,
       (int)statusCode,
       statusCode.ToString(),
-      methodHandle);
+      callerName);
 
     if (success)
     {

@@ -12,7 +12,7 @@ internal static class Helpers
     HashSet<int> okResultCodes,
     int resultCode,
     string returnCodeName,
-    RuntimeMethodHandle? methodHandle,
+    string callerName,
     bool statusIsDiscardAndError)
   {
     // OK / Pending etc.
@@ -22,78 +22,55 @@ internal static class Helpers
     }
 
     // FMI semantics: 1=Warning, 2=Discard (non-error unless explicitly treated as error)
-    if (((resultCode == (int)FmiStatus.Warning) || (resultCode == (int)FmiStatus.Discard && !statusIsDiscardAndError)) && methodHandle != null)
+    if (((resultCode == (int)FmiStatus.Warning) || (resultCode == (int)FmiStatus.Discard && !statusIsDiscardAndError)))
     {
-      var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
-      if (methodInfo != null)
-      {
-        var sb = new StringBuilder(
-          $"FMU Importer encountered an error with code '{resultCode}' ({returnCodeName})");
-        var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
+      var sb = new StringBuilder(
+        $"FMU Importer encountered a warning with code '{resultCode}' ({returnCodeName})");
 
-        if (!string.IsNullOrEmpty(fullName))
-        {
-          sb.AppendLine($" while calling '{fullName}'.");
-        }
-        else
-        {
-          sb.AppendLine(".");
-        }
-        return new Tuple<bool, StringBuilder?>(true, sb);
+      if (!string.IsNullOrEmpty(callerName))
+      {
+        sb.AppendLine($" while calling '{callerName}'.");
       }
-      return new Tuple<bool, StringBuilder?>(true, null);
+      else
+      {
+        sb.AppendLine(".");
+      }
+      return new Tuple<bool, StringBuilder?>(true, sb);
     }
 
-    return BuildErrorTuple(resultCode, returnCodeName, methodHandle);
+    return BuildErrorTuple(resultCode, returnCodeName, callerName);
   }
 
   public static Tuple<bool, StringBuilder?> ProcessSilKitReturnCode(
     HashSet<int> okResultCodes,
     int resultCode,
     string returnCodeName,
-    RuntimeMethodHandle? methodHandle)
+    string callerName)
   {
     if (okResultCodes.Contains(resultCode))
     {
       return new Tuple<bool, StringBuilder?>(true, null);
     }
-    return BuildErrorTuple(resultCode, returnCodeName, methodHandle);
+    return BuildErrorTuple(resultCode, returnCodeName, callerName);
   }
 
   private static Tuple<bool, StringBuilder?> BuildErrorTuple(
     int resultCode,
     string returnCodeName,
-    RuntimeMethodHandle? methodHandle)
+    string callerName)
   {
     var errorMessageBuilder = new StringBuilder();
     errorMessageBuilder.Append(
       $"FMU Importer encountered an error with code '{resultCode}' ({returnCodeName})");
 
-    if (methodHandle == null)
+    if (string.IsNullOrEmpty(callerName))
     {
       errorMessageBuilder.Append(
         ". Failed to identify name of method that caused the error.");
     }
     else
     {
-      var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
-      if (methodInfo == null)
-      {
-        errorMessageBuilder.Append(
-          ". Failed to identify name of method that caused the error.");
-      }
-      else
-      {
-        var fullName = methodInfo.DeclaringType?.FullName + "." + methodInfo.Name;
-        if (!string.IsNullOrEmpty(fullName))
-        {
-          errorMessageBuilder.AppendLine($" while calling '{fullName}'.");
-        }
-        else
-        {
-          errorMessageBuilder.AppendLine(".");
-        }
-      }
+      errorMessageBuilder.AppendLine($" while calling '{callerName}'.");
     }
 
     return new Tuple<bool, StringBuilder?>(false, errorMessageBuilder);

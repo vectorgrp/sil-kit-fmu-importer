@@ -40,8 +40,7 @@ public class RpcServer : IRpcServer
         controllerName,
         dataSpecPtr,
         context,
-        _callHandler),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _callHandler));
     }
     finally
     {
@@ -76,8 +75,7 @@ public class RpcServer : IRpcServer
       (Helpers.SilKit_ReturnCodes)SilKit_RpcServer_SubmitResult(
         RpcServerPtr,
         callHandle,  // Pass the callHandle directly as IntPtr
-        byteVectorPtr),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        byteVectorPtr));
     }
     finally
     {

@@ -47,8 +47,7 @@ public class DataSubscriber : IDataSubscriber
         controllerName,
         silKitDataSpec,
         dataHandlerContext,
-        _dataMessageHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _dataMessageHandlerDelegate));
   }
 
 
@@ -60,8 +59,7 @@ public class DataSubscriber : IDataSubscriber
       (Helpers.SilKit_ReturnCodes)SilKit_DataSubscriber_SetDataMessageHandler(
         DataSubscriberPtr,
         IntPtr.Zero,
-        _dataMessageHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _dataMessageHandlerDelegate));
   }
 
   private void DataMessageHandlerInternal(

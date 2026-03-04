@@ -233,9 +233,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void EnterConfigurationMode()
   {
-    ProcessReturnCode(
-      _fmi3EnterConfigurationMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi3EnterConfigurationMode(_component));
 
     CurrentState = InternalFmuStates.ConfigurationMode;
   }
@@ -250,9 +248,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void ExitConfigurationMode()
   {
-    ProcessReturnCode(
-      _fmi3ExitConfigurationMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi3ExitConfigurationMode(_component));
 
     CurrentState = InternalFmuStates.Instantiated;
   }
@@ -274,8 +270,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         (tolerance.HasValue) ? tolerance.Value : double.NaN,
         startTime,
         stopTime.HasValue,
-        (stopTime.HasValue) ? stopTime.Value : double.NaN),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (stopTime.HasValue) ? stopTime.Value : double.NaN));
 
     CurrentState = InternalFmuStates.InitializationMode;
   }
@@ -302,9 +297,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void ExitInitializationMode()
   {
-    ProcessReturnCode(
-      _fmi3ExitInitializationMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi3ExitInitializationMode(_component));
 
     if (ModelDescription.CoSimulation.hasEventMode == false)
     {
@@ -327,8 +320,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     string[]? categories)
   {
     ProcessReturnCode(
-      _fmi3SetDebugLogging(_component, loggingOn, (IntPtr)nCategories, categories),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi3SetDebugLogging(_component, loggingOn, (IntPtr)nCategories, categories));
   }
 
   /*
@@ -864,8 +856,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         out eventEncountered,
         out terminateRequested,
         out var earlyReturn,
-        out lastSuccessfulTime),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        out lastSuccessfulTime));
 
     if (terminateRequested)
     {
@@ -899,9 +890,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void EnterStepMode()
   {
-    ProcessReturnCode(
-      _fmi3EnterStepMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi3EnterStepMode(_component));
 
     CurrentState = InternalFmuStates.StepMode;
   }
@@ -915,9 +904,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
 
   public void EnterEventMode()
   {
-    ProcessReturnCode(
-      _fmi3EnterEventMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi3EnterEventMode(_component));
 
     CurrentState = InternalFmuStates.EventMode;
   }
@@ -939,8 +926,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
       out var _,
       out var _,
       out var _,
-      out var _),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      out var _));
 
     if (terminateSimulation)
     {
@@ -981,9 +967,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
     try
     {
       CurrentState = InternalFmuStates.Terminated;
-      ProcessReturnCode(
-        _fmi3Terminate(_component),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      ProcessReturnCode(_fmi3Terminate(_component));
     }
     catch (Exception e)
     {
@@ -1033,8 +1017,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1075,8 +1058,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1117,8 +1099,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1159,8 +1140,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1201,8 +1181,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1243,8 +1222,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1285,8 +1263,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1327,8 +1304,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1369,8 +1345,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (IntPtr)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1411,8 +1386,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
   }
@@ -1454,8 +1428,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         tmpResult,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
@@ -1497,8 +1470,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
-        tmpResult),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        tmpResult));
 
     var result = Array.ConvertAll(tmpResult, e => e != 0);
     return ReturnVariable.CreateReturnVariable(valueReferences, result, nValues, ModelDescription);
@@ -1538,8 +1510,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         resultRaw,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     var result = new string[resultRaw.Length];
     for (var i = 0; i < result.Length; i++)
@@ -1597,8 +1568,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         (IntPtr)valueReferences.Length,
         valueSizes,
         result,
-        nValues),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        nValues));
 
     return ReturnVariable.CreateReturnVariable(
       valueReferences,
@@ -1647,8 +1617,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1684,8 +1653,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1721,8 +1689,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1758,8 +1725,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1795,8 +1761,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1832,8 +1797,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1869,8 +1833,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1906,8 +1869,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1943,8 +1905,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -1980,8 +1941,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -2017,8 +1977,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -2060,8 +2019,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         valueReferences,
         (size_t)valueReferences.Length,
         valuePtrs,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -2098,8 +2056,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         (size_t)valueReferences.Length,
         valueSizes,
         values,
-        (size_t)values.Length),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (size_t)values.Length));
   }
 
   /*
@@ -2138,8 +2095,7 @@ internal class Fmi3Binding : FmiBindingBase, IFmi3Binding
         _component,
         valueReferences,
         (size_t)valueReferences.Length,
-        values),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        values));
   }
 
   /*

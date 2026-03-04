@@ -39,8 +39,7 @@ internal class CanController : ICanController
       out _dataControllerPtr,
       _participant.ParticipantPtr,
       controllerName,
-      networkName),
-    System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      networkName));
   }
 
   /*
@@ -70,8 +69,7 @@ internal class CanController : ICanController
         context,
         _canFrameHandler,
         directionMask,
-        outHandlerIdPtr),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        outHandlerIdPtr));
 
       return (UInt64)Marshal.ReadInt64(outHandlerIdPtr);
     }
@@ -110,8 +108,7 @@ internal class CanController : ICanController
           context,
           _canFrameTransmitHandler,
           statusMask,
-          outHandlerIdPtr),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+          outHandlerIdPtr));
 
       return (UInt64)Marshal.ReadInt64(outHandlerIdPtr);
     }
@@ -144,8 +141,7 @@ internal class CanController : ICanController
       _dataControllerPtr,
       rate,
       fdRate,
-      xlRate),
-    System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      xlRate));
   }
 
   /*
@@ -172,8 +168,7 @@ internal class CanController : ICanController
        (Helpers.SilKit_ReturnCodes)SilKit_CanController_SendFrame(
          _dataControllerPtr,
          canFramePtr,
-         userContext),
-       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+         userContext));
     }
     finally
     {
@@ -196,8 +191,7 @@ internal class CanController : ICanController
   public void Start()
   {
     Helpers.ProcessReturnCode(
-    (Helpers.SilKit_ReturnCodes)SilKit_CanController_Start(_dataControllerPtr),
-    System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    (Helpers.SilKit_ReturnCodes)SilKit_CanController_Start(_dataControllerPtr));
   }
 
   /*
@@ -209,8 +203,7 @@ internal class CanController : ICanController
   public void Stop()
   {
     Helpers.ProcessReturnCode(
-    (Helpers.SilKit_ReturnCodes)SilKit_CanController_Stop(_dataControllerPtr),
-    System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    (Helpers.SilKit_ReturnCodes)SilKit_CanController_Stop(_dataControllerPtr));
   }
 
   /*

@@ -72,8 +72,7 @@ public class LifecycleService : ILifecycleService
       Helpers.ProcessReturnCode(
         (Helpers.SilKit_ReturnCodes)SilKit_TimeSyncService_Create(
           out _timeSyncServicePtr,
-          _lifecycleService.LifecycleServicePtr),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+          _lifecycleService.LifecycleServicePtr));
     }
 
     /*
@@ -109,8 +108,7 @@ public class LifecycleService : ILifecycleService
           TimeSyncServicePtr,
           out var context,
           _simStepHandlerDelegate,
-          initialStepSize),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+          initialStepSize));
     }
 
     private void SimulationStepHandlerInternal(IntPtr context, IntPtr timeSyncService, UInt64 now, UInt64 duration)
@@ -189,8 +187,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_Create(
         out _lifecycleServicePtr,
         _participant.ParticipantPtr,
-        handler.AddrOfPinnedObject()),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        handler.AddrOfPinnedObject()));
     handler.Free();
   }
 
@@ -217,8 +214,7 @@ public class LifecycleService : ILifecycleService
   public void StartLifecycle()
   {
     Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_StartLifecycle(LifecycleServicePtr),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_StartLifecycle(LifecycleServicePtr));
   }
 
   /*
@@ -232,8 +228,7 @@ public class LifecycleService : ILifecycleService
   public void Stop(string reason)
   {
     Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_Stop(LifecycleServicePtr, reason),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_Stop(LifecycleServicePtr, reason));
   }
 
   /*
@@ -252,8 +247,7 @@ public class LifecycleService : ILifecycleService
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_WaitForLifecycleToComplete(
         LifecycleServicePtr,
-        out var finalState),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        out var finalState));
     if ((Participant.ParticipantStates)finalState != Participant.ParticipantStates.Shutdown)
     {
       Debug.WriteLine($"Finished SIL Kit with state '{(Participant.ParticipantStates)finalState}'");
@@ -287,8 +281,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetCommunicationReadyHandler(
         LifecycleServicePtr,
         out var context,
-        _communicationReadyHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _communicationReadyHandlerDelegate));
   }
 
   private void CommunicationReadyHandlerInternal(IntPtr context, IntPtr lifecycleService)
@@ -328,8 +321,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetStartingHandler(
         LifecycleServicePtr,
         out _,
-        _startingHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _startingHandlerDelegate));
   }
 
   private void StartingHandlerInternal(IntPtr context, IntPtr lifecycleService)
@@ -368,8 +360,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetStopHandler(
         LifecycleServicePtr,
         out var context,
-        _stopHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _stopHandlerDelegate));
   }
 
   private void StopHandlerInternal(IntPtr context, IntPtr lifecycleService)
@@ -407,8 +398,7 @@ public class LifecycleService : ILifecycleService
       (Helpers.SilKit_ReturnCodes)SilKit_LifecycleService_SetShutdownHandler(
         LifecycleServicePtr,
         out var context,
-        _shutdownHandlerDelegate),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _shutdownHandlerDelegate));
   }
 
   private void ShutdownHandlerInternal(IntPtr context, IntPtr lifecycleService)

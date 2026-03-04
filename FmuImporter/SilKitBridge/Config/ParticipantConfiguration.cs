@@ -26,8 +26,7 @@ public class ParticipantConfiguration : IDisposable
     Helpers.ProcessReturnCode(
       (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_FromString(
         out _configurationPtr,
-        configurationString),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        configurationString));
   }
 
 #region IDisposable
@@ -40,8 +39,7 @@ public class ParticipantConfiguration : IDisposable
   private void ReleaseUnmanagedResources()
   {
     Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_Destroy(ParticipantConfigurationPtr),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      (Helpers.SilKit_ReturnCodes)SilKit_ParticipantConfiguration_Destroy(ParticipantConfigurationPtr));
     ParticipantConfigurationPtr = IntPtr.Zero;
   }
 

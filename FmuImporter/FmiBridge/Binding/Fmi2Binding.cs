@@ -332,9 +332,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void NotifyAsyncDoStepReturned(FmiStatus status)
   {
-    ProcessReturnCode(
-      (int)status,
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode((int)status);
     WaitForDoStepEvent.Set();
   }
 
@@ -343,8 +341,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
   public void SetDebugLogging(bool loggingOn, string[] categories)
   {
     ProcessReturnCode(
-      _fmi2SetDebugLogging(_component, loggingOn, (IntPtr)categories.Length, categories),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2SetDebugLogging(_component, loggingOn, (IntPtr)categories.Length, categories));
   }
 
   /*
@@ -445,8 +442,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         (tolerance.HasValue) ? tolerance.Value : double.NaN,
         startTime,
         stopTime.HasValue,
-        (stopTime.HasValue) ? stopTime.Value : double.NaN),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (stopTime.HasValue) ? stopTime.Value : double.NaN));
   }
 
   /*
@@ -471,9 +467,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void EnterInitializationMode()
   {
-    ProcessReturnCode(
-      _fmi2EnterInitializationMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi2EnterInitializationMode(_component));
 
     CurrentState = InternalFmuStates.InitializationMode;
   }
@@ -488,9 +482,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void ExitInitializationMode()
   {
-    ProcessReturnCode(
-      _fmi2ExitInitializationMode(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi2ExitInitializationMode(_component));
 
     CurrentState = InternalFmuStates.StepMode;
   }
@@ -515,9 +507,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     try
     {
       CurrentState = InternalFmuStates.Terminated;
-      ProcessReturnCode(
-        _fmi2Terminate(_component),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      ProcessReturnCode(_fmi2Terminate(_component));
     }
     catch (Exception e)
     {
@@ -550,9 +540,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
     var status = _fmi2DoStep(_component, currentCommunicationPoint, communicationStepSize, out _);
     // Note that this return code is special as the code '0' as well as '5' are success values
-    ProcessReturnCode(
-      status,
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(status);
     if ((FmiStatus)status == FmiStatus.OK)
     {
       // synchronous call - skip to new time retrieval
@@ -588,9 +576,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
 
   public void CancelStep()
   {
-    ProcessReturnCode(
-      _fmi2CancelStep(_component),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+    ProcessReturnCode(_fmi2CancelStep(_component));
   }
 
   /*
@@ -618,8 +604,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     var result = new double[valueReferences.Length];
 
     ProcessReturnCode(
-      _fmi2GetReal(_component, valueReferences, (IntPtr)valueReferences.Length, result),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2GetReal(_component, valueReferences, (IntPtr)valueReferences.Length, result));
 
     return result;
   }
@@ -648,8 +633,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     var result = new int[valueReferences.Length];
 
     ProcessReturnCode(
-      _fmi2GetInteger(_component, valueReferences, (IntPtr)valueReferences.Length, result),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2GetInteger(_component, valueReferences, (IntPtr)valueReferences.Length, result));
 
     return result;
   }
@@ -679,8 +663,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     var tmpResult = new IntPtr[valueReferences.Length];
 
     ProcessReturnCode(
-      _fmi2GetBoolean(_component, valueReferences, (IntPtr)valueReferences.Length, tmpResult),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2GetBoolean(_component, valueReferences, (IntPtr)valueReferences.Length, tmpResult));
 
     var result = Array.ConvertAll(tmpResult, e => e != IntPtr.Zero);
     return result;
@@ -710,8 +693,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     var resultRaw = new IntPtr[valueReferences.Length];
 
     ProcessReturnCode(
-      _fmi2GetString(_component, valueReferences, (IntPtr)valueReferences.Length, resultRaw),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2GetString(_component, valueReferences, (IntPtr)valueReferences.Length, resultRaw));
 
     var result = new string[resultRaw.Length];
     for (var i = 0; i < result.Length; i++)
@@ -756,8 +738,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     ProcessReturnCode(
-      _fmi2SetReal(_component, valueReferences, (IntPtr)valueReferences.Length, values),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2SetReal(_component, valueReferences, (IntPtr)valueReferences.Length, values));
   }
 
   /*
@@ -782,8 +763,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     ProcessReturnCode(
-      _fmi2SetInteger(_component, valueReferences, (IntPtr)valueReferences.Length, values),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2SetInteger(_component, valueReferences, (IntPtr)valueReferences.Length, values));
   }
 
   /*
@@ -813,8 +793,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
         _component,
         valueReferences,
         (IntPtr)valueReferences.Length,
-        Array.ConvertAll(values, Convert.ToInt32)),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        Array.ConvertAll(values, Convert.ToInt32)));
   }
 
   /*
@@ -845,8 +824,7 @@ internal class Fmi2Binding : FmiBindingBase, IFmi2Binding
     }
 
     ProcessReturnCode(
-      _fmi2SetString(_component, valueReferences, (IntPtr)valueReferences.Length, valuePtrs),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      _fmi2SetString(_component, valueReferences, (IntPtr)valueReferences.Length, valuePtrs));
   }
 
   /*

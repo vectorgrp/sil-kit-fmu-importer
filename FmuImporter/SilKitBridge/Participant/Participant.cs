@@ -84,9 +84,7 @@ public class Participant : IDisposable
         participantName,
         registryUri);
 
-      Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)rc,
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      Helpers.ProcessReturnCode((Helpers.SilKit_ReturnCodes)rc);
 
       if (createdPtr == IntPtr.Zero)
       {

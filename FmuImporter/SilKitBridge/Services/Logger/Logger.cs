@@ -34,8 +34,7 @@ public class Logger : ILogger
     if (sLoggerPtr == IntPtr.Zero)
     {
       Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)SilKit_Participant_GetLogger(out sLoggerPtr, participantPtr),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (Helpers.SilKit_ReturnCodes)SilKit_Participant_GetLogger(out sLoggerPtr, participantPtr));
     }
   }
 
@@ -44,8 +43,7 @@ public class Logger : ILogger
     try
     {
       Helpers.ProcessReturnCode(
-        (Helpers.SilKit_ReturnCodes)SilKit_Logger_Log(LoggerPtr, (UInt32)level, message),
-        System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        (Helpers.SilKit_ReturnCodes)SilKit_Logger_Log(LoggerPtr, (UInt32)level, message));
     }
     catch (Exception e)
     {
@@ -88,8 +86,7 @@ public class Logger : ILogger
     try
     {
       Helpers.ProcessReturnCode(
-       (Helpers.SilKit_ReturnCodes)SilKit_Logger_GetLogLevel(LoggerPtr, logLevel),
-       System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+       (Helpers.SilKit_ReturnCodes)SilKit_Logger_GetLogLevel(LoggerPtr, logLevel));
 
       return (LogLevel)Marshal.ReadInt32(logLevel);
     }

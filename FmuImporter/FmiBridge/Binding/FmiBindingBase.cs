@@ -17,7 +17,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     (int)FmiStatus.Pending // asynchronous doStep (FMI 2 only)
   };
 
-  private static readonly List<string> sDiscardIsHandledAsError =
+  private static readonly HashSet<string> sDiscardIsHandledAsError =
   [
     "EnterInitializationMode",
     "ExitInitializationMode",
@@ -281,25 +281,20 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
 
   public abstract FmiVersions GetFmiVersion();
 
-  public void ProcessReturnCode(int statusCode, RuntimeMethodHandle? methodHandle)
+  public void ProcessReturnCode(int statusCode, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
   {
     bool statusIsDiscardAndHandledAsError = false;
 
-    if (methodHandle != null)
+    if (!string.IsNullOrEmpty(callerName))
     {
-      var methodInfo = System.Reflection.MethodBase.GetMethodFromHandle(methodHandle.Value);
-      var methodeName = methodInfo?.Name;
-      if (methodeName != null)
-      {
-        statusIsDiscardAndHandledAsError = sDiscardIsHandledAsError.Contains(methodeName) && (FmiStatus)statusCode is FmiStatus.Discard;
-      }        
+      statusIsDiscardAndHandledAsError = sDiscardIsHandledAsError.Contains(callerName) && (FmiStatus)statusCode is FmiStatus.Discard;
     }
 
-      var result = Common.Helpers.ProcessFmiReturnCode(
+    var result = Common.Helpers.ProcessFmiReturnCode(
       sOkCodes,
       statusCode,
       ((FmiStatus)statusCode).ToString(),
-      methodHandle,
+      callerName,
       statusIsDiscardAndHandledAsError);
     if (result.Item1)
     {

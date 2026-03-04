@@ -34,8 +34,7 @@ public class DataPublisher : IDataPublisher
         _participant.ParticipantPtr,
         controllerName,
         silKitDataSpec,
-        history),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        history));
   }
 
   /*
@@ -68,8 +67,7 @@ public class DataPublisher : IDataPublisher
     var byteVectorPtr = handle2.AddrOfPinnedObject();
 
     Helpers.ProcessReturnCode(
-      (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Publish(DataPublisherPtr, byteVectorPtr),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+      (Helpers.SilKit_ReturnCodes)SilKit_DataPublisher_Publish(DataPublisherPtr, byteVectorPtr));
     handle2.Free();
     handle.Free();
   }

@@ -40,8 +40,7 @@ internal class RpcClient : IRpcClient
         controllerName,
         dataSpecPtr,
         resultHandlerContext,
-        _handler),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        _handler));
     }
     finally
     {
@@ -76,8 +75,7 @@ internal class RpcClient : IRpcClient
       (Helpers.SilKit_ReturnCodes)SilKit_RpcClient_Call(
         _rpcClientPtr,
         bytesVectorPtr,
-        userContext),
-      System.Reflection.MethodBase.GetCurrentMethod()?.MethodHandle);
+        userContext));
     }
     finally
     {
