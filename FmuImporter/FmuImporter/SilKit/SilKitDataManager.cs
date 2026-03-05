@@ -5,19 +5,33 @@ using SilKit.Services.PubSub;
 
 namespace FmuImporter.SilKit;
 
+public enum DataCategory
+{
+  Clock,
+  Variable,
+  ClockedVariable,
+  Structure,
+  ClockedStructure
+}
+
 public class SilKitDataManager : IDisposable
 {
   private readonly SilKitEntity _silKitEntity;
-  private SortedList<ulong, Dictionary<long, byte[]>> DataBuffer { get; }
+  private Dictionary<DataCategory, SortedList<ulong, Dictionary<long, byte[]>>> DataBuffers { get; }
 
   public SilKitDataManager(SilKitEntity silKitEntity)
   {
     _silKitEntity = silKitEntity;
 
-    DataBuffer = new SortedList<ulong, Dictionary<long, byte[]>>();
-    if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized)
+    DataBuffers = new Dictionary<DataCategory, SortedList<ulong, Dictionary<long, byte[]>>>();
+    foreach (var category in Enum.GetValues<DataCategory>())
     {
-      DataBuffer.Add(0, new Dictionary<long, byte[]>());
+      var buffer = new SortedList<ulong, Dictionary<long, byte[]>>();
+      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized)
+      {
+        buffer.Add(0, new Dictionary<long, byte[]>());
+      }
+      DataBuffers[category] = buffer;
     }
 
     ValueRefToPublisher = new Dictionary<long, IDataPublisher>();
@@ -55,15 +69,17 @@ public class SilKitDataManager : IDisposable
     string topicName,
     string? labelInstanceName,
     string? labelNamespace,
-    IntPtr context)
+    IntPtr context,
+    DataCategory category)
   {
+    var buffer = DataBuffers[category];
     var sub = _silKitEntity.CreateDataSubscriber(
       serviceName,
       topicName,
       labelInstanceName,
       labelNamespace,
       context,
-      DataMessageHandler);
+      (ctx, subscriber, dataMessageEvent) => DataMessageHandler(ctx, subscriber, dataMessageEvent, buffer));
 
     return ValueRefToSubscriber.TryAdd((long)context, sub);
   }
@@ -92,16 +108,20 @@ public class SilKitDataManager : IDisposable
 
 #region data collection & processing
 
-  private void DataMessageHandler(IntPtr context, IDataSubscriber subscriber, DataMessageEvent dataMessageEvent)
+  private void DataMessageHandler(
+    IntPtr context,
+    IDataSubscriber subscriber,
+    DataMessageEvent dataMessageEvent,
+    SortedList<ulong, Dictionary<long, byte[]>> buffer)
   {
     // buffer data
     // Use a last-is-best approach for storage
 
     var valueRef = (long)context;
-    var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : dataMessageEvent.TimestampInNS;
+    var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0UL : dataMessageEvent.TimestampInNS;
 
     // data is processed in sim. step callback (OnSimulationStep)
-    if (DataBuffer.TryGetValue(dataMessageEvent.TimestampInNS, out var futureDict))
+    if (buffer.TryGetValue(timeStamp, out var futureDict))
     {
       futureDict[valueRef] = dataMessageEvent.Data;
     }
@@ -111,39 +131,33 @@ public class SilKitDataManager : IDisposable
       {
         { valueRef, dataMessageEvent.Data }
       };
-      DataBuffer.Add(dataMessageEvent.TimestampInNS, dict);
+      buffer.Add(timeStamp, dict);
     }
   }
 
   /// <summary>
-  ///   Retrieve specific received data up to a specific point in time.
+  ///   Retrieve all received data of a specific category up to a specific point in time.
   ///   The data will be removed from the buffer and the result is aggregated.
   /// </summary>
   /// <param name="currentTime">The time (included) up to which the data will be retrieved.</param>
-  /// <param name="valueRefsToRetrieve">Value references of the data to retrieve.</param>
+  /// <param name="category">The data category to retrieve.</param>
   /// <returns>The aggregated data, divided by the value reference of the variable.</returns>
-  public Dictionary<long, byte[]> RetrieveReceivedData(ulong currentTime, HashSet<long> valueRefsToRetrieve)
+  public Dictionary<long, byte[]> RetrieveReceivedData(ulong currentTime, DataCategory category)
   {
+    var buffer = DataBuffers[category];
     var valueUpdates = new Dictionary<long, byte[]>();
-    var emptyTimestamps = new List<ulong>();
+    var removeCount = 0;
 
-    foreach (var timeDataPair in DataBuffer)
+    foreach (var timeDataPair in buffer)
     {
       if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
       {
-        // directly check and remove each value ref
-        foreach (var vRef in valueRefsToRetrieve)
+        foreach (var dataBufferKvp in timeDataPair.Value)
         {
-          if (timeDataPair.Value.Remove(vRef, out var clockData))
-          {
-            valueUpdates[vRef] = clockData;
-          }
+          valueUpdates[dataBufferKvp.Key] = dataBufferKvp.Value;
         }
 
-        if (timeDataPair.Value.Count == 0)
-        {
-          emptyTimestamps.Add(timeDataPair.Key);
-        }
+        removeCount++;
       }
       else
       {
@@ -151,10 +165,10 @@ public class SilKitDataManager : IDisposable
       }
     }
 
-    // clean up empty dictionaries
-    foreach (var timestamp in emptyTimestamps)
+    // clean up processed timestamps
+    while (removeCount-- > 0)
     {
-      DataBuffer.Remove(timestamp);
+      buffer.RemoveAt(0);
     }
 
     return valueUpdates;

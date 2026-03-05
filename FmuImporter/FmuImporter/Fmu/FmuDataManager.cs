@@ -24,9 +24,7 @@ public class FmuDataManager
   private readonly Dictionary<string, ConfiguredStructure> _parameterConfiguredStructureByName;
 
   // classic variables and structured variables
-  public HashSet<long> InputVariableRefs { get; }
   public Dictionary<long /* refValue*/, ConfiguredVariable> InputConfiguredVariables { get; }
-  public HashSet<long> InputStructureIds { get; }
   public Dictionary<long, ConfiguredStructure> InputConfiguredStructures { get; }
   private readonly Dictionary<string, ConfiguredStructure> _inputConfiguredStructureByName;
 
@@ -35,9 +33,7 @@ public class FmuDataManager
   private readonly Dictionary<string, ConfiguredStructure> _outputConfiguredStructureByName;
 
   // clocked variables, clocked structured variables
-  public HashSet<long> InputClockedVariableRefs { get; }
   public Dictionary<long /* refValue*/, ConfiguredVariable> InputConfiguredClockedVariables { get; }
-  public HashSet<long> InputClockedStructureIds { get; }
   public Dictionary<long, ConfiguredStructure> InputConfiguredClockedStructures { get; }
   private readonly Dictionary<string, ConfiguredStructure> _inputConfiguredClockedStructureByName;
 
@@ -46,7 +42,6 @@ public class FmuDataManager
   private readonly Dictionary<string, ConfiguredStructure> _outputConfiguredClockedStructureByName;
 
   // clocks
-  public HashSet<long> InputClockRefs { get; }
   public Dictionary<long /* refValue*/, ConfiguredVariable> InputConfiguredClocks { get; }
   public List<ConfiguredVariable> OutputConfiguredClocks { get; }
 
@@ -71,9 +66,7 @@ public class FmuDataManager
     ParameterConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
     _parameterConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
-    InputVariableRefs = new HashSet<long>();
     InputConfiguredVariables = new Dictionary<long, ConfiguredVariable>();
-    InputStructureIds = new HashSet<long>();
     InputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
     _inputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
@@ -81,9 +74,7 @@ public class FmuDataManager
     OutputConfiguredStructures = new Dictionary<long, ConfiguredStructure>();
     _outputConfiguredStructureByName = new Dictionary<string, ConfiguredStructure>();
 
-    InputClockedVariableRefs = new HashSet<long>();
     InputConfiguredClockedVariables = new Dictionary<long, ConfiguredVariable>();
-    InputClockedStructureIds = new HashSet<long>();
     InputConfiguredClockedStructures = new Dictionary<long, ConfiguredStructure>();
     _inputConfiguredClockedStructureByName = new Dictionary<string, ConfiguredStructure>();
 
@@ -91,7 +82,6 @@ public class FmuDataManager
     OutputConfiguredClockedStructures = new Dictionary<long, ConfiguredStructure>();
     _outputConfiguredClockedStructureByName = new Dictionary<string, ConfiguredStructure>();
 
-    InputClockRefs = new HashSet<long>();
     InputConfiguredClocks = new Dictionary<long, ConfiguredVariable>();
     OutputConfiguredClocks = new List<ConfiguredVariable>();
 
@@ -190,22 +180,7 @@ public class FmuDataManager
       ProcessConfiguredVariable(configuredVariable, useStructuredNamingConvention, commInterface);
     }
 
-    ProcessInputStructIds();
-
     ValidateCommInterfaceMapping();
-  }
-
-  private void ProcessInputStructIds()
-  {
-    foreach (var structId in InputConfiguredClockedStructures.Values.Select(s => s.StructureId))
-    {
-      InputClockedStructureIds.Add(structId);
-    }
-
-    foreach (var structId in InputConfiguredStructures.Values.Select(s => s.StructureId))
-    {
-      InputStructureIds.Add(structId);
-    }
   }
 
   private void ProcessConfiguredVariable(
@@ -298,7 +273,6 @@ public class FmuDataManager
           {
             return;
           }
-          InputClockRefs.Add(c.FmuVariableDefinition.ValueReference);
           InputConfiguredClocks.Add(c.FmuVariableDefinition.ValueReference, c);
           break;
         }
@@ -306,12 +280,10 @@ public class FmuDataManager
         // clocked variables
         if (c.FmuVariableDefinition.Clocks != null && c.FmuVariableDefinition.Clocks.Length > 0)
         {
-          InputClockedVariableRefs.Add(c.FmuVariableDefinition.ValueReference);
           InputConfiguredClockedVariables.Add(c.FmuVariableDefinition.ValueReference, c);
         }
 
         // classic variables
-        InputVariableRefs.Add(c.FmuVariableDefinition.ValueReference);
         InputConfiguredVariables.Add(c.FmuVariableDefinition.ValueReference, c);
         break;
     }

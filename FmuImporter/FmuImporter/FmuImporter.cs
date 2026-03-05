@@ -355,6 +355,75 @@ public class FmuImporter
     }
   }
 
+  private static IntPtr StructureIdToIntPtr(long structureId)
+  {
+    return Environment.Is64BitProcess
+      ? new IntPtr(structureId)
+      : new IntPtr((int)structureId);
+  }
+
+  private void CreateSubscribersForVariables(
+    Dictionary<long, ConfiguredVariable> configuredVariables,
+    DataCategory category)
+  {
+    foreach (var configuredVariable in configuredVariables.Values)
+    {
+      SilKitDataManager.CreateSubscriber(
+        configuredVariable.FmuVariableDefinition.Name,
+        configuredVariable.TopicName,
+        _fmuImporterConfig.Instance,
+        _fmuImporterConfig.Namespace,
+        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+        category);
+    }
+  }
+
+  private void CreateSubscribersForStructures(
+    Dictionary<long, ConfiguredStructure> configuredStructures,
+    DataCategory category)
+  {
+    foreach (var configuredStructure in configuredStructures.Values)
+    {
+      SilKitDataManager.CreateSubscriber(
+        configuredStructure.Name,
+        configuredStructure.Name,
+        _fmuImporterConfig.Instance,
+        _fmuImporterConfig.Namespace,
+        StructureIdToIntPtr(configuredStructure.StructureId),
+        category);
+    }
+  }
+
+  private void CreatePublishersForVariables(
+    List<ConfiguredVariable> configuredVariables)
+  {
+    foreach (var configuredVariable in configuredVariables)
+    {
+      SilKitDataManager.CreatePublisher(
+        configuredVariable.FmuVariableDefinition.Name,
+        configuredVariable.TopicName,
+        _fmuImporterConfig.Instance,
+        _fmuImporterConfig.Namespace,
+        StructureIdToIntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
+        0);
+    }
+  }
+
+  private void CreatePublishersForStructures(
+  Dictionary<long, ConfiguredStructure> configuredStructures)
+  {
+    foreach (var configuredStructure in configuredStructures.Values)
+    {
+      SilKitDataManager.CreatePublisher(
+        configuredStructure.Name,
+        configuredStructure.Name,
+        _fmuImporterConfig.Instance,
+        _fmuImporterConfig.Namespace,
+        StructureIdToIntPtr(configuredStructure.StructureId),
+        0);
+    }
+  }
+
   private void PrepareConfiguredVariables(List<Variable> modelDescriptionVariables)
   {
     if (FmuDataManager == null)
@@ -364,144 +433,23 @@ public class FmuImporter
 
     FmuDataManager.Initialize(_fmuImporterConfig, _fmuImporterCommInterface, modelDescriptionVariables);
 
-    // create subscribers for input variables
-    foreach (var configuredVariable in FmuDataManager.InputConfiguredVariables.Values)
-    {
-      // This is a redundant sanity check. It is also done when adding the variable to InputConfiguredVariable.
-      if (configuredVariable.FmuVariableDefinition.Causality != Variable.Causalities.Input)
-      {
-        throw new InvalidConfigurationException(
-          $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' was added to the list of input variables, but its " +
-          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
-      }
+    // create subscribers for input variables, clocked input variables and input clocks
+    CreateSubscribersForVariables(FmuDataManager.InputConfiguredVariables, DataCategory.Variable);
+    CreateSubscribersForVariables(FmuDataManager.InputConfiguredClockedVariables, DataCategory.ClockedVariable);
+    CreateSubscribersForVariables(FmuDataManager.InputConfiguredClocks, DataCategory.Clock);
 
-      SilKitDataManager.CreateSubscriber(
-        configuredVariable.FmuVariableDefinition.Name,
-        configuredVariable.TopicName,
-        _fmuImporterConfig.Instance,
-        _fmuImporterConfig.Namespace,
-        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference));
-    }
+    // create subscribers for input structures and input clocked structures
+    CreateSubscribersForStructures(FmuDataManager.InputConfiguredStructures, DataCategory.Structure);
+    CreateSubscribersForStructures(FmuDataManager.InputConfiguredClockedStructures, DataCategory.ClockedStructure);
 
-    // create subscribers for input structures
-    foreach (var configuredStructure in FmuDataManager.InputConfiguredStructures.Values)
-    {
-      if (Environment.Is64BitProcess)
-      {
-        SilKitDataManager.CreateSubscriber(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr(configuredStructure.StructureId));
-      }
-      else
-      {
-        SilKitDataManager.CreateSubscriber(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr((int)configuredStructure.StructureId));
-      }
-    }
+    // create publishers for output variables, output clocked variables and output clocks
+    CreatePublishersForVariables(FmuDataManager.OutputConfiguredVariables.Values.SelectMany(list => list).ToList());
+    CreatePublishersForVariables(FmuDataManager.OutputConfiguredClockedVariables.Values.SelectMany(list => list).ToList());
+    CreatePublishersForVariables(FmuDataManager.OutputConfiguredClocks);
 
-    // create subscribers for input clocked structures
-    foreach (var configuredStructure in FmuDataManager.InputConfiguredClockedStructures.Values)
-    {
-      if (Environment.Is64BitProcess)
-      {
-        SilKitDataManager.CreateSubscriber(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr(configuredStructure.StructureId));
-      }
-      else
-      {
-        SilKitDataManager.CreateSubscriber(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr((int)configuredStructure.StructureId));
-      }
-    }
-
-    // create publishers for output variables
-    var flattenedOutputVariables = FmuDataManager.OutputConfiguredVariables.Values.SelectMany(list => list).ToList();
-
-    foreach (var configuredVariable in flattenedOutputVariables)
-    {
-      if (configuredVariable.FmuVariableDefinition.Causality is not Variable.Causalities.Output)
-      {
-        throw new InvalidConfigurationException(
-          $"An internal error occurred. " +
-          $"'{configuredVariable.FmuVariableDefinition.Name}' with value reference " +
-          $"{configuredVariable.FmuVariableDefinition.ValueReference} was added to the list of output variables, but its " +
-          $"causality was '{configuredVariable.FmuVariableDefinition.Causality}'");
-      }
-
-      SilKitDataManager.CreatePublisher(
-        configuredVariable.FmuVariableDefinition.Name,
-        configuredVariable.TopicName,
-        _fmuImporterConfig.Instance,
-        _fmuImporterConfig.Namespace,
-        new IntPtr(configuredVariable.FmuVariableDefinition.ValueReference),
-        0);
-    }
-
-    // create publishers for output structures
-    foreach (var configuredStructure in FmuDataManager.OutputConfiguredStructures.Values)
-    {
-      if (Environment.Is64BitProcess)
-      {
-        SilKitDataManager.CreatePublisher(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr(configuredStructure.StructureId),
-          0);
-      }
-      else
-      {
-        SilKitDataManager.CreatePublisher(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr((int)configuredStructure.StructureId),
-          0);
-      }
-    }
-
-    // create publishers for output clocked structures
-    foreach (var configuredStructure in FmuDataManager.OutputConfiguredClockedStructures.Values)
-    {
-      if (Environment.Is64BitProcess)
-      {
-        SilKitDataManager.CreatePublisher(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr(configuredStructure.StructureId),
-          0);
-      }
-      else
-      {
-        SilKitDataManager.CreatePublisher(
-          configuredStructure.Name,
-          configuredStructure.Name,
-          _fmuImporterConfig.Instance,
-          _fmuImporterConfig.Namespace,
-          new IntPtr((int)configuredStructure.StructureId),
-          0);
-      }
-    }
+    // create publishers for output structures and output clocked structures
+    CreatePublishersForStructures(FmuDataManager.OutputConfiguredStructures);
+    CreatePublishersForStructures(FmuDataManager.OutputConfiguredClockedStructures);
   }
 
   private static int canControllerId = 1;
@@ -773,11 +721,11 @@ public class FmuImporter
     }
 
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
-    var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputVariableRefs);
-    var receivedSilKitClocks = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockRefs);
-    var receivedSilKitClockedData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockedVariableRefs);
-    var receivedSilKitDataStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputStructureIds);
-    var receivedSilKitDataClockedStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockedStructureIds);
+    var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
+    var receivedSilKitClocks = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Clock);
+    var receivedSilKitClockedData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedVariable);
+    var receivedSilKitDataStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Structure);
+    var receivedSilKitDataClockedStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedStructure);
 
     FmuDataManager.SetData(receivedSilKitData);
     FmuDataManager.SetData(receivedSilKitClocks);
@@ -841,11 +789,11 @@ public class FmuImporter
         RecordClocksAndClockedVariables();
 
         // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
-        var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputVariableRefs);
-        var receivedSilKitClocksEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockRefs);
-        var receivedSilKitClockedDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockedVariableRefs);
-        var receivedSilKitDataStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputStructureIds);
-        var receivedSilKitDataClockedStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, FmuDataManager.InputClockedStructureIds);
+        var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
+        var receivedSilKitClocksEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Clock);
+        var receivedSilKitClockedDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedVariable);
+        var receivedSilKitDataStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Structure);
+        var receivedSilKitDataClockedStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedStructure);
 
         FmuDataManager.SetData(receivedSilKitDataEventMode);
         FmuDataManager.SetData(receivedSilKitClocksEventMode);
