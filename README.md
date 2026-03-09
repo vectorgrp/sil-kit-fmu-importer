@@ -564,7 +564,7 @@ The following properties of a variable can be modified:
 | Name                                              | Type   | Description |
 |---------------------------------------------------|--------|-------------|
 | VariableName                                      | String | Name of the variable in the model description (mandatory). |
-| TopicName                                         | String | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input and output variables with the same topic name are connected. |
+| TopicName                                         | String | The topic under which the publisher / subscriber that corresponds to the variable sends / receives the data. This means that input or output variables with the same topic name are connected. |
 | [Transformation](#variablemappingstransformation) | Object | Allows to add a linear transformation (factor and offset) and a typecast to the data before it is serialized by SIL Kit. |
 
 In the example below, there are two FMUs (FMU1 and FMU2) with variables that should be connected.
