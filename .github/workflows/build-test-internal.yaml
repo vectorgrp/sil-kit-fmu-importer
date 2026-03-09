@@ -41,8 +41,8 @@ jobs:
     container:
       image: pnd-sil-kit-adapters-docker-prod.vegistry.vg.vector.int/sil_kit_adapters_ci_workflow:ubuntu2404_build
       credentials:
-        username: ${{ secrets.ARTIFACTORY_USERNAME }}
-        password: ${{ secrets.ARTIFACTORY_TOKEN }}
+        username: ${{ secrets.ARTIFACTORY_USR }}
+        password: ${{ secrets.ARTIFACTORY_PSW }}
       options: --privileged
 
     steps:
