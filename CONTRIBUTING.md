@@ -1,6 +1,6 @@
-# Contributing to Vector SIL Kit FMU Importer
+# Contributing to the SIL Kit FMU Importer
 
-Welcome and thank you for your interest in contributing to the Vector SIL Kit
+Welcome and thank you for your interest in contributing to the SIL Kit
 FMU Importer open source project.
 
 We are sorry, but at the moment, we do not accept external contributions until
