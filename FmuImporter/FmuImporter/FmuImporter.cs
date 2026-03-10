@@ -175,7 +175,7 @@ public class FmuImporter
       }
 
       // Initialize FMU
-      FmuEntity.PrepareFmu(ApplyParameterConfiguration, ApplyParameterConfiguration);
+      FmuEntity.PrepareFmu(FmuConfigurationAction, FmuInitializationAction);
 
       // Initialize FmuDataManager
       FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog, useClockPubSubElements);
@@ -260,28 +260,32 @@ public class FmuImporter
     SilKitEntity.Logger.Log(Helpers.Helpers.FmiLogLevelToSilKitLogLevel(severity), message);
   }
 
-  private void ApplyParameterConfiguration()
+  private void FmuConfigurationAction()
   {
-    Dictionary<string, Parameter>.ValueCollection usedConfiguredParameters;
-    var isHandlingStructuredParameters = false;
-
-    // initialize all configured parameters
-    if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Instantiated) &&
-        (_configuredStructuralParameters != null))
+    if ((FmuEntity.CurrentFmuSuperState != FmuEntity.FmuSuperStates.Instantiated) ||
+        (_configuredStructuralParameters == null))
     {
-      usedConfiguredParameters = _configuredStructuralParameters.Values;
-      isHandlingStructuredParameters = true;
-    }
-    else if ((FmuEntity.CurrentFmuSuperState == FmuEntity.FmuSuperStates.Initializing) &&
-             (_configuredParameters != null))
-    {
-      usedConfiguredParameters = _configuredParameters.Values;
-    }
-    else
-    {
-      throw new Exception();
+      throw new Exception("Either FmuConfigurationAction called when the FmuSuperState is not Instantiated or configuredStructuralParameters is null");
     }
 
+    ApplyParameterConfiguration(_configuredStructuralParameters.Values, true);
+  }
+ 
+  private void FmuInitializationAction()
+  {
+    if ((FmuEntity.CurrentFmuSuperState != FmuEntity.FmuSuperStates.Initializing) ||
+        (_configuredParameters == null))
+    {
+      throw new Exception("Either FmuInitializationAction called when the FmuSuperState is not Initializing or configuredParameters is null");
+    }
+
+    ApplyParameterConfiguration(_configuredParameters.Values, false);
+  }
+
+  private void ApplyParameterConfiguration(
+    Dictionary<string, Parameter>.ValueCollection usedConfiguredParameters,
+    bool isHandlingStructuredParameters)
+  {
     if (usedConfiguredParameters.Count == 0)
     {
       return;
