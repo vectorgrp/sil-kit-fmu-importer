@@ -874,6 +874,17 @@ public class FmuDataManager
   private byte[]? TransformSilKitToFmuData(long refValue, List<byte> silKitData, out List<int> binSizes)
   {
     var success = InputConfiguredVariables.TryGetValue(refValue, out var configuredVariable);
+    if (!success)
+    {
+      // check clocks
+      success = InputConfiguredClocks.TryGetValue(refValue, out configuredVariable);
+    }
+    if (!success)
+    {
+      // check clocked variables
+      success = InputConfiguredClockedVariables.TryGetValue(refValue, out configuredVariable);
+    }
+
     if (success && (configuredVariable != null))
     {
       var dc = new DataConverter();

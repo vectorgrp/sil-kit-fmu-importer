@@ -544,6 +544,18 @@ public class FmuImporter
 
   private void RecordClocksAndClockedVariables()
   {
+    // retrieve and publish clock and clocked variable data
+    var activeInputClocks = SilKitDataManager.LookupActiveClocks(_lastSimStep!.Value);
+    var outputClocks = FmuDataManager.GetClocks(activeInputClocks); // can be clocked by input clocks
+
+    var activeOutputClocks = outputClocks.Where(clock => clock.Item2[0] != 0).Select(clock => clock.Item1).ToHashSet();
+    var outputClockedVariables = FmuDataManager.GetClockedVariableData(activeInputClocks, activeOutputClocks); // clocked by in/out clocks
+    var outputClockedStructures = FmuDataManager.GetClockedStructureData(activeInputClocks);
+
+    SilKitDataManager.PublishAll(outputClocks);
+    SilKitDataManager.PublishAll(outputClockedVariables);
+    SilKitDataManager.PublishAll(outputClockedStructures);
+
     // retrieve and send CAN frames
     var outputCan = FmuCanManager.GetCanData();
     SilKitCanManager.SendAllFrames(outputCan);
@@ -559,6 +571,15 @@ public class FmuImporter
 
   private void ApplyClocksAndClockedInputs()
   {
+    // handle classic clocks and clocked variables/structures
+    var receivedSilKitClocks = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Clock);
+    var receivedSilKitClockedData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedVariable);
+    var receivedSilKitClockedStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedStructure);
+
+    FmuDataManager.SetData(receivedSilKitClocks);
+    FmuDataManager.SetData(receivedSilKitClockedData);
+    FmuDataManager.SetData(receivedSilKitClockedStruct);
+
     // handle received CAN frames
     var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
     FmuCanManager.SetCanData(receivedSilKitCanData);
@@ -704,6 +725,11 @@ public class FmuImporter
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           RecordClocksAndClockedVariables();
+          SilKitDataManager.ClearDataUpTo(
+            _lastSimStep!.Value,
+            DataCategory.Clock,
+            DataCategory.ClockedVariable,
+            DataCategory.ClockedStructure);
 
           if (terminateRequested)
           {
@@ -726,16 +752,12 @@ public class FmuImporter
 
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
     var receivedSilKitData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
-    var receivedSilKitClocks = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Clock);
-    var receivedSilKitClockedData = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedVariable);
     var receivedSilKitDataStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Structure);
-    var receivedSilKitDataClockedStruct = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedStructure);
 
     FmuDataManager.SetData(receivedSilKitData);
-    FmuDataManager.SetData(receivedSilKitClocks);
-    FmuDataManager.SetData(receivedSilKitClockedData);
     FmuDataManager.SetData(receivedSilKitDataStruct);
-    FmuDataManager.SetData(receivedSilKitDataClockedStruct);
+
+    SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Variable, DataCategory.Structure);
 
     _lastSimStep = nowInNs;
 
@@ -758,23 +780,11 @@ public class FmuImporter
 
       // Retrieve and publish non-structured variables
       var currentOutputData = FmuDataManager.GetVariableOutputData();
-
-      var activeInputClocks = receivedSilKitClocks.Where(clock => clock.Value[0] != 0).Select(clock => clock.Key).ToHashSet();
-      var currentOutputClocks = FmuDataManager.GetClocks(activeInputClocks); // can be clocked by in clocks
-
-      var outputActiveClocks = currentOutputClocks.Where(clock => clock.Item2[0] != 0).Select(clock => clock.Item1).ToHashSet();
-      var currentOutputClockedData = FmuDataManager.GetClockedVariableData(activeInputClocks, outputActiveClocks); // clocked by in/out clocks
-
       SilKitDataManager.PublishAll(currentOutputData);
-      SilKitDataManager.PublishAll(currentOutputClocks);
-      SilKitDataManager.PublishAll(currentOutputClockedData);
 
       // Retrieve and publish structures
       var currentStructureOutputData = FmuDataManager.GetStructureOutputData();
-      var currentClockedStructureOutputData = FmuDataManager.GetClockedStructureData(activeInputClocks);
-
       SilKitDataManager.PublishAll(currentStructureOutputData);
-      SilKitDataManager.PublishAll(currentClockedStructureOutputData);
 
       if (terminateRequested)
       {
@@ -794,16 +804,12 @@ public class FmuImporter
 
         // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
         var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
-        var receivedSilKitClocksEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Clock);
-        var receivedSilKitClockedDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedVariable);
         var receivedSilKitDataStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Structure);
-        var receivedSilKitDataClockedStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.ClockedStructure);
 
         FmuDataManager.SetData(receivedSilKitDataEventMode);
-        FmuDataManager.SetData(receivedSilKitClocksEventMode);
-        FmuDataManager.SetData(receivedSilKitClockedDataEventMode);
         FmuDataManager.SetData(receivedSilKitDataStructEventMode);
-        FmuDataManager.SetData(receivedSilKitDataClockedStructEventMode);
+
+        SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Variable, DataCategory.Structure);
 
         do
         {
@@ -812,6 +818,9 @@ public class FmuImporter
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           RecordClocksAndClockedVariables();
+          // clear internal buffer after setting and getting values
+          SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, 
+            DataCategory.Clock, DataCategory.ClockedVariable, DataCategory.ClockedStructure);
 
           if (terminateRequested)
           {
@@ -825,23 +834,11 @@ public class FmuImporter
 
         // Retrieve and publish non-structured variables
         var currentOutputDataEventMode = FmuDataManager.GetVariableOutputData();
-
-        var activeInputClocksEventMode = receivedSilKitClocksEventMode.Where(clock => clock.Value[0] != 0).Select(clock => clock.Key).ToHashSet();
-        var currentOutputClocksEventMode = FmuDataManager.GetClocks(activeInputClocksEventMode); // can be clocked by input clocks
-
-        var outputActiveClocksEventMode = currentOutputClocksEventMode.Where(clock => clock.Item2[0] != 0).Select(clock => clock.Item1).ToHashSet();
-        var currentOutputClockedDataEventMode = FmuDataManager.GetClockedVariableData(activeInputClocksEventMode, outputActiveClocksEventMode); // clocked by in/out clocks
-
         SilKitDataManager.PublishAll(currentOutputDataEventMode);
-        SilKitDataManager.PublishAll(currentOutputClocksEventMode);
-        SilKitDataManager.PublishAll(currentOutputClockedDataEventMode);
 
         // Retrieve and publish structures
         var currentStructureOutputDataEventMode = FmuDataManager.GetStructureOutputData();
-        var currentClockedStructureOutputDataEventMode = FmuDataManager.GetClockedStructureData(activeInputClocksEventMode);
-
         SilKitDataManager.PublishAll(currentStructureOutputDataEventMode);
-        SilKitDataManager.PublishAll(currentClockedStructureOutputDataEventMode);
 
         FmuEntity.EnterStepMode();
       }

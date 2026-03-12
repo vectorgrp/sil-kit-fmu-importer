@@ -137,7 +137,6 @@ public class SilKitDataManager : IDisposable
 
   /// <summary>
   ///   Retrieve all received data of a specific category up to a specific point in time.
-  ///   The data will be removed from the buffer and the result is aggregated.
   /// </summary>
   /// <param name="currentTime">The time (included) up to which the data will be retrieved.</param>
   /// <param name="category">The data category to retrieve.</param>
@@ -146,7 +145,6 @@ public class SilKitDataManager : IDisposable
   {
     var buffer = DataBuffers[category];
     var valueUpdates = new Dictionary<long, byte[]>();
-    var removeCount = 0;
 
     foreach (var timeDataPair in buffer)
     {
@@ -156,8 +154,6 @@ public class SilKitDataManager : IDisposable
         {
           valueUpdates[dataBufferKvp.Key] = dataBufferKvp.Value;
         }
-
-        removeCount++;
       }
       else
       {
@@ -165,13 +161,55 @@ public class SilKitDataManager : IDisposable
       }
     }
 
-    // clean up processed timestamps
-    while (removeCount-- > 0)
+    return valueUpdates;
+  }
+
+public void ClearDataUpTo(double pointInTime, params DataCategory[] categories)
+  {
+    var buffers = categories.Length > 0
+      ? categories.Select(c => DataBuffers[c])
+      : DataBuffers.Values;
+
+    foreach (var buffer in buffers)
     {
-      buffer.RemoveAt(0);
+      var keysToRemove = buffer.Keys.Where(time => time <= pointInTime).ToList();
+      foreach (var key in keysToRemove)
+      {
+        buffer.Remove(key);
+      }
+    }
+  }
+
+  /// <summary>
+  ///   Look up active clocks up to a specific point in time without modifying the buffer.
+  ///   A clock is considered active if its first byte is non-zero.
+  /// </summary>
+  /// <param name="currentTime">The time (included) up to which the data will be looked up.</param>
+  /// <returns>The set of value references of active clocks.</returns>
+  public HashSet<long> LookupActiveClocks(ulong currentTime)
+  {
+    var activeClocks = new HashSet<long>();
+    var clocksBuffer = DataBuffers[DataCategory.Clock];
+
+    foreach (var timeDataPair in clocksBuffer)
+    {
+      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
+      {
+        foreach (var clockRefVal in timeDataPair.Value)
+        {
+          if (clockRefVal.Value[0] != 0)
+          {
+            activeClocks.Add(clockRefVal.Key);
+          }
+        }
+      }
+      else
+      {
+        break;
+      }
     }
 
-    return valueUpdates;
+    return activeClocks;
   }
 
 #endregion data collection & processing
