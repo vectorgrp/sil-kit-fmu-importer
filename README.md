@@ -535,7 +535,7 @@ Each entry of the list must have the following attributes:
 The `Value` attribute may be one of the following:
 * A string (with single (`'`) or double (`"`) quotes) even if the content of the string is a numeric value;
 * A numeric value (example: `42`, `3.14`). If it's not representable by an integer type of size 64 bits or a double-precision floating point due to overflow, it'll be considered a string;
-* A list of the above (lists nesting is not supported).
+* A list of the above. Nested lists (for multi-dimensional arrays) are supported; see the syntax example below.
 
 If the `VariableName` designates a variable whose type is an enumeration, integer values are interpreted as the the enumerator's underlying value. If it is a string, it is interpreted as an enumerator's name and the value is taken from the Model Description.
 
@@ -549,10 +549,7 @@ Parameters:
   - VariableName: <enum-typed-variable-name-in-model-description>
     Value: "<name-of-enumerator-used-as-start-value>"
   - VariableName: <array-name-in-model-description>
-    Value:
-      - <first-item-of-the-start-value>
-      - <second-item-of-the-start-value>
-      - ...
+    Value: [[<row-1-item-1>, <row-1-item-2>, ...], [<row-2-item-1>, <row-2-item-2>, ...], ...]
   - ...
 ```
 
@@ -636,10 +633,7 @@ Enumerators are not convertible.
 * In FMI 3.0, variables may also be (multi-dimensional) arrays.
 These are declared as lists in the FMU Importer (e.g., `List<Double>`).
 * Non-convertible data types cannot be used in type transformations.
-
->Note: Currently, the FMU Importer does not support nested lists.
-Therefore, multi-dimensional FMI arrays are handled as their flattened counterparts as defined in [the FMI 3.0 standard](https://fmi-standard.org/docs/3.0.1/#serialization-of-variables).
-This information is primarily important for other SIL Kit applications that want to exchange array data with the FMU Importer.
+* Multi-dimensional arrays are supported. In that case, `TransmissionType` can be nested lists, example: `List<List<T>>` 
 
 Members of structures that are not always available when the structure is distributed must be declared to be `optional`.
 This is done by appending a question mark (`?`) at the end of the data type.
