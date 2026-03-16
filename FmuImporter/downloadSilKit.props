@@ -21,7 +21,7 @@
 	</PropertyGroup>
 
 	<!-- Prefer a locally installed SIL Kit on Linux, check for libSilKit.so in /usr/lib/x86_64-linux-gnu. -->
-	<!-- First, prefer an exact versioned file matching the current SilKitVersion, e.g. libSilKit.so.5.0.1 -->
+	<!-- First, prefer an exact versioned file matching the current SilKitVersion, e.g. libSilKit.so.5.0.3 -->
 	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and Exists('/usr/lib/x86_64-linux-gnu/libSilKit.so.$(SilKitVersion)')">
 		<SilKitLinuxLibPath>/usr/lib/x86_64-linux-gnu/libSilKit.so.$(SilKitVersion)</SilKitLinuxLibPath>
 	</PropertyGroup>
