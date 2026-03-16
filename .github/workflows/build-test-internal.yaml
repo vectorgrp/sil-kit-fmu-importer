@@ -98,7 +98,7 @@ jobs:
     needs: [build-windows, build-linux]
     uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomation.yaml@main
     with:
-      fmu-importer-version: 1.5.0
+      fmu-importer-version: 1.6.0
       branch-name: ${{ github.head_ref }}
       commit-full-sha: ${{ github.sha }}
     secrets: inherit

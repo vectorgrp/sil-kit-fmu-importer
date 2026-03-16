@@ -4,6 +4,31 @@ All notable changes to the SIL Kit FMU Importer project shall be documented in t
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.6.0] - TBD
+
+This version introduces performance enhancements, extended compatibility, quality-of-life improvements, as well as some bug fixes.
+
+### Added
+
+* Support for multi-dimensional arrays
+
+### Changed
+
+* Updated SIL Kit to version 5.0.3
+* The FMU Importer now targets .NET 10
+* Using new FMI C# classes generated using XmlSchemaClassGenerator
+* Adjusted calling order for processing variables, clocked variables and clocks to improve compatibility with other vendors and ensure compliance with the FMI standard (for details, see https://github.com/modelica/fmi-standard/pull/2098)
+* Improved performance when receiving SIL Kit data by using multiple internal buffers
+* Improved logging and diagnostics for participant creation failures and architecture mismatches
+* Removed pinned SIL Kit library files, handling them dynamically during the build process 
+* General documentation improvements
+
+### Fixed
+
+* Issue when parsing empty model description fields (e.g. empty dependencies or dependenciesKind) are now handled internally instead of causing XML parser errors
+* Unhandled error regarding GenerationTool field parsing in FMI 2.0 FMUs
+
+
 ## [1.5.0] - 2025-06-16
 
 This version introduces support for the CAN Network Abstraction (Low-Cut) part of the Layered Standard for Network Communication for FMI 3.0 and improves general usability, especially with Vector vVIRTUALtarget exported FMUs.
