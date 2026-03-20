@@ -542,10 +542,10 @@ public class FmuImporter
     }
   }
 
-  private void RecordClocksAndClockedVariables()
+  private void RecordClocksAndClockedVariables(HashSet<long>? savedActiveInputClocks = null)
   {
     // retrieve and publish clock and clocked variable data
-    var activeInputClocks = SilKitDataManager.LookupActiveClocks(_lastSimStep!.Value);
+    var activeInputClocks = savedActiveInputClocks ?? SilKitDataManager.LookupActiveClocks(_lastSimStep!.Value);
     var outputClocks = FmuDataManager.GetClocks(activeInputClocks); // can be clocked by input clocks
 
     var activeOutputClocks = outputClocks.Where(clock => clock.Item2[0] != 0).Select(clock => clock.Item1).ToHashSet();
@@ -759,6 +759,16 @@ public class FmuImporter
 
     SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Variable, DataCategory.Structure);
 
+    // save active input clocks before clearing - event mode needs this information after DoStep
+    HashSet<long>? preStepActiveInputClocks = null;
+
+    if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
+    {
+      ApplyClocksAndClockedInputs();
+      preStepActiveInputClocks = SilKitDataManager.LookupActiveClocks(_lastSimStep!.Value);
+      SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Clock, DataCategory.ClockedVariable, DataCategory.ClockedStructure);
+    }
+
     _lastSimStep = nowInNs;
 
     if (_initialSimTime > 0)
@@ -771,6 +781,7 @@ public class FmuImporter
     var fmiNow = Helpers.Helpers.SilKitTimeToFmiTime(nowInNs - durationInNs);
     try
     {
+      
       FmuEntity.DoStep(
         fmiNow,
         Helpers.Helpers.SilKitTimeToFmiTime(durationInNs),
@@ -800,7 +811,7 @@ public class FmuImporter
       {
         FmuEntity.EnterEventMode();
 
-        RecordClocksAndClockedVariables();
+        RecordClocksAndClockedVariables(preStepActiveInputClocks);
 
         // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
         var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
@@ -817,7 +828,11 @@ public class FmuImporter
 
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
-          RecordClocksAndClockedVariables();
+          RecordClocksAndClockedVariables(preStepActiveInputClocks);
+          if (preStepActiveInputClocks != null)
+          {
+            preStepActiveInputClocks = null;
+          }
           // clear internal buffer after setting and getting values
           SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, 
             DataCategory.Clock, DataCategory.ClockedVariable, DataCategory.ClockedStructure);

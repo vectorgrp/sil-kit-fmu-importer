@@ -17,7 +17,7 @@ This version introduces performance enhancements, extended compatibility, qualit
 * Updated SIL Kit to version 5.0.3
 * The FMU Importer now targets .NET 10
 * Using new FMI C# classes generated using XmlSchemaClassGenerator
-* Adjusted calling order for processing variables, clocked variables and clocks to improve compatibility with other vendors and ensure compliance with the FMI standard (for details, see https://github.com/modelica/fmi-standard/pull/2098)
+* Adjusted the calling order for processing variables, clocked variables and clocks to improve interoperability with FMUs from other vendors
 * Improved performance when receiving SIL Kit data by using multiple internal buffers
 * Improved logging and diagnostics for participant creation failures and architecture mismatches
 * Removed pinned SIL Kit library files, handling them dynamically during the build process 
