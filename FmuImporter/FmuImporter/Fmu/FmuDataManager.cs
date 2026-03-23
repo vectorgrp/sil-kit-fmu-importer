@@ -281,6 +281,7 @@ public class FmuDataManager
         if (c.FmuVariableDefinition.Clocks != null && c.FmuVariableDefinition.Clocks.Length > 0)
         {
           InputConfiguredClockedVariables.Add(c.FmuVariableDefinition.ValueReference, c);
+          break;
         }
 
         // classic variables
