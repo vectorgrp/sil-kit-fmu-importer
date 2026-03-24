@@ -4,7 +4,7 @@ All notable changes to the SIL Kit FMU Importer project shall be documented in t
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
-## [1.6.0] - TBD
+## [1.6.0] - 2026-03-24
 
 This version introduces performance enhancements, extended compatibility, quality-of-life improvements, as well as some bug fixes.
 
