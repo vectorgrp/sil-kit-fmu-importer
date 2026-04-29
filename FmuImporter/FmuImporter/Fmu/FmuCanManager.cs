@@ -4,7 +4,6 @@
 using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel.Internal;
-using FmuImporter.Config;
 using System.Runtime.InteropServices;
 
 namespace FmuImporter.Fmu;
@@ -42,7 +41,7 @@ public class FmuCanManager
     foreach (var (valueRef, modelDescriptionVariable) in modelDescriptionVariables)
     {
       if (modelDescriptionVariable.MimeType == null || 
-          modelDescriptionVariable.MimeType.Contains("application/org.fmi-standard.fmi-ls-bus.can") == false)
+          modelDescriptionVariable.MimeType.Contains(Terminal.Constants.CanMimeType) == false)
       {
         // other variables are handled in their own class
         continue;

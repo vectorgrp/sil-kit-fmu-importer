@@ -216,9 +216,9 @@ public class FmuEntity : IDisposable
   }
 
   /* Get terminal name with associated vRefIn (Rx_Data) and vRefOut (Tx_Data) */
-  public Dictionary<string, (uint? /* vRefIn */, uint? /* vRefOut */)> GetTerminalsValueRefs()
+  public Dictionary<uint /* vRefOut */, (string /* terminal name */, uint /* vRefIn */)> GetTerminalsValueRefs()
   {
-    var returnedDict = new Dictionary<string, (uint?, uint?)>();
+    var returnedDict = new Dictionary<uint, (string, uint)>();
 
     if (TerminalsAndIcons == null) 
     { 
@@ -241,7 +241,10 @@ public class FmuEntity : IDisposable
           vRefOut = variable.CorrespondingValueReference;
         }
       }
-      returnedDict[terminalName] = (vRefIn, vRefOut);
+      if (vRefIn != null && vRefOut != null)
+      {
+        returnedDict[vRefOut.Value] = (terminalName, vRefIn.Value);
+      }
     }
     return returnedDict;
   }

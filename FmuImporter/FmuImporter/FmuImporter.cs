@@ -11,6 +11,7 @@ using FmuImporter.Models.Config;
 using FmuImporter.Models.Exceptions;
 using FmuImporter.SilKit;
 using SilKit.Services.Can;
+using SilKit.Services.Ethernet;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.Rpc;
@@ -35,13 +36,15 @@ public class FmuImporter
   private SilKitEntity SilKitEntity { get; }
   private SilKitDataManager SilKitDataManager { get; }
   private SilKitCanManager SilKitCanManager { get; }
+  private SilKitEthernetManager SilKitEthernetManager { get; }
+  private SilKitRpcClientManager SilKitRpcClientManager { get; set; }
+  private SilKitRpcServerManager SilKitRpcServerManager { get; set; }
   private FmuEntity FmuEntity { get; }
   private FmuDataManager FmuDataManager { get; set; }
   private FmuCanManager FmuCanManager { get; set; }
+  private FmuEthernetManager FmuEthernetManager { get; set; }
   private FmuRpcManager FmuRpcClientManager { get; set; }
-  private SilKitRpcClientManager SilKitRpcClientManager { get; set; }
   private FmuRpcManager FmuRpcServerManager { get; set; }
-  private SilKitRpcServerManager SilKitRpcServerManager { get; set; }
 
   private readonly Configuration _fmuImporterConfig = null!;
   private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
@@ -193,6 +196,11 @@ public class FmuImporter
             FmuCanManager ??= new FmuCanManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
             SilKitCanManager ??= new SilKitCanManager(SilKitEntity);
           }
+          else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.ETHERNET)
+          {
+            FmuEthernetManager ??= new FmuEthernetManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitEthernetManager ??= new SilKitEthernetManager(SilKitEntity);
+          }
           // handle RPC terminal if any
           else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.RPC_CLIENT)
           {
@@ -224,7 +232,7 @@ public class FmuImporter
 
         // process can variables and remove them from the modelDescriptionVariables
         if (FmuCanManager != null) ProcessCanVariables(ref modelDescriptionVariables);
-
+        if (FmuEthernetManager != null) ProcessEthernetVariables(ref modelDescriptionVariables);
         if (FmuRpcClientManager != null) ProcessRpcClientVariables(ref modelDescriptionVariables);
         if (FmuRpcServerManager != null) ProcessRpcServerVariables(ref modelDescriptionVariables);
       }
@@ -232,6 +240,8 @@ public class FmuImporter
       // if no CanManager, FmuRpcClientManager or FmuRpcServerManager: use the default ctor to avoid making them nullable
       FmuCanManager ??= new FmuCanManager();
       SilKitCanManager ??= new SilKitCanManager();
+      FmuEthernetManager ??= new FmuEthernetManager();
+      SilKitEthernetManager ??= new SilKitEthernetManager();
       FmuRpcClientManager ??= new FmuRpcManager();
       SilKitRpcClientManager ??= new SilKitRpcClientManager();
       FmuRpcServerManager ??= new FmuRpcManager();
@@ -469,43 +479,74 @@ public class FmuImporter
       return;
     }
 
-    for (var i = 0; i < FmuCanManager.OutputCanVariables.Count; i++)
+    foreach (var outVar in FmuCanManager.OutputCanVariables)
     {
-      var networkName = "";
-      foreach (var pairTerminalNameVrefs in networkNamesValueRefs)
+      var vRefOut = outVar.ValueReference;
+      if (networkNamesValueRefs.TryGetValue(vRefOut, out var networkInfo))
       {
-        if (pairTerminalNameVrefs.Value.Item2 == FmuCanManager.OutputCanVariables[i].ValueReference)
+        var networkName = networkInfo.Item1;
+        var vRefIn = networkInfo.Item2;
+
+        SilKitCanManager.CreateCanController("SilKit_CAN_CTRL_" + canControllerId, networkName, vRefOut);
+        SilKitCanManager.AddCanFrameHandler(
+          vRefOut,
+          vRefIn,
+          SilKitCanManager.FuncCanFrameHandler,
+          (int)TransmitDirection.RX);
+        if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
         {
-          var vRefOut = pairTerminalNameVrefs.Value.Item2;
-          var vRefIn = pairTerminalNameVrefs.Value.Item1;
-          networkName = pairTerminalNameVrefs.Key;
-          SilKitCanManager.CreateCanController("SilKit_CAN_CTRL_" + canControllerId, networkName, vRefOut.Value);
-          SilKitCanManager.AddCanFrameHandler(
-            vRefOut.Value,
-            vRefIn!.Value,
-            SilKitCanManager.FuncCanFrameHandler,
-            (int)TransmitDirection.RX);
-          if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
-          {
-            SilKitCanManager.AddFrameTransmitHandler(
-              vRefOut.Value,
-              SilKitCanManager.FuncCanFrameTransmitHandler,
-              (int)(CanTransmitStatus.Transmitted | CanTransmitStatus.Canceled | CanTransmitStatus.TransmitQueueFull));
-          }
-
-          canControllerId++;
-          break;
+          SilKitCanManager.AddFrameTransmitHandler(
+            vRefOut,
+            SilKitCanManager.FuncCanFrameTransmitHandler,
+            (int)(CanTransmitStatus.Transmitted | CanTransmitStatus.Canceled | CanTransmitStatus.TransmitQueueFull));
         }
-      }
 
-      if (networkName == "")
-      {
-        throw new InvalidConfigurationException(
-          $"An internal error occurred. The value reference " +
-          $"{FmuCanManager.OutputCanVariables[i].ValueReference} with the mimeType application/org.fmi-standard.fmi-ls-bus.can does not have " +
-          $"a corresponding variable in the TerminalsAndIcons.xml file.");
+        canControllerId++;
       }
     }
+  }
+
+  private static int ethernetControllerId = 1;
+
+  private void ProcessEthernetVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  {
+    FmuEthernetManager.Initialize(ref modelDescriptionVariables);
+
+    // if any, get the terminal names with their respective vRef in/out  
+    var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
+    if (networkNamesValueRefs.Count == 0)
+    {
+      return;
+    }
+
+    foreach (var outVar in FmuEthernetManager.OutputEthernetVariables)
+    {
+      var vRefOut = outVar.ValueReference;
+      if (networkNamesValueRefs.TryGetValue(vRefOut, out var networkInfo))
+      {
+        var networkName = networkInfo.Item1;
+        var vRefIn = networkInfo.Item2;
+
+        SilKitEthernetManager.CreateEthernetController("SilKit_ETH_CTRL_" + ethernetControllerId, networkName, vRefOut);
+        SilKitEthernetManager.AddEthernetFrameHandler(
+          vRefOut,
+          vRefIn,
+          SilKitEthernetManager.FuncEthernetFrameHandler,
+          (int)Direction.RX);
+        if (SilKitEntity.Logger.GetLogLevel() is LogLevel.Trace or LogLevel.Debug)
+        {
+          SilKitEthernetManager.AddFrameTransmitHandler(
+            vRefOut,
+            SilKitEthernetManager.FuncEthernetFrameTransmitHandler,
+            (int)(EthernetTransmitStatus.Transmitted | EthernetTransmitStatus.ControllerInactive | EthernetTransmitStatus.LinkDown |
+                  EthernetTransmitStatus.Dropped | EthernetTransmitStatus.InvalidFrameFormat));
+        }
+
+        ethernetControllerId++;
+      }
+    }
+
+    SilKitEthernetManager.ActivateEthernetControllers();
   }
 
   private static int rpcClientId = 1;
@@ -560,6 +601,10 @@ public class FmuImporter
     var outputCan = FmuCanManager.GetCanData();
     SilKitCanManager.SendAllFrames(outputCan);
 
+    // retrieve and send Ethernet frames
+    var outputEthernet = FmuEthernetManager.GetEthernetData();
+    SilKitEthernetManager.SendAllFrames(outputEthernet);
+
     // retrieve RPC server results from the FMU and submit them
     var rpcServerResults = FmuRpcServerManager.GetOperations();
     SilKitRpcServerManager.SubmitResult(rpcServerResults);
@@ -583,6 +628,10 @@ public class FmuImporter
     // handle received CAN frames
     var receivedSilKitCanData = SilKitCanManager.RetrieveReceivedCanData(_lastSimStep!.Value);
     FmuCanManager.SetCanData(receivedSilKitCanData);
+
+    // handle received Ethernet frames
+    var receivedSilKitEthernetData = SilKitEthernetManager.RetrieveReceivedEthernetData(_lastSimStep!.Value);
+    FmuEthernetManager.SetEthernetData(receivedSilKitEthernetData);
 
     // handle client RPC results
     var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);
@@ -734,6 +783,7 @@ public class FmuImporter
           if (terminateRequested)
           {
             SilKitCanManager.StopCanControllers();
+            SilKitEthernetManager.DeactivateEthernetControllers();
             FmuEntity.Terminate();
             ExitFmuImporter();
             return;
@@ -800,6 +850,7 @@ public class FmuImporter
       if (terminateRequested)
       {
         SilKitCanManager.StopCanControllers();
+        SilKitEthernetManager.DeactivateEthernetControllers();
         FmuEntity.Terminate();
         ExitFmuImporter();
         return;
@@ -840,6 +891,7 @@ public class FmuImporter
           if (terminateRequested)
           {
             SilKitCanManager.StopCanControllers();
+            SilKitEthernetManager.DeactivateEthernetControllers();
             FmuEntity.Terminate();
             ExitFmuImporter();
             return;
@@ -903,6 +955,7 @@ public class FmuImporter
             InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
     {
       SilKitCanManager.StopCanControllers();
+      SilKitEthernetManager.DeactivateEthernetControllers();
       FmuEntity.Terminate();
       // FreeInstance will be called by the dispose pattern
     }

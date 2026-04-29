@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
-using System.Runtime.InteropServices;
 using Fmi;
 using Fmi.Binding.Helper;
 using Fmi.FmiModel.Internal;
@@ -10,8 +9,11 @@ using FmuImporter.Models.Exceptions;
 using FmuImporter.Models.Helpers;
 using SilKit.Services;
 using SilKit.Services.Can;
+using SilKit.Services.Ethernet;
 using SilKit.Services.Logger;
 using SilKit.Supplements;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace FmuImporter;
 
@@ -159,7 +161,26 @@ public class DataConverter
     return canTransmitOp.GetBytes();
   }
 
-#endregion SIL Kit -> FMU (plain)
+  public byte[] SilKitEthernetFrameToLsEthernetTransmitOperation(EthernetFrame silkitEthernetFrame)
+  {
+    int dataSize = (int)silkitEthernetFrame.raw.size - EthernetFrame.EthernetHeaderSize;
+    if (dataSize < 0)
+    {
+      throw new ArgumentOutOfRangeException("Invalid Ethernet frame size: " + dataSize);
+    }
+
+    EthernetTransmitOperation ethernetTransmitOp = new EthernetTransmitOperation(dataSize);
+    ethernetTransmitOp.SetOPCode((int)EthernetOperations.Transmit);
+    ethernetTransmitOp.SetLength(29 + (uint)dataSize); // Length = 29 (fixed header size) + Data Length
+    ethernetTransmitOp.SetDestinationAddress(silkitEthernetFrame.GetDestinationAddress());
+    ethernetTransmitOp.SetSourceAddress(silkitEthernetFrame.GetSourceAddress());
+    ethernetTransmitOp.SetTypeLength(silkitEthernetFrame.GetEtherType());
+    ethernetTransmitOp.SetData(silkitEthernetFrame.GetPayload());
+
+    return ethernetTransmitOp.GetBytes();
+  }
+
+  #endregion SIL Kit -> FMU (plain)
 
   private List<object?>? DeserializeFromSilKit(
     Deserializer deserializer, ConfiguredVariable configuredVariable)
@@ -611,7 +632,66 @@ public class DataConverter
     return silkitCanFrame;
   }
 
-#endregion FMU -> SIL Kit (plain)
+  public EthernetFrame LsEthernetTransmitOperationToSilKitEthernetFrame(byte[] LsEthernetFrame, ILogger Logger)
+  {
+    // copy only the fixed header
+    int headerSize = Marshal.SizeOf(typeof(EthernetTransmitOperation)) - IntPtr.Size;
+
+    if (LsEthernetFrame.Length < headerSize)
+    {
+      Logger.Log(LogLevel.Error, $"Ethernet frame too short ({LsEthernetFrame.Length} bytes). Expected at least {headerSize} bytes.");
+      return new EthernetFrame();
+    }
+
+    IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(EthernetTransmitOperation)));
+    Marshal.Copy(LsEthernetFrame, 0, ptr, headerSize);
+    var ptrToStruct = Marshal.PtrToStructure(ptr, typeof(EthernetTransmitOperation));
+    Marshal.FreeHGlobal(ptr);
+
+    if (ptrToStruct == null)
+    {
+      Logger.Log(LogLevel.Error, $"Error while casting Ethernet transmit operation to SIL Kit Ethernet frame. Retrieved bytes:" +
+        $"{LsEthernetFrame}");
+      return new EthernetFrame();
+    }
+
+    EthernetTransmitOperation ethernetTransmitOp = (EthernetTransmitOperation)ptrToStruct;
+
+    // populate the Data field from the remaining bytes
+    var dataLength = ethernetTransmitOp.GetDataLength();
+
+    if (LsEthernetFrame.Length < headerSize + dataLength)
+    {
+      Logger.Log(LogLevel.Error, $"Ethernet frame size mismatch. Header indicates {dataLength} data bytes, " +
+        $"but only {LsEthernetFrame.Length - headerSize} are available.");
+      return new EthernetFrame();
+    }
+
+    ethernetTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
+    Marshal.Copy(LsEthernetFrame, headerSize, ethernetTransmitOp.Data, dataLength);
+
+    EthernetFrame silkitEthernetFrame = new EthernetFrame();
+
+    List<byte> rawBytes = new List<byte>();
+    rawBytes.AddRange(ethernetTransmitOp.GetDestinationAddress());
+    rawBytes.AddRange(ethernetTransmitOp.GetSourceAddress());
+    rawBytes.AddRange(ethernetTransmitOp.GetTypeLength());
+    rawBytes.AddRange(ethernetTransmitOp.GetData());
+
+    int rawBytesSize = rawBytes.Count;
+    var dataptr = Marshal.AllocHGlobal(rawBytesSize);
+    Marshal.Copy(rawBytes.ToArray(), 0, dataptr, rawBytesSize);
+
+    silkitEthernetFrame.raw = new ByteVector
+    {
+      data = dataptr,
+      size = (IntPtr)rawBytesSize
+    };
+
+    return silkitEthernetFrame;
+  }
+
+  #endregion FMU -> SIL Kit (plain)
 
   // serialization with type conversion
   private void SerializeToSilKit(

@@ -104,11 +104,11 @@ internal static class SilKitVersion
 
     // Ethernet
 
-    //EthernetFrameEvent = 1,
-    //EthernetFrameTransmitEvent = 2,
-    //EthernetStateChangeEvent = 3,
-    //EthernetBitrateChangeEvent = 4,
-    //EthernetFrame = 5,
+    EthernetFrameEvent = 1,
+    EthernetFrameTransmitEvent = 2,
+    EthernetStateChangeEvent = 3,
+    EthernetBitrateChangeEvent = 4,
+    EthernetFrame = 5,
 
     // // Ethernet data type versions
     // #define SilKit_EthernetFrameEvent_VERSION 1

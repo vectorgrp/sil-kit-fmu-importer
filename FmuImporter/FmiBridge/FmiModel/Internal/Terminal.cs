@@ -9,28 +9,34 @@ public enum InternalTerminalKind
 {
   UNKNOWN = 0,
   CAN = 1,
-  RPC_CLIENT = 2,
-  RPC_SERVER = 3
+  ETHERNET = 2,
+  RPC_CLIENT = 3,
+  RPC_SERVER = 4
 }
 
 public class Terminal
 {
   public static class Constants
   {
+    // General FMI-LS-BUS Constants
+    public const string LS_BUS_TerminalKind = "org.fmi-ls-bus.network-terminal";
+    public const string LS_BUS_MatchingRule = "org.fmi-ls-bus.transceiver";
+    public const string LS_BUS_VariableKind = "signal";
+    public const string LS_BUS_ConfigurationTerminalKind = "org.fmi-ls-bus.network-terminal.configuration";
+    public const string LS_BUS_ConfigurationMatchingRule = "bus";
+    public const string LS_BUS_ConfigurationTerminalName = "Configuration";
+
     // CAN Terminal Constants
     public const string CanMimeType = "application/org.fmi-standard.fmi-ls-bus.can";
-    public const string CanTerminalKind = "org.fmi-ls-bus.network-terminal";
-    public const string CanMatchingRule = "org.fmi-ls-bus.transceiver";
-    public const string CanNestedTerminalKind = "org.fmi-ls-bus.network-terminal.configuration";
-    public const string CanNestedMatchingRule = "bus";
-    public const string CanNestedTerminalName = "Configuration";
+
+    // Ethernet Terminal Constants
+    public const string EthernetMimeType = "application/org.fmi-standard.fmi-ls-bus.ethernet";
+    public const string EthernetSegmentTerminalKind = "org.fmi-ls-bus.ethernet-segment-terminal";
+    public const string EthernetSwitchTerminalKind = "org.fmi-ls-bus.ethernet-switch-terminal";
 
     // RPC Terminal Constants
     public const string RpcTerminalKind = "vnd.vector.operation-terminal.v1";
     public const string RpcMatchingRule = "plug";
-
-    // Member Names
-    public const string SignalVariableKind = "signal";
   }
 
   public InternalTerminalKind InternalTerminalKind { get; set; }
@@ -120,8 +126,14 @@ public class Terminal
       if (variable.MimeType?.Contains(Constants.CanMimeType) == true)
       {
         // if a mimeType for fmi-ls-bus can has been found, validate the whole corresponding Terminal
-        ValidateCANTerminal();
+        ValidateCanTerminal();
+        InternalTerminalKind = InternalTerminalKind.CAN;
         break;
+      }
+      else if (variable.MimeType?.Contains(Constants.EthernetMimeType) == true)
+      {
+        ValidateEthernetTerminal();
+        InternalTerminalKind = InternalTerminalKind.ETHERNET;
       }
       else if (TerminalKind.Equals(Constants.RpcTerminalKind))
       {
@@ -141,15 +153,14 @@ public class Terminal
     }
   }
 
-  private void ValidateCANTerminal()
+  private void ValidateLsBusTerminal()
   {
-    if ((MatchingRule != Constants.CanMatchingRule) || (TerminalKind != Constants.CanTerminalKind))
+    if ((MatchingRule != Constants.LS_BUS_MatchingRule) || (TerminalKind != Constants.LS_BUS_TerminalKind))
     {
-      throw new TerminalsAndIconsException($"Terminal {Name} does not match fmi-ls-bus can " +
-                                           $"matchingRule=\"{Constants.CanMatchingRule}\" or terminalKind=\"{Constants.CanTerminalKind}\".");
+      throw new TerminalsAndIconsException($"Terminal {Name} does not match fmi-ls-bus " +
+                                           $"matchingRule=\"{Constants.LS_BUS_MatchingRule}\" or terminalKind=\"{Constants.LS_BUS_TerminalKind}\".");
     }
 
-    InternalTerminalKind = InternalTerminalKind.CAN;
     foreach (var pairNameMember in TerminalMemberVariables)
     {
       if (pairNameMember.Value.MemberName is not ("Rx_Clock" or "Tx_Clock" or "Rx_Data" or "Tx_Data"))
@@ -157,12 +168,22 @@ public class Terminal
         throw new TerminalsAndIconsException($"TerminalMemberVariable {pairNameMember.Key} must match one of the " +
           $"following memberName: Rx_Clock, Tx_Clock, Rx_Data, Tx_Data.");
       }
-      if (pairNameMember.Value.VariableKind != Constants.SignalVariableKind)
+      if (pairNameMember.Value.VariableKind != Constants.LS_BUS_VariableKind)
       {
-      throw new TerminalsAndIconsException($"TerminalMemberVariable {pairNameMember.Key} must have '{Constants.SignalVariableKind}'" +
-        $"as variableKind.");
+        throw new TerminalsAndIconsException($"TerminalMemberVariable {pairNameMember.Key} must have '{Constants.LS_BUS_VariableKind}'" +
+          $"as variableKind.");
       }
     }
+  }
+
+  private void ValidateEthernetTerminal()
+  {
+    ValidateLsBusTerminal();
+  }
+
+  private void ValidateCanTerminal()
+  {
+    ValidateLsBusTerminal();
 
     if ((NestedTerminals == null) || (NestedTerminals.Count == 0))
     {
@@ -175,21 +196,21 @@ public class Terminal
     }
 
     var nestedTerminal = NestedTerminals.First().Value;
-    if (nestedTerminal.Name != Constants.CanNestedTerminalName)
+    if (nestedTerminal.Name != Constants.LS_BUS_ConfigurationTerminalName)
     {
       throw new TerminalsAndIconsException($"Terminal {Name} contains the nested terminal " +
-        $"{NestedTerminals.First().Key} with the name {nestedTerminal.Name}. It must be {Constants.CanNestedTerminalName}.");
+        $"{NestedTerminals.First().Key} with the name {nestedTerminal.Name}. It must be {Constants.LS_BUS_ConfigurationTerminalName}.");
     }
-    if (nestedTerminal.TerminalKind != Constants.CanNestedTerminalKind)
+    if (nestedTerminal.TerminalKind != Constants.LS_BUS_ConfigurationTerminalKind)
     {
       throw new TerminalsAndIconsException($"Terminal {Name} contains the nested terminal " +
         $"{NestedTerminals.First().Key} with the terminalKind {nestedTerminal.TerminalKind}. It must be " +
-        $"{Constants.CanNestedTerminalKind}.");
+        $"{Constants.LS_BUS_ConfigurationTerminalKind}.");
     }
-    if (nestedTerminal.MatchingRule != Constants.CanNestedMatchingRule)
+    if (nestedTerminal.MatchingRule != Constants.LS_BUS_ConfigurationMatchingRule)
     {
       throw new TerminalsAndIconsException($"Terminal {Name} contains the nested terminal " +
-        $"{NestedTerminals.First().Key} with the matchingRule {nestedTerminal.MatchingRule}. It must be {Constants.CanNestedMatchingRule}.");
+        $"{NestedTerminals.First().Key} with the matchingRule {nestedTerminal.MatchingRule}. It must be {Constants.LS_BUS_ConfigurationMatchingRule}.");
     }
   }
 
@@ -228,9 +249,9 @@ public class Terminal
         var memberVariable = pairNameMember.Value;
 
         // check variable kind
-        if (memberVariable.VariableKind != Constants.SignalVariableKind)
+        if (memberVariable.VariableKind != Constants.LS_BUS_VariableKind)
         {
-          throw new TerminalsAndIconsException($"TerminalMemberVariable {variableName} must have '{Constants.SignalVariableKind}' " +
+          throw new TerminalsAndIconsException($"TerminalMemberVariable {variableName} must have '{Constants.LS_BUS_VariableKind}' " +
                                                $"as variableKind.");
         }
 
