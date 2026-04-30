@@ -177,6 +177,12 @@ public class FmuImporter
         _configuredStructuralParameters.Add(myStructParam, param!);
       }
 
+      if (_fmuImporterConfig!.StopTime != null)
+      {
+        // overwrite the stop time in the model description, the simulation relies on this value to determine when to terminate
+        FmuEntity.ModelDescription.DefaultExperiment.StopTime = _fmuImporterConfig.StopTime;
+      }
+
       // Initialize FMU
       FmuEntity.PrepareFmu(FmuConfigurationAction, FmuInitializationAction);
 

@@ -15,6 +15,7 @@ public class ConfigurationPublic
   public int Version { get; set; } = default!;
 
   public UInt64? StepSize { get; set; }
+  public Double? StopTime { get; set; }
   public List<string /* includePath */>? Include { get; set; }
   public List<Parameter>? Parameters { get; set; }
   public List<VariableConfiguration>? VariableMappings { get; set; }

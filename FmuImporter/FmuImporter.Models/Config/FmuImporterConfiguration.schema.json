@@ -160,7 +160,12 @@
           "type": "integer",
           "description": "Amount of time in nanoseconds between two simulation time steps. Defaults to the step size defined inside the FMU's model description if present, or 1 ms if not.",
           "minimum": 1,
-          "default" : 1000000
+          "default": 1000000
+        },
+        "StopTime": {
+          "type": "number",
+          "description": "Time when the simulation stops in seconds. Defaults to the stop time defined inside the FMU's model description if present.",
+          "minimum": 1
         },
         "VariableMappings": {
           "type": "array",
