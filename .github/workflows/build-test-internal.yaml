@@ -10,8 +10,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Get environment variable for windows docker image URI and provide it to next build step
+  prep-windows:
+    runs-on: [Windows, ska, docker]
+    outputs:
+      image: ${{ steps.set_image.outputs.image }}
+    environment: build-action
+    steps:
+      - id: set_image
+        run: echo "image=${{ vars.WIN_DOCKER_IMAGE_URI }}" >> $env:GITHUB_OUTPUT
+
+  # Get environment variable for linux docker image URI and provide it to next build step
+  prep-linux:
+    runs-on: [Linux, self-hosted, ska]
+    outputs:
+      image: ${{ steps.set_image.outputs.image }}
+    environment: build-action
+    steps:
+      - id: set_image
+        run: echo "image=${{ vars.LINUX_DOCKER_IMAGE_URI }}" >> "$GITHUB_OUTPUT"
+
   build-windows:
-    runs-on: [self-hosted, Windows, ska]
+    runs-on: [Windows, ska, docker]
+    needs: prep-windows
+    container: ${{ needs.prep-windows.outputs.image }}
 
     steps:
     # Check out this Git repo
@@ -38,8 +60,9 @@ jobs:
   # Build the project, then remove the built artifacts
   build-linux:
     runs-on: [Linux, self-hosted, ska]
+    needs: prep-linux
     container:
-      image: pnd-sil-kit-adapters-docker-prod.vegistry.vg.vector.int/sil_kit_adapters_ci_workflow:ubuntu2404_build
+      image: ${{ needs.prep-linux.outputs.image }}
       credentials:
         username: ${{ secrets.ARTIFACTORY_USR }}
         password: ${{ secrets.ARTIFACTORY_PSW }}
