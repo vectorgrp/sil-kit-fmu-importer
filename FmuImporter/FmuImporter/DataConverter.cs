@@ -579,20 +579,41 @@ public class DataConverter
 
   public CanFrame LsCanTransmitOperationToSilKitCanFrame(byte[] LSCanFrame, ILogger Logger)
   {
-    int size = Marshal.SizeOf(typeof(CanTransmitOperation));
-    IntPtr ptr = Marshal.AllocHGlobal(size);
-    Marshal.Copy(LSCanFrame, 0, ptr, LSCanFrame.Length);
+    // copy only the fixed header
+    int headerSize = Marshal.SizeOf(typeof(CanTransmitOperation)) - IntPtr.Size;
+
+    if (LSCanFrame.Length < headerSize)
+    {
+      Logger.Log(LogLevel.Error, $"CAN frame too short ({LSCanFrame.Length} bytes). Expected at least {headerSize} bytes.");
+      return new CanFrame();
+    }
+
+    IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CanTransmitOperation)));
+    Marshal.Copy(LSCanFrame, 0, ptr, headerSize);
     var ptrToStruct = Marshal.PtrToStructure(ptr, typeof(CanTransmitOperation));
     Marshal.FreeHGlobal(ptr);
 
     if (ptrToStruct == null)
     {
-      Logger.Log(LogLevel.Error, $"Error while casting CAN transmit operation to SIL Kit CAN frame. Retreived bytes:" +
+      Logger.Log(LogLevel.Error, $"Error while casting CAN transmit operation to SIL Kit CAN frame. Retrieved bytes:" +
         $"{LSCanFrame}");
       return new CanFrame();
     }
 
     CanTransmitOperation canTransmitOp = (CanTransmitOperation)ptrToStruct;
+
+    // populate the Data field from the remaining bytes
+    var dataLength = canTransmitOp.GetDataLength();
+
+    if (LSCanFrame.Length < headerSize + dataLength)
+    {
+      Logger.Log(LogLevel.Error, $"CAN frame size mismatch. Header indicates {dataLength} data bytes, " +
+        $"but only {LSCanFrame.Length - headerSize} are available.");
+      return new CanFrame();
+    }
+
+    canTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
+    Marshal.Copy(LSCanFrame, headerSize, canTransmitOp.Data, dataLength);
 
     CanFrame silkitCanFrame = new CanFrame();
 
@@ -605,7 +626,6 @@ public class DataConverter
     {
       silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Rtr;
     }
-    var dataLength = canTransmitOp.GetDataLength();
     silkitCanFrame.dlc = CalculateDlc(dataLength);
     if ( silkitCanFrame.dlc == 0xFFFF)
     {
@@ -618,14 +638,9 @@ public class DataConverter
     silkitCanFrame.vcid = 0;
     silkitCanFrame.af = 0;
 
-    // handle data field. Starts from the 17th byte
-    var bytes = LSCanFrame.AsSpan(16, dataLength);
-    var dataptr = Marshal.AllocHGlobal(dataLength);
-    Marshal.Copy(bytes.ToArray(), 0, dataptr, dataLength);
-
     silkitCanFrame.data = new ByteVector
     {
-      data = dataptr,
+      data = canTransmitOp.Data,
       size = (IntPtr)dataLength
     };
     
