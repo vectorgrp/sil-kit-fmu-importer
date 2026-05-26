@@ -47,7 +47,9 @@ Its behavior is configured by configuration files that are passed during launch.
         5. [Supported Data Types](#supported-data-types)
   7. [Supported FMUs](#supported-fmus)
      1. [General Co-Simulation settings](#general-co-simulation-settings)
-     2. [FMI-LS-BUS CAN support](#fmi-ls-bus-can-support)
+      2. [FMI-LS-BUS support](#fmi-ls-bus-support)
+         1. [CAN](#fmi-ls-bus-can)
+         2. [Ethernet](#fmi-ls-bus-ethernet)
   8. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
@@ -208,7 +210,8 @@ The FMU Importer prints most of its logs on the `Info` level, but in case an err
   * If not in possession of the .vCDL file, you can also use the VcdlExporter to extract it from the FMU.
   * Enable SIL Kit and keep the default settings.
   * In the CANoe Options set the `Working mode` to `Custom` and the `Time Source` to `External: SIL Kit`.
-  * If FMI LS-BUS CAN is used, make sure that the terminal names and the CAN network names in CANoe are the same and mapped accordingly to SIL Kit.
+   * If FMI LS-BUS CAN is used, make sure that the terminal names and the CAN network names in CANoe are the same and mapped accordingly to SIL Kit.
+   * If FMI LS-BUS Ethernet is used, make sure that the terminal names and the Ethernet network names in CANoe are the same and mapped accordingly to SIL Kit.
   
 * Make sure a SIL Kit Registry is already running, if not start one manually with the default URI:
 
@@ -655,8 +658,8 @@ These settings guarantee synchronization on the SIL Kit network and avoid disrup
 | mightReturnEarlyFromDoStep             | false                             |
 | canReturnEarlyAfterIntermediateUpdate  | false                             |
 
-### **FMI-LS-BUS CAN support**
-The SIL Kit FMU Importer supports FMI-LS-BUS CAN according to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut). Clocks are essential for synchronizing events between the FMU Importer and the FMUs and needed for LS-BUS CAN support. Because Clocks are closely tied to Event Mode support from the importer, in LS-BUS enabled FMUs the following setting must be respected by the FMU.
+### **FMI-LS-BUS support**
+The SIL Kit FMU Importer supports FMI-LS-BUS according to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut). Clocks are essential for synchronizing events between the FMU Importer and the FMUs and needed for LS-BUS support. Because Clocks are closely tied to Event Mode support from the importer, in LS-BUS enabled FMUs the following setting must be respected by the FMU.
 
 |    **Model Description Attribute**     | **Required value**                |
 |----------------------------------------|-----------------------------------|
@@ -664,7 +667,11 @@ The SIL Kit FMU Importer supports FMI-LS-BUS CAN according to [the layered stand
 
 Please be aware that currently the SIL Kit FMU Importer does only support Triggered Clocks.
 
-Also be aware that currently the SIL Kit FMU Importer only supports CAN Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-can-operations).
+#### **FMI-LS-BUS CAN**
+The SIL Kit FMU Importer supports CAN Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-can-operations).
+
+#### **FMI-LS-BUS Ethernet**
+The SIL Kit FMU Importer supports Ethernet Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-ethernet-operations).
 
 ---
 
