@@ -120,6 +120,11 @@ internal class Program
             throw new FileNotFoundException($"The provided FMU file path ({fmuPath}) is invalid.");
           }
 
+          if (!Path.GetExtension(fmuPath).Equals(".fmu"))
+          {
+            throw new ArgumentException($"The provided file ({fmuPath}) does not have a '.fmu' extension.");
+          }
+
           if(createPersitentFmu)
           {
             // special case early exit : if "--persist" flag is passed, generate the persistent FMU folder and return, no simulation should be started
