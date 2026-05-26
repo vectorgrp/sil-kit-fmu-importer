@@ -1,0 +1,17 @@
+name: trigger skfi-quality-checks
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: serialization_group_fmu_importer
+  cancel-in-progress: false
+
+jobs:
+  trigger-quality-checks:
+    uses: pnd/sil-kit-adapters-ci-testing/.github/workflows/skfi-quality-checks.yaml@main
+    with:
+      repository_under_test : "pnd/sil-kit-fmu-importer"
+      branch_under_test: ${{ inputs.branch_under_test != '' && inputs.branch_under_test || (github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main') }}
+    secrets: inherit
+
