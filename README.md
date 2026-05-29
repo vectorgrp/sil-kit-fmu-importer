@@ -244,8 +244,6 @@ The FMU Importer will always map the different kinds of variable types as follow
 | Input                 | DataSubscriber  |
 | Independent           | DataPublisher   |
 | Output                | DataPublisher   |
-| Parameter             | DataPublisher   |
-| Structural parameter  | DataPublisher   |
 
 It is also possible to change the default name and type mapping.
 See [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer) for details.
@@ -284,8 +282,6 @@ The general procedure to synchronize the data between SIL Kit and the FMU is sim
 When receiving data for a specific variable more than once before a simulation time step is executed, the last received value is used ("last-is-best").
 2. The simulation step of the FMU is executed.
 3. All output variables are read from the FMU and published via SIL Kit.
-
-> (Structural) parameters are only published at the beginning of a simulation (t=0), because they are not meant to change after the simulation started.
 
 <details>
   <summary>Sequence of a synchronized simulation step</summary>
@@ -500,7 +496,7 @@ For instance, if you use Visual Studio Code with the Red Hat YAML extension, you
 | [Parameters](#parameters)             | Array\<Object> | Used to override default values of parameters. |
 | [VariableMappings](#variablemappings) | Array\<Object> | Used to modify how a variable is represented in a SIL Kit simulation. |
 | AlwaysUseStructuredNamingConvention   | Boolean        | Force usage of variable naming convention for automatic structure mapping (see [Variable Naming Convention in FMI and the FMU Importer](#variable-naming-convention-in-fmi-and-the-fmu-importer)). |
-| IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings (including parameters). |
+| IgnoreUnmappedVariables               | Boolean        | Set to true to prevent synchronization of variables that are not listed in VariableMappings. |
 | StepSize                              | Integer        | Simulation step size in ns. Overrides step size provided by FMU (if available). |
 | Namespace                             | String         | Namespace for all SIL Kit publishers and subscribers (only used for disambiguation - do not use if not necessary). |
 | Instance                              | String         | Instance name for all SIL Kit publishers and subscribers (only used for disambiguation - do not use if not necessary). |
