@@ -99,13 +99,13 @@ public class CommInterfaceGenerator
     // This contains the *actual* name (modified with GenerateStructNameFromPath) of structs. Same keys as 'structsDictionnary'
     var generatedStructName = new Dictionary<string, string>();
 
-    FindLsBusCanValueRefs(terminalsAndIcons, out var valueRefsUsedForLsBusCan);
+    FindLsBusTerminalValueRefs(terminalsAndIcons, out var valueRefsUsedForLsBusTerminals);
 
     foreach (var variable in modelDescription.Variables)
     {
-      if (valueRefsUsedForLsBusCan.Contains(variable.Key))
+      if (valueRefsUsedForLsBusTerminals.Contains(variable.Key))
       {
-        // Skip variables that are used for LS-Bus CAN
+        // Skip variables that are used for LS-Bus terminals (CAN, Ethernet, RPC)
         continue;
       }
 
@@ -229,13 +229,16 @@ public class CommInterfaceGenerator
     }
   }
 
-  private static void FindLsBusCanValueRefs(
-    TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusCan)
+  private static void FindLsBusTerminalValueRefs(
+    TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusTerminals)
   {
-    modelVariablesUsedForLsBusCan = new List<uint>();
+    modelVariablesUsedForLsBusTerminals = new List<uint>();
 
     var valuesToAdd = terminalsAndIcons?.Terminals
-                                       .Where(t => t.Value.InternalTerminalKind == InternalTerminalKind.CAN)
+                                       .Where(t => t.Value.InternalTerminalKind is InternalTerminalKind.CAN
+                                                   or InternalTerminalKind.ETHERNET
+                                                   or InternalTerminalKind.RPC_CLIENT
+                                                   or InternalTerminalKind.RPC_SERVER)
                                        .SelectMany(
                                          t => t.Value.TerminalMemberVariables
                                                .Where(m => m.Value.CorrespondingValueReference != null)
@@ -243,7 +246,7 @@ public class CommInterfaceGenerator
 
     if (valuesToAdd != null)
     {
-      modelVariablesUsedForLsBusCan.AddRange(valuesToAdd);
+      modelVariablesUsedForLsBusTerminals.AddRange(valuesToAdd);
     }
   }
 
