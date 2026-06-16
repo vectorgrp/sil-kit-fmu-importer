@@ -10,30 +10,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Get environment variable for windows docker image URI and provide it to next build step
-  prep-windows:
-    runs-on: [Windows, ska, docker]
-    outputs:
-      image: ${{ steps.set_image.outputs.image }}
-    environment: build-action
-    steps:
-      - id: set_image
-        run: echo "image=${{ vars.WIN_DOCKER_IMAGE_URI }}" >> $env:GITHUB_OUTPUT
-
-  # Get environment variable for linux docker image URI and provide it to next build step
-  prep-linux:
-    runs-on: [Linux, self-hosted, ska]
-    outputs:
-      image: ${{ steps.set_image.outputs.image }}
-    environment: build-action
-    steps:
-      - id: set_image
-        run: echo "image=${{ vars.LINUX_DOCKER_IMAGE_URI }}" >> "$GITHUB_OUTPUT"
-
   build-windows:
     runs-on: [Windows, ska, docker]
-    needs: prep-windows
-    container: ${{ needs.prep-windows.outputs.image }}
+    environment: build-action
+    container: ${{ vars.WIN_DOCKER_IMAGE_URI }}
 
     steps:
     # Check out this Git repo
@@ -60,9 +40,9 @@ jobs:
   # Build the project, then remove the built artifacts
   build-linux:
     runs-on: [Linux, self-hosted, ska]
-    needs: prep-linux
+    environment: build-action
     container:
-      image: ${{ needs.prep-linux.outputs.image }}
+      image: ${{ vars.LINUX_DOCKER_IMAGE_URI }}
       credentials:
         username: ${{ secrets.ARTIFACTORY_USR }}
         password: ${{ secrets.ARTIFACTORY_PSW }}
@@ -100,14 +80,14 @@ jobs:
         http_proxy: ""  # Explicitly disable the proxy for Node.js
         https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
-        name: fmu-importer-x64-build
+        name: fmu-importer-build
         retention-days: 1
         path: ./FmuImporter/_publish/*.zip
     
     - name: Upload test results
       uses: actions/upload-artifact@v3
       env:
-        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        http_proxy: ""  # Explicitly disable the proxy for Node.js 
         https_proxy: ""  # Explicitly disable the proxy for Node.js
       with:
         name: fmu-importer-linux-x64-test-result
@@ -117,9 +97,21 @@ jobs:
     - if: always()
       run: rm -rfv * .??*
 
-  run-integration-tests:
-    needs: [build-windows, build-linux]
-    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomation.yaml@main
+  run-windows-integration-tests:
+    needs: [build-linux, build-windows]
+    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationWindows.yaml@main
+    with:
+      fmu-importer-version: 1.6.0
+      sil-kit-version: 5.0.3
+      branch-name: ${{ github.head_ref }}
+      runner-labels: '["Windows", "docker-windows"]'
+      run-vtt-tests: true
+      fmu-architecture: x86
+    secrets: inherit
+
+  run-linux-integration-tests:
+    needs: [build-linux]
+    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationLinux.yaml@main
     with:
       fmu-importer-version: 1.6.0
       sil-kit-version: 5.0.3

@@ -4,6 +4,10 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildXPlatform">
     <Import Project="../common.props" Condition="$(CommonImported) == ''" />
 
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+    </PropertyGroup>
+
     <Target Name="BuildXPlatform" BeforeTargets="Build">
         <PropertyGroup>
             <BuildPath>$(MSBuildThisFileDirectory)/../</BuildPath>

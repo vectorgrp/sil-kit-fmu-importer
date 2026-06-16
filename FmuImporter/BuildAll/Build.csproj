@@ -6,6 +6,7 @@
     <Import Project="../downloadSilKit.props" />
 
     <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
         <SilKitDirBase Condition="'$(SilKitDirBase)'==''">$(MSBuildProjectDirectory)\..\_silkit\</SilKitDirBase>
     </PropertyGroup>
 
