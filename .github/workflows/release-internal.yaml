@@ -9,7 +9,7 @@ on:
 jobs:
   # Get environment variable for docker image URI and provide it to next build step
   prep-linux:
-    runs-on: [Linux, self-hosted, ska-runner]
+    runs-on: [Linux, self-hosted, ska]
     outputs:
       image: ${{ steps.set_image.outputs.image }}
     environment: build-action
@@ -22,7 +22,7 @@ jobs:
 
   # Build the project, then remove the built artifacts
   build-linux:
-    runs-on: [Linux, Docker, self-hosted, ska-runner]
+    runs-on: [Linux, self-hosted, ska]
     needs: prep-linux
     container:
       image: ${{ needs.prep-linux.outputs.image }}
@@ -32,9 +32,6 @@ jobs:
       HTTP_PROXY: ""
       HTTPS_PROXY: ""
 
-
-      
-
     steps:
     # Check out this Git repo
     - name: Install .Net 10
@@ -43,8 +40,19 @@ jobs:
         dotnet-version: '10.0.x'
       
     - uses: actions/checkout@v4
+
     - name: Build & Publish
+      env:
+        HTTP_PROXY: ${{ secrets.PROXY }}
+        HTTPS_PROXY: ${{ secrets.PROXY }}
+        NO_PROXY: ${{ secrets.NO_PROXY }}
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+
+    - name: Rename zip files using tag name
+      run: |
+        mv ./FmuImporter/_publish/SilKitFmuImporter-*-xPlatform-x64.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-xPlatform-x64.zip
+        mv ./FmuImporter/_publish/SilKitFmuImporter-*-win-x86.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-win-x86.zip
+    
     - name: Release
       uses: actions-mirror/softprops-action-gh-release@v2
       env:

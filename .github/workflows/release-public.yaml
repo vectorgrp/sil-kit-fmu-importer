@@ -31,6 +31,10 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build & Publish
       run: dotnet build ./FmuImporter/BuildAll/Build.csproj -v:m
+    - name: Rename zip files using tag name
+      run: |
+        mv ./FmuImporter/_publish/SilKitFmuImporter-*-xPlatform-x64.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-xPlatform-x64.zip
+        mv ./FmuImporter/_publish/SilKitFmuImporter-*-win-x86.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-win-x86.zip
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
