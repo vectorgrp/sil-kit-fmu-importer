@@ -47,9 +47,10 @@ Its behavior is configured by configuration files that are passed during launch.
         5. [Supported Data Types](#supported-data-types)
   7. [Supported FMUs](#supported-fmus)
      1. [General Co-Simulation settings](#general-co-simulation-settings)
-      2. [FMI-LS-BUS support](#fmi-ls-bus-support)
-         1. [CAN](#fmi-ls-bus-can)
-         2. [Ethernet](#fmi-ls-bus-ethernet)
+     2. [FMI-LS-BUS support](#fmi-ls-bus-support)
+        1. [CAN](#fmi-ls-bus-can)
+        2. [Ethernet](#fmi-ls-bus-ethernet)
+     3. [Client Server Communication support](#client-server-communication-support)
   8. [Error Handling](#error-handling)
 
 ## **Overview of FMI**
@@ -668,6 +669,38 @@ The SIL Kit FMU Importer supports CAN Communication via the LS-BUS Operation wit
 
 #### **FMI-LS-BUS Ethernet**
 The SIL Kit FMU Importer supports Ethernet Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-ethernet-operations).
+
+
+### **Client Server Communication support**
+The SIL Kit FMU Importer supports Client Server Communication. This feature enables calling and returning operations between the FMU and other SIL Kit participants via client-server ports.
+
+#### **General information**
+
+The following properties and constraints apply to the FMU Importer:
+
+- Cancellation of pending operations is not supported.
+- The completion of operations does not necessarily happen in the order of calling (i.e., a later call may complete before an earlier one).
+- It is valid to call an operation repeatedly during a single time step. Each call corresponds to an individual instance which completes independently of all other instances.
+
+#### **Client-Server ports**
+
+The following model variables are created for the elements of server ports:
+
+| FMI variable name           | Causality | Type   |
+|-----------------------------|-----------|--------|
+| *operation*.Rx_Call         | input     | clock  |
+| *operation*.Rx_CallId       | input     | int64  |
+| *operation*.Rx_CallArgs     | input     | binary |
+| *operation*.Tx_Return       | output    | clock  |
+| *operation*.Tx_ReturnId     | output    | int64  |
+| *operation*.Tx_ReturnArgs   | output    | binary |
+
+For a client port, the `Rx`/`Tx` prefixes and causalities are swapped analogously (e.g. `Rx_CallId` becomes `Tx_CallId`, and `Tx_ReturnId` becomes `Rx_ReturnId`).
+
+> All those variables must have their `variableKind` set to `signal`.
+> `Rx_CallArgs`/`Tx_CallArgs` are optional if the operation has no arguments.
+
+In a client-server port terminal, the `matchingRule` must be `plug` and the `terminalKind` must be `vnd.vector.operation-terminal.v1`.
 
 ---
 
