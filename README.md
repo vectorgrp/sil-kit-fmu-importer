@@ -667,7 +667,7 @@ The SIL Kit FMU Importer supports FMI-LS-BUS according to [the layered standard]
 Please be aware that currently the SIL Kit FMU Importer does only support Triggered Clocks.
 
 #### **FMI-LS-BUS CAN**
-The SIL Kit FMU Importer supports CAN Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-can-operations).
+The SIL Kit FMU Importer supports CAN and CAN FD Communications via the LS-BUS Operations with OP Codes 0x10 and 0x11, and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-can-operations).
 
 #### **FMI-LS-BUS Ethernet**
 The SIL Kit FMU Importer supports Ethernet Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-ethernet-operations).
