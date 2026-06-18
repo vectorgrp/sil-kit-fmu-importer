@@ -202,7 +202,9 @@ If no configuration was provided or if it did not specify a registry URI, the de
 The FMU Importer uses the SIL Kit logger for its output.
 Therefore, you need to provide a SIL Kit configuration file that contains a `Logging` section to see any output provided by the FMU Importer. The FmuImporter defaults to loading this configuration file from ./Config.silkit.yaml, but a different one can be provided by the corresponding command line option (-s).
 The FMU Importer prints most of its logs on the `Info` level, but in case an error occurs, there is one log message on the `Error` level that contains the error message and a log message on the `Debug` level that contains the error message including further information (such as a stack trace) to track the error's origin more easily.
-> Persistence allows the FMU to be extracted once and reused across runs by storing it in a known folder (that has the same name as the FMU itself) and validating it with a hash.
+> Persistence allows the FMU to be extracted once (--persist) and reused across runs (--use-persisted) by storing it in a known folder (that has the same name as the FMU itself) and validating it with a hash.
+
+> Note: This persistence feature can also help you to mitigate issues with long FMU loading times. It can reduces the loading time because it does not need to decompress the FMU every time. It can also reduce the likelihood of additional security measures (e.g. anti virus software scans) because no new folder structure inside your default temp folder has to be created every time you import a FMU.
 
 ### **Example setup with a FMU exported by Vector vVIRTUALtarget**
 * Export the FMU with vVIRTUALtarget 9 or newer (refer to the tools help section `Functional Mock-up Unit` for further details).
