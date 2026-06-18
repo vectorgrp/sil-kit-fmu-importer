@@ -104,6 +104,10 @@ public class SilKitCanManager
           break;
         }
         case CanOperations.CAN_FD_Transmit:
+        {
+          SendFdFrame(pairRefOperation.Item1, pairRefOperation.Item2);
+          break;
+        }
         case CanOperations.CAN_XL_Transmit:
         case CanOperations.Confirm:
         case CanOperations.Arbitration_Lost:
@@ -144,6 +148,25 @@ public class SilKitCanManager
       return;
     }
     canController.SendFrame(_dc.LsCanTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger), (IntPtr)canController.transmitId);
+    canController.transmitId++;
+  }
+
+  public void SendFdFrame(uint vRef, byte[] data)
+  {
+    if (data.Length < 17) // 17 : header fields (without data)
+    {
+      // CAN FD transmit operation malformed
+      _silKitEntity.Logger.Log(LogLevel.Warn, $"The retrieved CAN FD operation is malformed. Bytes retrieved: {data}");
+    }
+
+    CanControllers.TryGetValue(vRef, out var canController);
+    if (canController == null)
+    {
+      _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to send a CAN FD frame: no CAN controller found for value " +
+        $"reference {vRef}");
+      return;
+    }
+    canController.SendFrame(_dc.LsCanFdTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger), (IntPtr)canController.transmitId);
     canController.transmitId++;
   }
 #endregion service creation

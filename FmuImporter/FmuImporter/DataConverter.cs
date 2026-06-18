@@ -148,6 +148,12 @@ public class DataConverter
 
   public byte[] SilKitCanFrameToLsCanTransmitOperation(CanFrame silkitCanFrame)
   {
+    // If the Fdf flag is set, this is a CAN FD frame
+    if ((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Fdf) != 0)
+    {
+      return SilKitCanFrameToLsCanFdTransmitOperation(silkitCanFrame);
+    }
+
     ushort dataSize = (ushort)silkitCanFrame.data.size;
 
     CanTransmitOperation canTransmitOp = new CanTransmitOperation(dataSize);
@@ -159,6 +165,22 @@ public class DataConverter
     canTransmitOp.SetData(silkitCanFrame.data.data);
 
     return canTransmitOp.GetBytes();
+  }
+
+  public byte[] SilKitCanFrameToLsCanFdTransmitOperation(CanFrame silkitCanFrame)
+  {
+    ushort dataSize = (ushort)silkitCanFrame.data.size;
+
+    CanFdTransmitOperation canFdTransmitOp = new CanFdTransmitOperation(dataSize);
+    canFdTransmitOp.SetOPCode((int)CanOperations.CAN_FD_Transmit);
+    canFdTransmitOp.SetLength((uint)17 + dataSize); // 17 : header fields (without data)
+    canFdTransmitOp.SetID(silkitCanFrame.id);
+    canFdTransmitOp.SetIde((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Ide) == 0 ? 0 : 1);
+    canFdTransmitOp.SetBrs((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Brs) == 0 ? 0 : 1);
+    canFdTransmitOp.SetEsi((silkitCanFrame.flags & (uint)SilKitCanFrameFlag.Esi) == 0 ? 0 : 1);
+    canFdTransmitOp.SetData(silkitCanFrame.data.data);
+
+    return canFdTransmitOp.GetBytes();
   }
 
   public byte[] SilKitEthernetFrameToLsEthernetTransmitOperation(EthernetFrame silkitEthernetFrame)
@@ -577,26 +599,26 @@ public class DataConverter
                                    (ushort)0xFFFF;
   }
 
-  public CanFrame LsCanTransmitOperationToSilKitCanFrame(byte[] LSCanFrame, ILogger Logger)
+  public CanFrame LsCanTransmitOperationToSilKitCanFrame(byte[] LsCanFrame, ILogger Logger)
   {
     // copy only the fixed header
     int headerSize = Marshal.SizeOf(typeof(CanTransmitOperation)) - IntPtr.Size;
 
-    if (LSCanFrame.Length < headerSize)
+    if (LsCanFrame.Length < headerSize)
     {
-      Logger.Log(LogLevel.Error, $"CAN frame too short ({LSCanFrame.Length} bytes). Expected at least {headerSize} bytes.");
+      Logger.Log(LogLevel.Error, $"CAN frame too short ({LsCanFrame.Length} bytes). Expected at least {headerSize} bytes.");
       return new CanFrame();
     }
 
     IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CanTransmitOperation)));
-    Marshal.Copy(LSCanFrame, 0, ptr, headerSize);
+    Marshal.Copy(LsCanFrame, 0, ptr, headerSize);
     var ptrToStruct = Marshal.PtrToStructure(ptr, typeof(CanTransmitOperation));
     Marshal.FreeHGlobal(ptr);
 
     if (ptrToStruct == null)
     {
       Logger.Log(LogLevel.Error, $"Error while casting CAN transmit operation to SIL Kit CAN frame. Retrieved bytes:" +
-        $"{LSCanFrame}");
+        $"{LsCanFrame}");
       return new CanFrame();
     }
 
@@ -605,15 +627,15 @@ public class DataConverter
     // populate the Data field from the remaining bytes
     var dataLength = canTransmitOp.GetDataLength();
 
-    if (LSCanFrame.Length < headerSize + dataLength)
+    if (LsCanFrame.Length < headerSize + dataLength)
     {
       Logger.Log(LogLevel.Error, $"CAN frame size mismatch. Header indicates {dataLength} data bytes, " +
-        $"but only {LSCanFrame.Length - headerSize} are available.");
+        $"but only {LsCanFrame.Length - headerSize} are available.");
       return new CanFrame();
     }
 
     canTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
-    Marshal.Copy(LSCanFrame, headerSize, canTransmitOp.Data, dataLength);
+    Marshal.Copy(LsCanFrame, headerSize, canTransmitOp.Data, dataLength);
 
     CanFrame silkitCanFrame = new CanFrame();
 
@@ -644,6 +666,80 @@ public class DataConverter
       size = (IntPtr)dataLength
     };
     
+    return silkitCanFrame;
+  }
+
+  public CanFrame LsCanFdTransmitOperationToSilKitCanFrame(byte[] LsCanFdFrame, ILogger Logger)
+  {
+    // copy only the fixed header
+    int headerSize = Marshal.SizeOf(typeof(CanFdTransmitOperation)) - IntPtr.Size;
+
+    if (LsCanFdFrame.Length < headerSize)
+    {
+      Logger.Log(LogLevel.Error, $"CAN FD frame too short ({LsCanFdFrame.Length} bytes). Expected at least {headerSize} bytes.");
+      return new CanFrame();
+    }
+
+    IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CanFdTransmitOperation)));
+    Marshal.Copy(LsCanFdFrame, 0, ptr, headerSize);
+    var ptrToStruct = Marshal.PtrToStructure(ptr, typeof(CanFdTransmitOperation));
+    Marshal.FreeHGlobal(ptr);
+
+    if (ptrToStruct == null)
+    {
+      Logger.Log(LogLevel.Error, $"Error while casting CAN FD transmit operation to SIL Kit CAN frame. Retrieved bytes:" +
+        $"{LsCanFdFrame}");
+      return new CanFrame();
+    }
+
+    CanFdTransmitOperation canFdTransmitOp = (CanFdTransmitOperation)ptrToStruct;
+
+    // populate the Data field from the remaining bytes
+    var dataLength = canFdTransmitOp.GetDataLength();
+
+    if (LsCanFdFrame.Length < headerSize + dataLength)
+    {
+      Logger.Log(LogLevel.Error, $"CAN FD frame size mismatch. Header indicates {dataLength} data bytes, " +
+        $"but only {LsCanFdFrame.Length - headerSize} are available.");
+      return new CanFrame();
+    }
+
+    canFdTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
+    Marshal.Copy(LsCanFdFrame, headerSize, canFdTransmitOp.Data, dataLength);
+
+    CanFrame silkitCanFrame = new CanFrame();
+
+    silkitCanFrame.id = canFdTransmitOp.GetID();
+    silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Fdf;
+    if (canFdTransmitOp.GetIde() == 1)
+    {
+      silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Ide;
+    }
+    if (canFdTransmitOp.GetBrs() == 1)
+    {
+      silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Brs;
+    }
+    if (canFdTransmitOp.GetEsi() == 1)
+    {
+      silkitCanFrame.flags |= (UInt32)SilKitCanFrameFlag.Esi;
+    }
+    silkitCanFrame.dlc = CalculateDlc(dataLength);
+    if (silkitCanFrame.dlc == 0xFFFF)
+    {
+      Logger.Log(LogLevel.Error, $"Error while processing the CAN FD frame dlc. The frame is ignored due to inconsistent " +
+        $"frame size. DataLength is: {dataLength}");
+      return new CanFrame();
+    }
+    silkitCanFrame.sdt = 0;
+    silkitCanFrame.vcid = 0;
+    silkitCanFrame.af = 0;
+
+    silkitCanFrame.data = new ByteVector
+    {
+      data = canFdTransmitOp.Data,
+      size = (IntPtr)dataLength
+    };
+
     return silkitCanFrame;
   }
 

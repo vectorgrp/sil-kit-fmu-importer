@@ -152,3 +152,76 @@ public class CanTransmitOperation : TransmitOperation
     return bytes.Concat(byteArray).ToArray();
   }
 }
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class CanFdTransmitOperation : TransmitOperation
+{
+  public byte Brs;
+  public byte Esi;
+  [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+  public byte[] DataLength;
+  // Data has an unknown size
+  public IntPtr Data;
+
+  // parameterless ctor used for marshalling
+  public CanFdTransmitOperation() : base()
+  {
+    DataLength = new byte[2];
+  }
+
+  public CanFdTransmitOperation(int dataSize) : this()
+  {
+    Data = Marshal.AllocHGlobal(dataSize);
+    SetDataLength((UInt16)dataSize);
+  }
+
+  public void SetDataLength(UInt16 dataLength)
+  {
+    BinaryPrimitives.WriteUInt16LittleEndian(DataLength, dataLength);
+  }
+
+  public UInt16 GetDataLength()
+  {
+    return BinaryPrimitives.ReadUInt16LittleEndian(DataLength);
+  }
+
+  public void SetData(IntPtr data)
+  {
+    Data = data;
+  }
+
+  public void SetBrs(int brs)
+  {
+    Brs = (byte)brs;
+  }
+
+  public int GetBrs()
+  {
+    return Brs;
+  }
+
+  public void SetEsi(int esi)
+  {
+    Esi = (byte)esi;
+  }
+
+  public int GetEsi()
+  {
+    return Esi;
+  }
+
+  public byte[] GetBytes()
+  {
+    var size = GetDataLength();
+    var bytes = OPCode.Concat(Length).Concat(ID).Concat(new byte[] { Ide }).Concat(new byte[] { Brs }).Concat(new byte[] { Esi }).Concat(DataLength);
+
+    if (size == 0)
+    {
+      return bytes.ToArray();
+    }
+
+    byte[] byteArray = new byte[size];
+    Marshal.Copy(Data, byteArray, 0, size);
+    return bytes.Concat(byteArray).ToArray();
+  }
+}
