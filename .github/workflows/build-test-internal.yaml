@@ -101,8 +101,8 @@ jobs:
     needs: [build-linux, build-windows]
     uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationWindows.yaml@main
     with:
-      fmu-importer-version: 1.6.0
-      sil-kit-version: 5.0.3
+      fmu-importer-version: 1.7.0
+      sil-kit-version: 5.0.4
       branch-name: ${{ github.head_ref }}
       runner-labels: '["Windows", "docker-windows"]'
       run-vtt-tests: true
@@ -113,7 +113,7 @@ jobs:
     needs: [build-linux]
     uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationLinux.yaml@main
     with:
-      fmu-importer-version: 1.6.0
-      sil-kit-version: 5.0.3
+      fmu-importer-version: 1.7.0
+      sil-kit-version: 5.0.4
       branch-name: ${{ github.head_ref }}
     secrets: inherit
