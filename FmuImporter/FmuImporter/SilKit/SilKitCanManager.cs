@@ -86,48 +86,86 @@ public class SilKitCanManager
   {
     foreach (var pairRefOperation in canList)
     {
-      // Check the OP Code : 4 first bytes
-      var operation = (CanOperations)BinaryPrimitives.ReadUInt32LittleEndian(pairRefOperation.Item2);
-      switch (operation)
+      var vRef = pairRefOperation.Item1;
+      var binary = pairRefOperation.Item2; // binary data contain one or more CAN operations
+
+      var offset = 0;
+      while (offset < binary.Length)
       {
-        case CanOperations.Format_Error:
+        // at least the common header (OP Code + Length = 8 bytes)
+        if (binary.Length - offset < 8)
         {
-          // log the whole operation that caused the error. Data starts at the 11th byte
-          _silKitEntity.Logger.Log(LogLevel.Warn, $"Format Error Operation received on Tx_Data with value " +
-            $"reference {pairRefOperation.Item1}. Complete binary data that caused the error: " +
-            $"{pairRefOperation.Item2.Skip(10).ToArray()}");
+          _silKitEntity.Logger.Log(LogLevel.Warn, $"Incomplete CAN Bus Operation header on Tx_Data with value " +
+            $"reference {vRef}. {binary.Length - offset} trailing bytes could not be parsed and are ignored.");
           break;
         }
-        case CanOperations.CAN_Transmit:
+
+        // OP Code : first 4 bytes
+        var operation = (CanOperations)BinaryPrimitives.ReadUInt32LittleEndian(binary.AsSpan(offset, 4));
+        // Length : next 4 bytes
+        var operationLength = BinaryPrimitives.ReadUInt32LittleEndian(binary.AsSpan(offset + 4, 4));
+
+        // the Length must at least cover the common header and must not exceed the remaining bytes
+        if (operationLength < 8 || offset + operationLength > binary.Length)
         {
-          SendFrame(pairRefOperation.Item1, pairRefOperation.Item2);
+          _silKitEntity.Logger.Log(LogLevel.Warn, $"Malformed CAN Bus Operation on Tx_Data with value " +
+            $"reference {vRef}. The operation Length field is {operationLength} but {binary.Length - offset} " +
+            $"bytes remain. The rest of the binary is ignored.");
           break;
         }
-        case CanOperations.CAN_FD_Transmit:
-        {
-          SendFdFrame(pairRefOperation.Item1, pairRefOperation.Item2);
-          break;
-        }
-        case CanOperations.CAN_XL_Transmit:
-        case CanOperations.Confirm:
-        case CanOperations.Arbitration_Lost:
-        case CanOperations.Bus_Error:
-        case CanOperations.Configuration:
-        case CanOperations.Status:
-        case CanOperations.Wakeup:
-        {
-          // unsupported operation
-          _silKitEntity.Logger.Log(LogLevel.Warn, $"Unsupported {operation} Operation received on Tx_Data with value " +
-            $"reference {pairRefOperation.Item1}");
-          break;
-        }
-        default:
-        {
-          // non existing operation
-          _silKitEntity.Logger.Log(LogLevel.Warn, $"Non existing Operation received on Tx_Data with value " +
-            $"reference {pairRefOperation.Item1}. Operation code received is: {operation}");
-          break;
-        }
+
+        // extract the bytes belonging to this single operation
+        var operationBytes = new byte[operationLength];
+        Array.Copy(binary, offset, operationBytes, 0, (int)operationLength);
+
+        ProcessOperation(vRef, operation, operationBytes);
+
+        offset += (int)operationLength;
+      }
+    }
+  }
+
+  private void ProcessOperation(uint vRef, CanOperations operation, byte[] operationBytes)
+  {
+    switch (operation)
+    {
+      case CanOperations.Format_Error:
+      {
+        // log the whole operation that caused the error. Data starts at the 11th byte
+        _silKitEntity.Logger.Log(LogLevel.Warn, $"Format Error Operation received on Tx_Data with value " +
+          $"reference {vRef}. Complete binary data that caused the error: " +
+          $"{operationBytes.Skip(10).ToArray()}");
+        break;
+      }
+      case CanOperations.CAN_Transmit:
+      {
+        SendFrame(vRef, operationBytes);
+        break;
+      }
+      case CanOperations.CAN_FD_Transmit:
+      {
+        SendFdFrame(vRef, operationBytes);
+        break;
+      }
+      case CanOperations.CAN_XL_Transmit:
+      case CanOperations.Confirm:
+      case CanOperations.Arbitration_Lost:
+      case CanOperations.Bus_Error:
+      case CanOperations.Configuration:
+      case CanOperations.Status:
+      case CanOperations.Wakeup:
+      {
+        // unsupported operation
+        _silKitEntity.Logger.Log(LogLevel.Warn, $"Unsupported {operation} Operation received on Tx_Data with value " +
+          $"reference {vRef}");
+        break;
+      }
+      default:
+      {
+        // non existing operation
+        _silKitEntity.Logger.Log(LogLevel.Warn, $"Non existing Operation received on Tx_Data with value " +
+          $"reference {vRef}. Operation code received is: {operation}");
+        break;
       }
     }
   }
