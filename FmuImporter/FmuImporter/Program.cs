@@ -21,6 +21,17 @@ internal class Program
     CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
     CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
+    if (args.Contains("--version"))
+    {
+      var rawVersion = Assembly.GetExecutingAssembly()
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? "unknown";
+      var version = rawVersion.Contains('+') ? rawVersion.Substring(0, rawVersion.IndexOf('+')) : rawVersion;
+      Console.WriteLine($"{RootCommand.ExecutableName} {version}");
+      Console.WriteLine("Vector Informatik GmbH (C) 2026");
+      return;
+    }
+
     var rootCommand = new RootCommand("FMU Importer for SIL Kit");
 
     var fmuPathOption = new Option<string>(
