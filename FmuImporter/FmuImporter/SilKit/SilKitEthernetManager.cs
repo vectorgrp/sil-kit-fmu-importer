@@ -183,7 +183,7 @@ public class SilKitEthernetManager
     var valueRef = (uint)context;
     var ethFrameEvent = Marshal.PtrToStructure<EthernetFrameEvent>(frameEvent);
     var ethFrame = Marshal.PtrToStructure<EthernetFrame>(ethFrameEvent.ethernetFrame);
-    var bytes = _dc.SilKitEthernetFrameToLsEthernetTransmitOperation(ethFrame);
+    var bytes = _dc.SilKitEthernetFrameToLsEthernetTransmitOperation(ethFrame, _silKitEntity.Logger);
 
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : ethFrameEvent.timestampInNs;
 

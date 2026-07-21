@@ -12,7 +12,7 @@ using SilKit.Services.Can;
 using SilKit.Services.Ethernet;
 using SilKit.Services.Logger;
 using SilKit.Supplements;
-using System.Collections.Generic;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace FmuImporter;
@@ -183,7 +183,7 @@ public class DataConverter
     return canFdTransmitOp.GetBytes();
   }
 
-  public byte[] SilKitEthernetFrameToLsEthernetTransmitOperation(EthernetFrame silkitEthernetFrame)
+  public byte[] SilKitEthernetFrameToLsEthernetTransmitOperation(EthernetFrame silkitEthernetFrame, ILogger logger)
   {
     int dataSize = (int)silkitEthernetFrame.raw.size - EthernetFrame.EthernetHeaderSize;
     if (dataSize < 0)
@@ -196,11 +196,54 @@ public class DataConverter
     ethernetTransmitOp.SetLength(29 + (uint)dataSize); // Length = 29 (fixed header size) + Data Length
     ethernetTransmitOp.SetDestinationAddress(silkitEthernetFrame.GetDestinationAddress());
     ethernetTransmitOp.SetSourceAddress(silkitEthernetFrame.GetSourceAddress());
-    ethernetTransmitOp.SetTypeLength(silkitEthernetFrame.GetEtherType());
+    var fmuEtherType = SwapEtherTypeEndianness(silkitEthernetFrame.GetEtherType()); // big to little endian
+    WarnOnPotentialEtherTypeEndiannessIssue(fmuEtherType, logger);
+    ethernetTransmitOp.SetTypeLength(fmuEtherType);
     ethernetTransmitOp.SetData(silkitEthernetFrame.GetPayload());
 
     return ethernetTransmitOp.GetBytes();
   }
+
+  #region EtherType endianness handling
+
+  private const ushort EtherTypeIPv4 = 0x0800;
+  private const ushort EtherTypeVlanTagged = 0x8100;
+
+  // Ensure the potential endianness issue warning is emitted only once during the simulation lifetime
+  private static bool etherTypeEndiannessWarningLogged;
+
+  private static byte[] SwapEtherTypeEndianness(byte[] etherType)
+  {
+    if (etherType.Length != 2)
+    {
+      throw new ArgumentException("EtherType must be 2 bytes long");
+    }
+
+    return new[] { etherType[1], etherType[0] };
+  }
+
+  // Warn once if the EtherType field is detected to be in big-endian instead of the expected little-endian
+  private static void WarnOnPotentialEtherTypeEndiannessIssue(byte[] fmuEtherType, ILogger logger)
+  {
+    if (etherTypeEndiannessWarningLogged)
+    {
+      return;
+    }
+
+    var etherTypeValue = BinaryPrimitives.ReadUInt16BigEndian(fmuEtherType);
+    if (etherTypeValue == EtherTypeIPv4 || etherTypeValue == EtherTypeVlanTagged)
+    {
+      etherTypeEndiannessWarningLogged = true;
+      logger.Log(
+        LogLevel.Warn,
+        $"Potential EtherType endianness issue detected: the EtherType receives is in " +
+        $"big-endian: 0x{etherTypeValue:X4}, but the FMI-LS-BUS standard stores it little-endian. " +
+        $"This may indicate a wrong byte order but can be a false positive " +
+        $" (e.g. 0x8100 could also be a valid IEEE 802.3 payload length).");
+    }
+  }
+
+  #endregion EtherType endianness handling
 
   #endregion SIL Kit -> FMU (plain)
 
@@ -786,8 +829,16 @@ public class DataConverter
     List<byte> rawBytes = new List<byte>();
     rawBytes.AddRange(ethernetTransmitOp.GetDestinationAddress());
     rawBytes.AddRange(ethernetTransmitOp.GetSourceAddress());
-    rawBytes.AddRange(ethernetTransmitOp.GetTypeLength());
+    var fmuEtherType = ethernetTransmitOp.GetTypeLength();
+    WarnOnPotentialEtherTypeEndiannessIssue(fmuEtherType, Logger);
+    rawBytes.AddRange(SwapEtherTypeEndianness(fmuEtherType)); // little to big endian
     rawBytes.AddRange(ethernetTransmitOp.GetData());
+
+    // Pad the frame with zeros if it is shorter before sending it to the SIL Kit network
+    if (rawBytes.Count < EthernetFrame.MinFrameSize)
+    {
+      rawBytes.AddRange(new byte[EthernetFrame.MinFrameSize - rawBytes.Count]);
+    }
 
     int rawBytesSize = rawBytes.Count;
     var dataptr = Marshal.AllocHGlobal(rawBytesSize);

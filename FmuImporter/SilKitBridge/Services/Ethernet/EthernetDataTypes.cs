@@ -59,10 +59,13 @@ public struct EthernetFrame
   // Ethernet frame layout:
   // [0-5]   Destination MAC address (6 bytes)
   // [6-11]  Source MAC address (6 bytes)
-  // [12-13] EtherType (2 bytes, little-endian)
+  // [12-13] EtherType (2 bytes, big-endian)
   // [14-n]  Payload data
 
   public const int EthernetHeaderSize = 14;
+
+  // Minimum Ethernet frame size in bytes
+  public const int MinFrameSize = 60;
 
   public byte[] GetDestinationAddress()
   {
@@ -82,7 +85,7 @@ public struct EthernetFrame
   {
     byte[] etherTypeBytes = new byte[2];
     Marshal.Copy(raw.data + 12, etherTypeBytes, 0, 2);
-    // EtherType is little-endian
+    // EtherType is big-endian
     return etherTypeBytes;
   }
 
