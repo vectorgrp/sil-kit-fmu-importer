@@ -34,6 +34,12 @@ public static class Helpers
     }
   }
 
+  public static void LogToConsole(LogSeverity severity, string message)
+  {
+    Console.WriteLine(
+      $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{FmiLogLevelToSilKitLogLevel(severity).ToString().ToLowerInvariant()}] {message}");
+  }
+
   /// <summary>
   ///   Converts SIL Kit time (measured in nanoseconds) to FMI time (measured in seconds)
   /// </summary>

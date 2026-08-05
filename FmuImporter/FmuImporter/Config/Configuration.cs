@@ -2,9 +2,9 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Security.Cryptography;
+using Fmi;
 using FmuImporter.Models.Config;
 using FmuImporter.Models.Exceptions;
-using SilKit.Services.Logger;
 
 namespace FmuImporter.Config;
 
@@ -43,13 +43,6 @@ public class Configuration : ConfigurationPublic
 
       return _resolvedVariableConfigurations;
     }
-  }
-
-  private ILogger? SilKitLogger { get; set; }
-
-  public void SetSilKitLogger(ILogger? logger)
-  {
-    SilKitLogger = logger;
   }
 
   /// <summary>
@@ -126,7 +119,6 @@ public class Configuration : ConfigurationPublic
       }
 
       var config = ConfigParser.LoadConfiguration(fullPath);
-      config.SetSilKitLogger(SilKitLogger);
       configHashes.Add(hashValue);
       result.Add(config);
     }
@@ -168,8 +160,8 @@ public class Configuration : ConfigurationPublic
         {
           if (parameterDictionary.ContainsKey(parameter.VariableName))
           {
-            SilKitLogger?.Log(
-              LogLevel.Info,
+            Helpers.Helpers.LogToConsole(
+              LogSeverity.Information,
               $"Parameter '{parameter.VariableName}' was defined in multiple configurations.");
             parameterDictionary[parameter.VariableName] = parameter;
           }
@@ -208,8 +200,8 @@ public class Configuration : ConfigurationPublic
         {
           if (variableConfigurationDictionary.ContainsKey(variableConfiguration.VariableName))
           {
-            SilKitLogger?.Log(
-              LogLevel.Info,
+            Helpers.Helpers.LogToConsole(
+              LogSeverity.Information,
               $"Variable '{variableConfiguration.VariableName}' was defined in multiple configurations.");
             variableConfigurationDictionary[variableConfiguration.VariableName] = variableConfiguration;
           }

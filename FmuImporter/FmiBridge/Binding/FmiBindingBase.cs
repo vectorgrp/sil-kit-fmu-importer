@@ -72,7 +72,7 @@ internal abstract class FmiBindingBase : IDisposable, IFmiBindingCommon
     ModelLoader.ExtractFmu(fmuPath, usePersistedFmu, out _extractedFolderPath, out _isTemporary, logCallback);
     if (IsTemporary)
     {
-      Log(LogSeverity.Debug, $"Temporarily extracted the FMU to '{_extractedFolderPath}'.");
+      Log(LogSeverity.Information, $"Temporarily extracted the FMU to '{_extractedFolderPath}'.");
     }
     else
     {

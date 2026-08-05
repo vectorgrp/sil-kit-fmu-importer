@@ -89,29 +89,6 @@ public class FmuImporter
 
     try
     {
-      SilKitEntity = new SilKitEntity(
-        silKitConfigurationPath,
-        participantName,
-        lifecycleMode,
-        timeSyncMode);
-      SilKitDataManager = new SilKitDataManager(SilKitEntity);
-      CurrentSilKitStatus = SilKitStatus.Initialized;
-    }
-    catch (Exception ex)
-    {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine($"An error occurred: {ex.Message}.\nMore information was written to the debug console.");
-      Debug.WriteLine($"An error occurred: {ex}.");
-      Console.ResetColor();
-      if (Environment.ExitCode == ExitCodes.Success)
-      {
-        Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
-      }
-      throw;
-    }
-
-    try
-    {
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
       {
         _fmuImporterConfig = new Configuration();
@@ -120,14 +97,12 @@ public class FmuImporter
       else
       {
         _fmuImporterConfig = ConfigParser.LoadConfiguration(fmuImporterConfigFilePath);
-        _fmuImporterConfig.SetSilKitLogger(SilKitEntity.Logger);
         _fmuImporterConfig.MergeIncludes();
       }
     }
     catch (Exception e)
     {
-      SilKitEntity.Logger.Log(LogLevel.Error, e.Message);
-      SilKitEntity.Logger.Log(LogLevel.Debug, e.ToString());
+      LogErrorToConsole(e);
       throw;
     }
 
@@ -147,7 +122,9 @@ public class FmuImporter
 
     try
     {
-      FmuEntity = new FmuEntity(fmuPath, usePersistedFmu, FmuEntity_OnFmuLog);
+      FmuEntity_OnFmuLogToConsole(LogSeverity.Information, $"Loading the FMU '{fmuPath}'.");
+
+      FmuEntity = new FmuEntity(fmuPath, usePersistedFmu, FmuEntity_OnFmuLogToConsole);
 
       _configuredParameters = _fmuImporterConfig.GetParameters();
       _configuredStructuralParameters = new Dictionary<string, Parameter>();
@@ -186,9 +163,53 @@ public class FmuImporter
       // Initialize FMU
       FmuEntity.PrepareFmu(FmuConfigurationAction, FmuInitializationAction);
 
+      FmuEntity_OnFmuLogToConsole(LogSeverity.Information, $"The FMU '{Path.GetFileNameWithoutExtension(fmuPath)}' was loaded.");
+    }
+    catch (Exception e)
+    {
+      LogErrorToConsole(e);
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
+      }
+
+      ExitFmuImporter();
+      throw;
+    }
+
+    try
+    {
+      // The FMU is ready - join the SIL Kit simulation
+      SilKitEntity = new SilKitEntity(
+        silKitConfigurationPath,
+        participantName,
+        lifecycleMode,
+        timeSyncMode);
+
+      // The SIL Kit logger is now available and used instead of the console
+      FmuEntity.OnFmuLog -= FmuEntity_OnFmuLogToConsole;
+      FmuEntity.OnFmuLog += FmuEntity_OnFmuLog;
+
+      SilKitDataManager = new SilKitDataManager(SilKitEntity);
+      CurrentSilKitStatus = SilKitStatus.Initialized;
+
       // Initialize FmuDataManager
       FmuDataManager = new FmuDataManager(FmuEntity.Binding, FmuEntity.ModelDescription, FmuEntity_OnFmuLog, useClockPubSubElements);
+    }
+    catch (Exception ex)
+    {
+      LogErrorToConsole(ex);
+      if (Environment.ExitCode == ExitCodes.Success)
+      {
+        Environment.ExitCode = ExitCodes.ErrorDuringInitialization;
+      }
 
+      ExitFmuImporter();
+      throw;
+    }
+
+    try
+    {
       // create a temporary copy to avoid modifying the FmuEntity's ModelDescription
       var modelDescriptionVariables = new Dictionary<uint, Variable>(FmuEntity.ModelDescription.Variables);
 
@@ -274,6 +295,21 @@ public class FmuImporter
   private void FmuEntity_OnFmuLog(LogSeverity severity, string message)
   {
     SilKitEntity.Logger.Log(Helpers.Helpers.FmiLogLevelToSilKitLogLevel(severity), message);
+  }
+
+  // Used while the FMU is loaded. At that point, the FMU Importer did not join the SIL Kit simulation yet and
+  // therefore no SIL Kit logger is available.
+  private void FmuEntity_OnFmuLogToConsole(LogSeverity severity, string message)
+  {
+    Helpers.Helpers.LogToConsole(severity, message);
+  }
+
+  private static void LogErrorToConsole(Exception e)
+  {
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine($"An error occurred: {e.Message}.\nMore information was written to the debug console.");
+    Debug.WriteLine($"An error occurred: {e}.");
+    Console.ResetColor();
   }
 
   private void FmuConfigurationAction()
@@ -960,8 +996,9 @@ public class FmuImporter
         !(FmuEntity.Binding.CurrentState is
             InternalFmuStates.TerminatedWithError or InternalFmuStates.Terminated or InternalFmuStates.Freed))
     {
-      SilKitCanManager.StopCanControllers();
-      SilKitEthernetManager.DeactivateEthernetControllers();
+      // The SIL Kit managers do not exist yet if the FMU Importer failed to join the simulation
+      SilKitCanManager?.StopCanControllers();
+      SilKitEthernetManager?.DeactivateEthernetControllers();
       FmuEntity.Terminate();
       // FreeInstance will be called by the dispose pattern
     }
