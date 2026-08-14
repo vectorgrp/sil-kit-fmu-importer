@@ -104,9 +104,10 @@ jobs:
       fmu-importer-version: 1.7.0
       sil-kit-version: 5.0.4
       branch-name: ${{ github.head_ref }}
-      runner-labels: '["Windows", "docker-windows"]'
+      runner-labels: '["Windows", "ska", "docker"]'
       run-vtt-tests: true
       fmu-architecture: x86
+      vtt-version: 10.2.46
     secrets: inherit
 
   run-linux-integration-tests:
