@@ -4,6 +4,17 @@ All notable changes to the SIL Kit FMU Importer project shall be documented in t
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.7.1] - 2026-08-18
+
+### Changed
+
+* Updated SIL Kit to version 5.0.7
+* FMU is loaded before the SIL Kit participant creation
+
+### Fixed
+
+* The byte order handling of the LS-BUS Ethernet field 'Type or Length' has been fixed. It now expects little-endian from the FMU and expects and sends big-endian on the SIL Kit Ethernet network.
+
 ## [1.7.0] - 2026-06-23
 
 This version introduces new features and quality-of-life improvements.
