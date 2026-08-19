@@ -99,7 +99,7 @@ jobs:
 
   run-windows-integration-tests:
     needs: [build-linux, build-windows]
-    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationWindows.yaml@main
+    uses: ptv/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationWindows.yaml@main
     with:
       fmu-importer-version: 1.7.1
       sil-kit-version: 5.0.7
@@ -112,7 +112,7 @@ jobs:
 
   run-linux-integration-tests:
     needs: [build-linux]
-    uses: pnd/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationLinux.yaml@main
+    uses: ptv/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationLinux.yaml@main
     with:
       fmu-importer-version: 1.7.1
       sil-kit-version: 5.0.7
