@@ -13,8 +13,10 @@ public class SilKitEthernetManager
 {
   private readonly SilKitEntity _silKitEntity;
   private readonly DataConverter _dc;
-  public Dictionary<uint /* vRefOut Tx_Data*/, IEthernetController> EthControllers { get; }
-  public SortedList<ulong /* timestamp */, Dictionary<uint /* vRef */, List<byte[]>>> EthBuffer { get; }
+  private readonly object _ethBufferLock = new();
+  private readonly object _ethControllersLock = new();
+  private Dictionary<uint /* vRefOut Tx_Data*/, IEthernetController> EthControllers { get; }
+  private SortedList<ulong /* timestamp */, Dictionary<uint /* vRef */, List<byte[]>>> EthBuffer { get; }
 
   // default ctor if no Ethernet traffic to manage
   public SilKitEthernetManager()
@@ -43,28 +45,41 @@ public class SilKitEthernetManager
   public bool CreateEthernetController(string controllerName, string networkName, uint vRefOut)
   {
     var ethernetController = _silKitEntity.CreateEthernetController(controllerName, networkName);
-    return EthControllers.TryAdd(vRefOut, ethernetController);
+    lock (_ethControllersLock)
+    {
+      return EthControllers.TryAdd(vRefOut, ethernetController);
+    }
   }
 
   public void ActivateEthernetControllers()
   {
-    foreach (var ethernetController in EthControllers.Values)
+    lock (_ethControllersLock)
     {
-      ethernetController.Activate();
+      foreach (var ethernetController in EthControllers.Values)
+      {
+        ethernetController.Activate();
+      }
     }
   }
 
   public void DeactivateEthernetControllers()
   {
-    foreach (var ethernetController in EthControllers.Values)
+    lock (_ethControllersLock)
     {
-      ethernetController.Deactivate();
+      foreach (var ethernetController in EthControllers.Values)
+      {
+        ethernetController.Deactivate();
+      }
     }
   }
 
   public UInt64 AddEthernetFrameHandler(uint vRef, uint vRefIn, EthernetFrameHandler handler, byte directionMask)
   {
-    EthControllers.TryGetValue(vRef, out var ethernetController);
+    IEthernetController? ethernetController;
+    lock (_ethControllersLock)
+    {
+      EthControllers.TryGetValue(vRef, out ethernetController);
+    }
     if (ethernetController == null)
     {
       throw new NullReferenceException($"No Ethernet controller found for value reference {vRef}");
@@ -74,7 +89,11 @@ public class SilKitEthernetManager
 
   public UInt64 AddFrameTransmitHandler(uint vRef, EthernetFrameTransmitHandler handler, UInt32 statusMask)
   {
-    EthControllers.TryGetValue(vRef, out var ethernetController);
+    IEthernetController? ethernetController;
+    lock (_ethControllersLock)
+    {
+      EthControllers.TryGetValue(vRef, out ethernetController);
+    }
     if (ethernetController == null)
     {
       throw new NullReferenceException($"No Ethernet controller found for value reference {vRef}");
@@ -164,7 +183,11 @@ public class SilKitEthernetManager
 
   public void SendFrame(uint vRef, byte[] data)
   {
-    EthControllers.TryGetValue(vRef, out var ethController);
+    IEthernetController? ethController;
+    lock (_ethControllersLock)
+    {
+      EthControllers.TryGetValue(vRef, out ethController);
+    }
     if (ethController == null)
     {
       _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to send an Ethernet frame: no Ethernet controller found for value " +
@@ -188,17 +211,20 @@ public class SilKitEthernetManager
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : ethFrameEvent.timestampInNs;
 
     // data is processed in sim. step callback (OnSimulationStep)
-    if (EthBuffer.TryGetValue(timeStamp, out var futureDict))
+    lock (_ethBufferLock)
     {
-      futureDict[valueRef].Add(bytes);
-    }
-    else
-    {
-      var dict = new Dictionary<uint, List<byte[]>>
+      if (EthBuffer.TryGetValue(timeStamp, out var futureDict))
       {
-        { valueRef, new List<byte[]> { bytes } }
-      };
-      EthBuffer.Add(timeStamp, dict);
+        futureDict[valueRef].Add(bytes);
+      }
+      else
+      {
+        var dict = new Dictionary<uint, List<byte[]>>
+        {
+          { valueRef, new List<byte[]> { bytes } }
+        };
+        EthBuffer.Add(timeStamp, dict);
+      }
     }
   }
 
@@ -216,10 +242,15 @@ public class SilKitEthernetManager
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
     var removeCounter = 0;
     var valueUpdates = new Dictionary<uint, List<byte[]>>();
-    foreach (var (timeStamp, ethData) in EthBuffer)
+    lock (_ethBufferLock)
     {
-      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime)
+      foreach (var (timeStamp, ethData) in EthBuffer)
       {
+        if (!(_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime))
+        {
+          // no need to iterate future events
+          break;
+        }        
         foreach (var refFramePair in ethData)
         {
           valueUpdates[refFramePair.Key] = new List<byte[]>();
@@ -231,17 +262,12 @@ public class SilKitEthernetManager
         }
         removeCounter++;
       }
-      else
-      {
-        // no need to iterate future events
-        break;
-      }
-    }
 
-    // remove all processed entries from the buffer
-    while (removeCounter-- > 0)
-    {
-      EthBuffer.RemoveAt(0);
+      // remove all processed entries from the buffer
+      while (removeCounter-- > 0)
+      {
+        EthBuffer.RemoveAt(0);
+      }
     }
 
     return valueUpdates;

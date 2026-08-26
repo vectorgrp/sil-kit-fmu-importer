@@ -17,6 +17,7 @@ public enum DataCategory
 public class SilKitDataManager : IDisposable
 {
   private readonly SilKitEntity _silKitEntity;
+  private readonly object _dataBuffersLock = new();
   private Dictionary<DataCategory, SortedList<ulong, Dictionary<long, byte[]>>> DataBuffers { get; }
 
   public SilKitDataManager(SilKitEntity silKitEntity)
@@ -121,17 +122,20 @@ public class SilKitDataManager : IDisposable
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0UL : dataMessageEvent.TimestampInNS;
 
     // data is processed in sim. step callback (OnSimulationStep)
-    if (buffer.TryGetValue(timeStamp, out var futureDict))
+    lock (_dataBuffersLock)
     {
-      futureDict[valueRef] = dataMessageEvent.Data;
-    }
-    else
-    {
-      var dict = new Dictionary<long, byte[]>
+      if (buffer.TryGetValue(timeStamp, out var futureDict))
       {
-        { valueRef, dataMessageEvent.Data }
-      };
-      buffer.Add(timeStamp, dict);
+        futureDict[valueRef] = dataMessageEvent.Data;
+      }
+      else
+      {
+        var dict = new Dictionary<long, byte[]>
+        {
+          { valueRef, dataMessageEvent.Data }
+        };
+        buffer.Add(timeStamp, dict);
+      }
     }
   }
 
@@ -146,18 +150,18 @@ public class SilKitDataManager : IDisposable
     var buffer = DataBuffers[category];
     var valueUpdates = new Dictionary<long, byte[]>();
 
-    foreach (var timeDataPair in buffer)
+    lock (_dataBuffersLock)
     {
-      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
+      foreach (var timeDataPair in buffer)
       {
+        if (!(_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime))
+        {
+          break;          
+        }
         foreach (var dataBufferKvp in timeDataPair.Value)
         {
           valueUpdates[dataBufferKvp.Key] = dataBufferKvp.Value;
         }
-      }
-      else
-      {
-        break;
       }
     }
 
@@ -170,12 +174,15 @@ public void ClearDataUpTo(double pointInTime, params DataCategory[] categories)
       ? categories.Select(c => DataBuffers[c])
       : DataBuffers.Values;
 
-    foreach (var buffer in buffers)
+    lock (_dataBuffersLock)
     {
-      var keysToRemove = buffer.Keys.Where(time => time <= pointInTime).ToList();
-      foreach (var key in keysToRemove)
+      foreach (var buffer in buffers)
       {
-        buffer.Remove(key);
+        var keysToRemove = buffer.Keys.Where(time => time <= pointInTime).ToList();
+        foreach (var key in keysToRemove)
+        {
+          buffer.Remove(key);
+        }
       }
     }
   }
@@ -191,10 +198,14 @@ public void ClearDataUpTo(double pointInTime, params DataCategory[] categories)
     var activeClocks = new HashSet<long>();
     var clocksBuffer = DataBuffers[DataCategory.Clock];
 
-    foreach (var timeDataPair in clocksBuffer)
+    lock (_dataBuffersLock)
     {
-      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime)
+      foreach (var timeDataPair in clocksBuffer)
       {
+        if (!(_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeDataPair.Key <= currentTime))
+        {
+          break;
+        }
         foreach (var clockRefVal in timeDataPair.Value)
         {
           if (clockRefVal.Value[0] != 0)
@@ -202,10 +213,6 @@ public void ClearDataUpTo(double pointInTime, params DataCategory[] categories)
             activeClocks.Add(clockRefVal.Key);
           }
         }
-      }
-      else
-      {
-        break;
       }
     }
 

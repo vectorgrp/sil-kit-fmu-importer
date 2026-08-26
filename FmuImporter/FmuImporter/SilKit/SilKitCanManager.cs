@@ -13,8 +13,10 @@ public class SilKitCanManager
 {
   private readonly SilKitEntity _silKitEntity;
   private readonly DataConverter _dc;
-  public Dictionary<uint /* vRefOut Tx_Data*/, ICanController> CanControllers { get; }
-  public SortedList<ulong /* timestamp */, Dictionary<uint /* vRef */, Dictionary<uint /* CAN id */, byte[]>>> CanBuffer { get; }
+  private readonly object _canBufferLock = new();
+  private readonly object _canControllersLock = new();
+  private Dictionary<uint /* vRefOut Tx_Data*/, ICanController> CanControllers { get; }
+  private SortedList<ulong /* timestamp */, Dictionary<uint /* vRef */, Dictionary<uint /* CAN id */, byte[]>>> CanBuffer { get; }
 
   // default ctor if no CAN traffic to manage
   public SilKitCanManager()
@@ -43,28 +45,41 @@ public class SilKitCanManager
   public bool CreateCanController(string controllerName, string networkName, uint vRefOut)
   {
     var canController = _silKitEntity.CreateCanController(controllerName, networkName);
-    return CanControllers.TryAdd(vRefOut, canController);
+    lock (_canControllersLock)
+    {
+      return CanControllers.TryAdd(vRefOut, canController);
+    }
   }
 
   public void StartCanControllers()
   {
-    foreach (var canController in CanControllers.Values)
+    lock (_canControllersLock)
     {
-      canController.Start();
+      foreach (var canController in CanControllers.Values)
+      {
+        canController.Start();
+      }
     }
   }
 
   public void StopCanControllers()
   {
-    foreach (var canController in CanControllers.Values)
+    lock (_canControllersLock)
     {
-      canController.Stop();
+      foreach (var canController in CanControllers.Values)
+      {
+        canController.Stop();
+      }
     }
   }
 
   public UInt64 AddCanFrameHandler(uint vRef, uint vRefIn, CanFrameHandler handler, byte directionMask)
   {
-    CanControllers.TryGetValue(vRef, out var canController);
+    ICanController? canController;
+    lock (_canControllersLock)
+    {
+      CanControllers.TryGetValue(vRef, out canController);
+    }
     if (canController == null)
     {
       throw new NullReferenceException($"No CAN controller found for value reference {vRef}");
@@ -74,7 +89,11 @@ public class SilKitCanManager
 
   public UInt64 AddFrameTransmitHandler(uint vRef, CanFrameTransmitHandler handler, Int32 statusMask)
   {
-    CanControllers.TryGetValue(vRef, out var canController);
+    ICanController? canController;
+    lock (_canControllersLock)
+    {
+      CanControllers.TryGetValue(vRef, out canController);
+    }
     if (canController == null)
     {
       throw new NullReferenceException($"No CAN controller found for value reference {vRef}");
@@ -178,7 +197,11 @@ public class SilKitCanManager
       _silKitEntity.Logger.Log(LogLevel.Warn, $"The retrieved CAN operation is malformed. Bytes retrieved: {data}");
     }
 
-    CanControllers.TryGetValue(vRef, out var canController);
+    ICanController? canController;
+    lock (_canControllersLock)
+    {
+      CanControllers.TryGetValue(vRef, out canController);
+    }
     if ( canController == null )
     {
       _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to send a CAN frame: no CAN controller found for value " +
@@ -197,7 +220,11 @@ public class SilKitCanManager
       _silKitEntity.Logger.Log(LogLevel.Warn, $"The retrieved CAN FD operation is malformed. Bytes retrieved: {data}");
     }
 
-    CanControllers.TryGetValue(vRef, out var canController);
+    ICanController? canController;
+    lock (_canControllersLock)
+    {
+      CanControllers.TryGetValue(vRef, out canController);
+    }
     if (canController == null)
     {
       _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to send a CAN FD frame: no CAN controller found for value " +
@@ -221,28 +248,31 @@ public class SilKitCanManager
     var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : cFrameEvent.timestampInNs;
 
     // data is processed in sim. step callback (OnSimulationStep)
-    if (CanBuffer.TryGetValue(timeStamp, out var refDict))
+    lock (_canBufferLock)
     {
-      if (refDict.TryGetValue(valueRef, out var futureDict))
+      if (CanBuffer.TryGetValue(timeStamp, out var refDict))
       {
-        futureDict[canFrame.id] = bytes; // add or update can frame with this CAN id
+        if (refDict.TryGetValue(valueRef, out var futureDict))
+        {
+          futureDict[canFrame.id] = bytes; // add or update can frame with this CAN id
+        }
+        else
+        {
+          var dict = new Dictionary<uint, byte[]>
+          {
+            { canFrame.id, bytes }
+          };
+          refDict[valueRef] = dict;
+        }
       }
       else
       {
-        var dict = new Dictionary<uint, byte[]>
+        var dict = new Dictionary<uint, Dictionary<uint, byte[]>>
         {
-          { canFrame.id, bytes }
+          { valueRef, new Dictionary<uint, byte[]> { { canFrame.id, bytes } } }
         };
-        refDict[valueRef] = dict;
+        CanBuffer.Add(timeStamp, dict);
       }
-    }
-    else
-    {
-      var dict = new Dictionary<uint, Dictionary<uint, byte[]>>
-      {
-        { valueRef, new Dictionary<uint, byte[]> { { canFrame.id, bytes } } }
-      };
-      CanBuffer.Add(timeStamp, dict);
     }
   }
 
@@ -261,10 +291,15 @@ public class SilKitCanManager
     // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
     var removeCounter = 0;
     var valueUpdates = new Dictionary<uint, List<byte[]>>();
-    foreach (var (timeStamp, canData) in CanBuffer)
+    lock (_canBufferLock)
     {
-      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime)
+      foreach (var (timeStamp, canData) in CanBuffer)
       {
+        if (!(_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime))
+        {
+          // no need to iterate future events
+          break;
+        }
         foreach (var refFramePair in canData)
         {
           valueUpdates[refFramePair.Key] = new List<byte[]>();
@@ -274,19 +309,14 @@ public class SilKitCanManager
             valueUpdates[refFramePair.Key].Add(idDataPair.Value);
           }
         }
-        removeCounter++;
+        removeCounter++;        
       }
-      else
-      {
-        // no need to iterate future events
-        break;
-      }
-    }
 
-    // remove all processed entries from the buffer
-    while (removeCounter-- > 0)
-    {
-      CanBuffer.RemoveAt(0);
+      // remove all processed entries from the buffer
+      while (removeCounter-- > 0)
+      {
+        CanBuffer.RemoveAt(0);
+      }
     }
 
     return valueUpdates;

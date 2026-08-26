@@ -807,12 +807,12 @@ public class FmuImporter
 
       if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
       {
+        ApplyClocksAndClockedInputs();
+
         RecordClocksAndClockedVariables();
 
         do
         {
-          ApplyClocksAndClockedInputs();
-
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           RecordClocksAndClockedVariables();
@@ -904,8 +904,6 @@ public class FmuImporter
       {
         FmuEntity.EnterEventMode();
 
-        RecordClocksAndClockedVariables(preStepActiveInputClocks);
-
         // set all data that was received up to the current simulation time (~lastSimStep) of the FMU
         var receivedSilKitDataEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Variable);
         var receivedSilKitDataStructEventMode = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.Structure);
@@ -915,10 +913,12 @@ public class FmuImporter
 
         SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Variable, DataCategory.Structure);
 
+        ApplyClocksAndClockedInputs();
+
+        RecordClocksAndClockedVariables(preStepActiveInputClocks);
+
         do
         {
-          ApplyClocksAndClockedInputs();
-
           FmuEntity.UpdateDiscreteStates(out discreteStatesNeedUpdate, out terminateRequested);
 
           RecordClocksAndClockedVariables(preStepActiveInputClocks);

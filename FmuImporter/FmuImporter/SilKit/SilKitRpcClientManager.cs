@@ -10,7 +10,8 @@ namespace FmuImporter.SilKit;
 
 public class SilKitRpcClientManager : SilKitRpcManager
 {
-  public Dictionary<uint /* vRef Rx_ReturnId */, IRpcClient> Clients { get; }
+  private readonly object _clientsLock = new();
+  private Dictionary<uint /* vRef Rx_ReturnId */, IRpcClient> Clients { get; }
 
   // default ctor if no RPC to manage
   public SilKitRpcClientManager() : base()
@@ -27,7 +28,10 @@ public class SilKitRpcClientManager : SilKitRpcManager
   public bool CreateRpcClient(string controllerName, RpcSpec dataSpec, IntPtr /* vRef Rx_ReturnId */ resultHandlerContext, RpcCallResultHandler handler)
   {
     var client = _silKitEntity.CreateRpcClient(controllerName, dataSpec, resultHandlerContext, handler);
-    return Clients.TryAdd((uint)resultHandlerContext, client);
+    lock (_clientsLock)
+    {
+      return Clients.TryAdd((uint)resultHandlerContext, client);
+    }
   }
   #endregion service creation
 
@@ -39,13 +43,18 @@ public class SilKitRpcClientManager : SilKitRpcManager
       var vRefTx = refData.Item1;
       var callIdArgs = refData.Item2;
 
-      if (!TxToRxMapping.TryGetValue(vRefTx, out var vRefRx))
+      if (!TryGetRxRef(vRefTx, out var vRefRx))
       {
         _silKitEntity.Logger.Log(LogLevel.Error, $"No Tx vRef mapping found for Rx vRef {vRefTx}");
         return;
       }
 
-      if (!Clients.TryGetValue(vRefRx, out var client))
+      IRpcClient? client;
+      lock (_clientsLock)
+      {
+        Clients.TryGetValue(vRefRx, out client);
+      }
+      if (client == null)
       {
         _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to make a RPC call: no RPC client found for value reference {vRefRx}");
         continue;

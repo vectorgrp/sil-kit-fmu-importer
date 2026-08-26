@@ -9,12 +9,25 @@ namespace FmuImporter.SilKit;
 public class SilKitRpcManager
 {
   protected readonly SilKitEntity _silKitEntity;
-  public SortedList<ulong /* timestamp */, Dictionary<uint /* vRef Rx_Id*/, Dictionary<ulong /* Rx_Id */, byte[]?>>> EventBuffer { get; }
-  public Dictionary<uint /* vRef Tx_Id */, uint /* vRef Rx_Id */> TxToRxMapping { get; }
+  private readonly object _eventBufferLock = new();
+  private readonly object _txToRxMappingLock = new();
+  private SortedList<ulong /* timestamp */, Dictionary<uint /* vRef Rx_Id*/, Dictionary<ulong /* Rx_Id */, byte[]?>>> EventBuffer { get; }
+  private Dictionary<uint /* vRef Tx_Id */, uint /* vRef Rx_Id */> TxToRxMapping { get; }
 
   public void AddTxRxMapping(uint txVRef, uint rxVRef)
   {
-    TxToRxMapping[txVRef] = rxVRef;
+    lock (_txToRxMappingLock)
+    {
+      TxToRxMapping[txVRef] = rxVRef;
+    }
+  }
+
+  protected bool TryGetRxRef(uint txVRef, out uint rxVRef)
+  {
+    lock (_txToRxMappingLock)
+    {
+      return TxToRxMapping.TryGetValue(txVRef, out rxVRef);
+    }
   }
 
   // default ctor if no RPC to manage
@@ -54,25 +67,28 @@ public class SilKitRpcManager
 
   public void AddToEventBuffer(ulong timeStamp, uint vRef, ulong id, byte[]? data)
   {
-    if (EventBuffer.TryGetValue(timeStamp, out var refDict))
+    lock (_eventBufferLock)
     {
-      if (refDict.TryGetValue(vRef, out var futureDict))
+      if (EventBuffer.TryGetValue(timeStamp, out var refDict))
       {
-        futureDict[id] = data;
+        if (refDict.TryGetValue(vRef, out var futureDict))
+        {
+          futureDict[id] = data;
+        }
+        else
+        {
+          var dict = new Dictionary<ulong, byte[]?> { { id, data } };
+          refDict[vRef] = dict;
+        }
       }
       else
       {
-        var dict = new Dictionary<ulong, byte[]?> { { id, data } };
-        refDict[vRef] = dict;
+        var dict = new Dictionary<uint, Dictionary<ulong, byte[]?>>
+        {
+          { vRef, new Dictionary<ulong, byte[]?> { { id, data } } }
+        };
+        EventBuffer.Add(timeStamp, dict);
       }
-    }
-    else
-    {
-      var dict = new Dictionary<uint, Dictionary<ulong, byte[]?>>
-      {
-        { vRef, new Dictionary<ulong, byte[]?> { { id, data } } }
-      };
-      EventBuffer.Add(timeStamp, dict);
     }
   }
 
@@ -81,10 +97,14 @@ public class SilKitRpcManager
     var removeCounter = 0;
     var valueUpdates = new Dictionary<uint, List<Tuple<ulong, byte[]?>>>();
 
-    foreach (var (timeStamp, rpcEvent) in EventBuffer)
+    lock (_eventBufferLock)
     {
-      if (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime)
+      foreach (var (timeStamp, rpcEvent) in EventBuffer)
       {
+        if (!(_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized || timeStamp <= currentTime))
+        {
+          break;
+        }
         foreach (var vRefRpcEvent in rpcEvent)
         {
           valueUpdates[vRefRpcEvent.Key] = new List<Tuple<ulong, byte[]?>>();
@@ -95,16 +115,12 @@ public class SilKitRpcManager
         }
         removeCounter++;
       }
-      else
-      {
-        break;
-      }
-    }
 
-    // Remove all processed entries from the buffer
-    while (removeCounter-- > 0)
-    {
-      EventBuffer.RemoveAt(0);
+      // Remove all processed entries from the buffer
+      while (removeCounter-- > 0)
+      {
+        EventBuffer.RemoveAt(0);
+      }
     }
 
     return valueUpdates;

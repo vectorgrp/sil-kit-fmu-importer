@@ -10,8 +10,10 @@ namespace FmuImporter.SilKit;
 
 public class SilKitRpcServerManager : SilKitRpcManager
 {
-  public Dictionary<uint /* vRef Rx_CallId*/, IRpcServer> Servers { get; }
-  public Dictionary<uint /* vRef Rx_CallId */, Dictionary<ulong /* Rx_CallId */, IntPtr /* callHandle */>> CallIdHandles { get; }
+  private readonly object _serversLock = new();
+  private readonly object _callIdHandlesLock = new();
+  private Dictionary<uint /* vRef Rx_CallId*/, IRpcServer> Servers { get; }
+  private Dictionary<uint /* vRef Rx_CallId */, Dictionary<ulong /* Rx_CallId */, IntPtr /* callHandle */>> CallIdHandles { get; }
 
   // default ctor if no RPC to manage
   public SilKitRpcServerManager() : base()
@@ -30,7 +32,10 @@ public class SilKitRpcServerManager : SilKitRpcManager
   public bool CreateRpcServer(string controllerName, RpcSpec dataSpec, IntPtr /* vRef Rx_CallId */ context, RpcCallHandler callHandler)
   {
     var server = _silKitEntity.CreateRpcServer(controllerName, dataSpec, context, callHandler);
-    return Servers.TryAdd((uint)context, server);
+    lock (_serversLock)
+    {
+      return Servers.TryAdd((uint)context, server);
+    }
   }
   #endregion service creation
 
@@ -42,55 +47,64 @@ public class SilKitRpcServerManager : SilKitRpcManager
       var vRefTx = refData.Item1;
       var returnIdArgs = refData.Item2;
 
-      if (!TxToRxMapping.TryGetValue(vRefTx, out var vRefRx))
+      if (!TryGetRxRef(vRefTx, out var vRefRx))
       {
         _silKitEntity.Logger.Log(LogLevel.Error, $"No Rx vRef mapping found for Tx vRef {vRefTx}");
         return;
       }
 
-      if (!Servers.TryGetValue(vRefRx, out var server))
+      IRpcServer? server;
+      lock (_serversLock)
+      {
+        Servers.TryGetValue(vRefRx, out server);
+      }
+      if (server == null)
       {
         _silKitEntity.Logger.Log(LogLevel.Error, $"Trying to submit RPC result: no RPC server found for value " +
           $"reference {vRefRx}.");
         continue;
       }
 
-      if (!CallIdHandles.TryGetValue(vRefRx, out var idCallHandle))
+      IntPtr callHandle;
+      lock (_callIdHandlesLock)
       {
-        _silKitEntity.Logger.Log(LogLevel.Error, $"No call id and handle found for value reference {vRefRx}");
-        continue;
-      }
-
-      if (!idCallHandle.TryGetValue(returnIdArgs.Item1, out var callHandle))
-      {
-        _silKitEntity.Logger.Log(LogLevel.Error, $"No call handle found for value reference {vRefRx}");
-        continue;
-      }
-
-      var vBytes = new ByteVector();
-      try
-      {
-        if (returnIdArgs.Item2 is not null)
+        if (!CallIdHandles.TryGetValue(vRefRx, out var idCallHandle))
         {
-          int size = returnIdArgs.Item2.Length;
-          IntPtr ptr = Marshal.AllocHGlobal(size);
-          Marshal.Copy(returnIdArgs.Item2, 0, ptr, size);
-
-          vBytes.data = ptr;
-          vBytes.size = size;
+          _silKitEntity.Logger.Log(LogLevel.Error, $"No call id and handle found for value reference {vRefRx}");
+          continue;
         }
 
-        server.SubmitResult(callHandle, vBytes);
-        // clean up the call handle after successful submission
-        idCallHandle.Remove(returnIdArgs.Item1);
-      }
-      catch (Exception ex)
-      {
-        _silKitEntity.Logger.Log(LogLevel.Error, $"Failed to submit RPC result for vRef {vRefRx}: {ex.Message}");
-      }
-      finally
-      {
-        Marshal.FreeHGlobal(vBytes.data);
+        if (!idCallHandle.TryGetValue(returnIdArgs.Item1, out callHandle))
+        {
+          _silKitEntity.Logger.Log(LogLevel.Error, $"No call handle found for value reference {vRefRx}");
+          continue;
+        }
+
+        var vBytes = new ByteVector();
+        try
+        {
+          if (returnIdArgs.Item2 is not null)
+          {
+            int size = returnIdArgs.Item2.Length;
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.Copy(returnIdArgs.Item2, 0, ptr, size);
+
+            vBytes.data = ptr;
+            vBytes.size = size;
+          }
+
+          server.SubmitResult(callHandle, vBytes);
+          // clean up the call handle after successful submission
+          idCallHandle.Remove(returnIdArgs.Item1);
+        }
+        catch (Exception ex)
+        {
+          _silKitEntity.Logger.Log(LogLevel.Error, $"Failed to submit RPC result for vRef {vRefRx}: {ex.Message}");
+        }
+        finally
+        {
+          Marshal.FreeHGlobal(vBytes.data);
+        }
       }
     }
   }
@@ -104,15 +118,18 @@ public class SilKitRpcServerManager : SilKitRpcManager
 
       var cEvent = Marshal.PtrToStructure<RpcCallEvent>(callEvent);
 
-      if (CallIdHandles.TryGetValue(vRefRx, out var idHandle))
+      lock (_callIdHandlesLock)
       {
-        idHandle.TryAdd(_internalIds, cEvent.callHandle);
-      }
-      else
-      {
-        var newDict = new Dictionary<ulong, IntPtr>();
-        newDict.TryAdd(_internalIds, cEvent.callHandle);
-        CallIdHandles.Add(vRefRx, newDict);
+        if (CallIdHandles.TryGetValue(vRefRx, out var idHandle))
+        {
+          idHandle.TryAdd(_internalIds, cEvent.callHandle);
+        }
+        else
+        {
+          var newDict = new Dictionary<ulong, IntPtr>();
+          newDict.TryAdd(_internalIds, cEvent.callHandle);
+          CallIdHandles.Add(vRefRx, newDict);
+        }
       }
 
       var timeStamp = (_silKitEntity.TimeSyncMode == TimeSyncModes.Unsynchronized) ? 0L : cEvent.timestampInNs;
