@@ -92,7 +92,7 @@ public class FmuExporter : BaseExporter
     }
 
     commonTextSb.Append(interfaceSb.ToString());
-    commonTextSb.AppendLine(objectsSb.ToString());
+    commonTextSb.Append(objectsSb.ToString());
 
     AddVcdlFooter(commonTextSb);
 
@@ -148,21 +148,19 @@ public class FmuExporter : BaseExporter
           vcdlProviderVariables.Add(v);
           break;
         case Variable.Causalities.Output:
-        case Variable.Causalities.Independent:
           vcdlConsumerVariables.Add(v);
           break;
+        case Variable.Causalities.Independent:
         case Variable.Causalities.CalculatedParameter:
         case Variable.Causalities.Parameter:
         case Variable.Causalities.StructuralParameter:
         case Variable.Causalities.Local:
-          // ignore
+          // ignore - independent variables (e.g. 'time') and parameters are not communication signals; the communication interface generator omits them too.
           continue;
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
     }
-
-    objectsSb.AppendLine();
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
     vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
@@ -234,21 +232,19 @@ public class FmuExporter : BaseExporter
           vcdlProviderVariables.Add(v);
           break;
         case Variable.Causalities.Output:
-        case Variable.Causalities.Independent:
           vcdlConsumerVariables.Add(v);
           break;
+        case Variable.Causalities.Independent:
         case Variable.Causalities.CalculatedParameter:
         case Variable.Causalities.Parameter:
         case Variable.Causalities.StructuralParameter:
         case Variable.Causalities.Local:
-          // ignore
+          // ignore - independent variables (e.g. 'time') and parameters are not communication signals; the communication interface generator omits them too.
           continue;
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
     }
-
-    objectsSb.AppendLine();
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
     vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);

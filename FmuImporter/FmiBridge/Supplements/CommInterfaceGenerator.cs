@@ -28,6 +28,11 @@ public class CommInterfaceGenerator
       var result = new StringBuilder();
 
       result.AppendLine("Version: 1");
+
+      // Emit the model identifier as namespace and instance so a vCDL exported from this communication interface matches one exported directly from the FMU.
+      var modelIdentifier = modelDescription.CoSimulation.ModelIdentifier;
+      result.AppendLine("Namespace: " + modelIdentifier);
+      result.AppendLine("Instance: " + modelIdentifier);
       result.AppendLine();
 
       GenerateEnumDefinitions(modelDescription, result);
