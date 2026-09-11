@@ -6,6 +6,7 @@ using Fmi;
 using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
+using FmuImporter.Models.Helpers;
 
 namespace VcdlExporter;
 
@@ -118,7 +119,6 @@ public class FmuExporter : BaseExporter
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
-      string typeString;
       // assume scalar
       if (vValue.Dimensions != null && vValue.Dimensions.Length > 0)
       {
@@ -126,20 +126,10 @@ public class FmuExporter : BaseExporter
           $"FMI 2.0.x does not support arrays. Check variable '{vValue.Name}'.");
       }
 
-      if (vValue.VariableType is VariableTypes.EnumFmi2)
-      {
-        typeString = vValue.TypeDefinition!.Name;
-      }
-      else
-      {
-        // assume scalar
-        typeString = GetVarTypeString(vValue.VariableType);
-      }
-
       var v = new VcdlVariable()
       {
         Name = vValue.Name,
-        Type = typeString
+        Type = CreateVariableType(BuildVariableType(vValue))
       };
 
       switch (vValue.Causality)
@@ -207,23 +197,10 @@ public class FmuExporter : BaseExporter
       // Note that the direction is reversed compared to the model description
       // input  -> provided // CANoe _provides_ the _input_ value for an FMU
       // output -> consumed // CANoe _consumes_ the _output_ value of an FMU
-      string typeString;
-      // assume scalar
-      typeString = vValue.VariableType is VariableTypes.EnumFmi3
-                     ? vValue.TypeDefinition!.Name
-                     : GetVarTypeString(vValue.VariableType);
-
-      // surround with list if more than one dimension is detected
-      if (vValue.Dimensions != null && vValue.Dimensions.Length > 0)
-      {
-        // assume array of scalar
-        typeString = $"list<{typeString}>";
-      }
-
       var v = new VcdlVariable()
       {
         Name = vValue.Name,
-        Type = typeString
+        Type = CreateVariableType(BuildVariableType(vValue))
       };
 
       switch (vValue.Causality)
@@ -265,6 +242,27 @@ public class FmuExporter : BaseExporter
       $"{modelDescription.CoSimulation.ModelIdentifier}",
       modelDescription.CoSimulation.ModelIdentifier,
       objectsSb);
+  }
+
+  // Builds the type model for a variable: a leaf type wrapped in one list per array dimension.
+  // The resulting OptionalType is rendered by the shared BaseExporter.CreateVariableType, so the FMU
+  // export path and the communication-interface export path use the exact same vCDL type renderer.
+  private OptionalType BuildVariableType(Variable variable)
+  {
+    var leafTypeName = variable.VariableType is VariableTypes.EnumFmi2 or VariableTypes.EnumFmi3
+                         ? variable.TypeDefinition!.Name
+                         : GetVarTypeString(variable.VariableType);
+
+    OptionalType type = new OptionalType(isOptional: false, isList: false, customTypeName: leafTypeName);
+
+    // Wrap the type in one list per array dimension (e.g. a 2-dimensional array becomes list<list<double>>).
+    var dimensionCount = variable.Dimensions?.Length ?? 0;
+    for (var i = 0; i < dimensionCount; i++)
+    {
+      type = new OptionalType(isOptional: false, isList: true, optionalType: type);
+    }
+
+    return type;
   }
 
   private string GetVarTypeString(VariableTypes variableType)

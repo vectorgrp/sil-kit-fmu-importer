@@ -13,6 +13,13 @@ internal class CommInterfaceGenerationWrapper
     {
       var FmiVersion = Fmi.FmiModel.ModelLoader.FindFmiVersion(fmuPath);
       var binding = Fmi.Binding.BindingFactory.CreateBinding(FmiVersion, fmuPath, false, LogCallback);
+      // Resolve array dimensions so that multi-dimensional arrays are emitted with the correct
+      // list nesting (their Dimensions are only populated by InitializeArrayLength).
+      foreach (var arrayVar in binding.ModelDescription.ArrayVariables.Values)
+      {
+        arrayVar.InitializeArrayLength(binding.ModelDescription.Variables);
+      }
+
       return (new Fmi.Supplements.CommInterfaceGenerator(binding, useClockPubSubElements)).CommInterfaceText;
     }
     catch (Exception e)

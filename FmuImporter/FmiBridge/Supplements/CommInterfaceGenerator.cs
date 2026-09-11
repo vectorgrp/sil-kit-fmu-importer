@@ -130,9 +130,15 @@ public class CommInterfaceGenerator
       var parsedName = StructuredVariableParser.Parse(variable.Value.Name);
       var topicName = parsedName.RootName;
       var varType = StringOf(variable.Value.VariableType, variable.Value.TypeDefinition);
-      varType = variable.Value.IsScalar
-                  ? varType
-                  : ("List<" + varType + ">");
+      if (!variable.Value.IsScalar)
+      {
+        // Wrap in one List<> per array dimension (e.g. a 2-dimensional array becomes List<List<double>>).
+        var dimensionCount = variable.Value.Dimensions?.Length ?? 1;
+        for (var i = 0; i < dimensionCount; i++)
+        {
+          varType = "List<" + varType + ">";
+        }
+      }
 
       var pubSubSb = variable.Value.Causality switch
       {
