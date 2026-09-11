@@ -50,8 +50,8 @@ jobs:
 
     - name: Rename zip files using tag name
       run: |
-        mv ./FmuImporter/_publish/SilKitFmuImporter-*-xPlatform-x64.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-xPlatform-x64.zip
-        mv ./FmuImporter/_publish/SilKitFmuImporter-*-win-x86.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-win-x86.zip
+        mv -n ./FmuImporter/_publish/SilKitFmuImporter-*-xPlatform-x64.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-xPlatform-x64.zip
+        mv -n ./FmuImporter/_publish/SilKitFmuImporter-*-win-x86.zip ./FmuImporter/_publish/SilKitFmuImporter-${GITHUB_REF_NAME#v}-win-x86.zip
     
     - name: Release
       uses: actions-mirror/softprops-action-gh-release@v2
