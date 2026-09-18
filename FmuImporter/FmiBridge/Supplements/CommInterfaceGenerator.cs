@@ -248,6 +248,7 @@ public class CommInterfaceGenerator
     var valuesToAdd = terminalsAndIcons?.Terminals
                                        .Where(t => t.Value.InternalTerminalKind is InternalTerminalKind.CAN
                                                    or InternalTerminalKind.ETHERNET
+                                                   or InternalTerminalKind.LIN
                                                    or InternalTerminalKind.RPC_CLIENT
                                                    or InternalTerminalKind.RPC_SERVER)
                                        .SelectMany(

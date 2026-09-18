@@ -2,6 +2,7 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.Runtime.InteropServices;
+using SilKit.Services.Lin;
 using SilKit.Config;
 using SilKit.Services.Can;
 using SilKit.Services.Ethernet;
@@ -215,6 +216,11 @@ public class Participant : IDisposable
     return new EthernetController(this, controllerName, networkName);
   }
 
+  public ILinController CreateLinController(string controllerName, string networkName)
+  {
+    return new LinController(this, controllerName, networkName);
+  }
+
   public IDataPublisher CreateDataPublisher(string controllerName, PubSubSpec dataSpec, byte history)
   {
     return new DataPublisher(this, controllerName, dataSpec, history);
@@ -244,4 +250,3 @@ public class Participant : IDisposable
     return Logger!;
   }
 }
-

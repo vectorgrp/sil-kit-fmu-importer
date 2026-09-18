@@ -6,6 +6,7 @@ using SilKit.Config;
 using SilKit.Services.Can;
 using SilKit.Services.Ethernet;
 using SilKit.Services.Logger;
+using SilKit.Services.Lin;
 using SilKit.Services.Orchestration;
 using SilKit.Services.PubSub;
 using SilKit.Services.Rpc;
@@ -84,6 +85,11 @@ public class SilKitEntity : IDisposable
   public IEthernetController CreateEthernetController(string controllerName, string networkName)
   {
     return _participant.CreateEthernetController(controllerName, networkName);
+  }
+
+  public ILinController CreateLinController(string controllerName, string networkName)
+  {
+    return _participant.CreateLinController(controllerName, networkName);
   }
 
   public IDataPublisher CreateDataPublisher(

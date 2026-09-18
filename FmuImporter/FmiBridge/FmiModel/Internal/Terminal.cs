@@ -10,8 +10,9 @@ public enum InternalTerminalKind
   UNKNOWN = 0,
   CAN = 1,
   ETHERNET = 2,
-  RPC_CLIENT = 3,
-  RPC_SERVER = 4
+  LIN = 3,
+  RPC_CLIENT = 4,
+  RPC_SERVER = 5
 }
 
 public class Terminal
@@ -33,6 +34,9 @@ public class Terminal
     public const string EthernetMimeType = "application/org.fmi-standard.fmi-ls-bus.ethernet";
     public const string EthernetSegmentTerminalKind = "org.fmi-ls-bus.ethernet-segment-terminal";
     public const string EthernetSwitchTerminalKind = "org.fmi-ls-bus.ethernet-switch-terminal";
+
+    // LIN Terminal Constants
+    public const string LinMimeType = "application/org.fmi-standard.fmi-ls-bus.lin";
 
     // RPC Terminal Constants
     public const string RpcTerminalKind = "vnd.vector.operation-terminal.v1";
@@ -134,6 +138,13 @@ public class Terminal
       {
         ValidateEthernetTerminal();
         InternalTerminalKind = InternalTerminalKind.ETHERNET;
+        break;
+      }
+      else if (variable.MimeType?.Contains(Constants.LinMimeType) == true)
+      {
+        ValidateLinTerminal();
+        InternalTerminalKind = InternalTerminalKind.LIN;
+        break;
       }
       else if (TerminalKind.Equals(Constants.RpcTerminalKind))
       {
@@ -212,6 +223,11 @@ public class Terminal
       throw new TerminalsAndIconsException($"Terminal {Name} contains the nested terminal " +
         $"{NestedTerminals.First().Key} with the matchingRule {nestedTerminal.MatchingRule}. It must be {Constants.LS_BUS_ConfigurationMatchingRule}.");
     }
+  }
+
+  private void ValidateLinTerminal()
+  {
+    ValidateLsBusTerminal();
   }
 
   public void ValidateRPCTerminal()

@@ -177,15 +177,14 @@ internal static class SilKitVersion
 
     // LIN
 
-    // // LIN data type IDs
-    // #define SilKit_LinFrame_DATATYPE_ID 1
-    // #define SilKit_LinFrameResponse_DATATYPE_ID 2
-    // #define SilKit_LinControllerConfig_DATATYPE_ID 3
-    // #define SilKit_LinFrameStatusEvent_DATATYPE_ID 4
-    // #define SilKit_LinGoToSleepEvent_DATATYPE_ID 5
-    // #define SilKit_LinWakeupEvent_DATATYPE_ID 6
-    // #define SilKit_Experimental_LinSlaveConfigurationEvent_DATATYPE_ID 7
-    // #define SilKit_Experimental_LinSlaveConfiguration_DATATYPE_ID 8
+    LinFrame = 1,
+    LinFrameResponse = 2,
+    LinControllerConfig = 3,
+    LinFrameStatusEvent = 4,
+    LinGoToSleepEvent = 5,
+    LinWakeupEvent = 6,
+    ExperimentalLinSlaveConfigurationEvent = 7,
+    ExperimentalLinSlaveConfiguration = 8,
     // 
     // // LIN data type versions
     // #define SilKit_LinFrame_VERSION 1

@@ -12,6 +12,7 @@ using FmuImporter.Models.Exceptions;
 using FmuImporter.SilKit;
 using SilKit.Services.Can;
 using SilKit.Services.Ethernet;
+using SilKit.Services.Lin;
 using SilKit.Services.Logger;
 using SilKit.Services.Orchestration;
 using SilKit.Services.Rpc;
@@ -37,12 +38,14 @@ public class FmuImporter
   private SilKitDataManager SilKitDataManager { get; }
   private SilKitCanManager SilKitCanManager { get; }
   private SilKitEthernetManager SilKitEthernetManager { get; }
+  private SilKitLinManager SilKitLinManager { get; }
   private SilKitRpcClientManager SilKitRpcClientManager { get; set; }
   private SilKitRpcServerManager SilKitRpcServerManager { get; set; }
   private FmuEntity FmuEntity { get; }
   private FmuDataManager FmuDataManager { get; set; }
   private FmuCanManager FmuCanManager { get; set; }
   private FmuEthernetManager FmuEthernetManager { get; set; }
+  private FmuLinManager FmuLinManager { get; set; }
   private FmuRpcManager FmuRpcClientManager { get; set; }
   private FmuRpcManager FmuRpcServerManager { get; set; }
 
@@ -228,6 +231,11 @@ public class FmuImporter
             FmuEthernetManager ??= new FmuEthernetManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
             SilKitEthernetManager ??= new SilKitEthernetManager(SilKitEntity);
           }
+          else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.LIN)
+          {
+            FmuLinManager ??= new FmuLinManager(FmuEntity.Binding, FmuEntity_OnFmuLog);
+            SilKitLinManager ??= new SilKitLinManager(SilKitEntity);
+          }
           // handle RPC terminal if any
           else if (pairNameTerminal.Value.InternalTerminalKind == InternalTerminalKind.RPC_CLIENT)
           {
@@ -260,6 +268,7 @@ public class FmuImporter
         // process can variables and remove them from the modelDescriptionVariables
         if (FmuCanManager != null) ProcessCanVariables(ref modelDescriptionVariables);
         if (FmuEthernetManager != null) ProcessEthernetVariables(ref modelDescriptionVariables);
+        if (FmuLinManager != null) ProcessLinVariables(ref modelDescriptionVariables);
         if (FmuRpcClientManager != null) ProcessRpcClientVariables(ref modelDescriptionVariables);
         if (FmuRpcServerManager != null) ProcessRpcServerVariables(ref modelDescriptionVariables);
       }
@@ -269,6 +278,8 @@ public class FmuImporter
       SilKitCanManager ??= new SilKitCanManager();
       FmuEthernetManager ??= new FmuEthernetManager();
       SilKitEthernetManager ??= new SilKitEthernetManager();
+      FmuLinManager ??= new FmuLinManager();
+      SilKitLinManager ??= new SilKitLinManager();
       FmuRpcClientManager ??= new FmuRpcManager();
       SilKitRpcClientManager ??= new SilKitRpcClientManager();
       FmuRpcServerManager ??= new FmuRpcManager();
@@ -591,6 +602,39 @@ public class FmuImporter
     SilKitEthernetManager.ActivateEthernetControllers();
   }
 
+  private static int linControllerId = 1;
+  private const uint DefaultLinBaudRate = 19200;
+
+  private void ProcessLinVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  {
+    FmuLinManager.Initialize(ref modelDescriptionVariables);
+
+    var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
+    if (networkNamesValueRefs.Count == 0)
+    {
+      return;
+    }
+
+    foreach (var outVar in FmuLinManager.OutputLinVariables)
+    {
+      var vRefOut = outVar.ValueReference;
+      if (networkNamesValueRefs.TryGetValue(vRefOut, out var networkInfo))
+      {
+        var networkName = networkInfo.Item1;
+        var vRefIn = networkInfo.Item2;
+
+        SilKitLinManager.CreateLinController("SilKit_LIN_CTRL_" + linControllerId, networkName, vRefOut);
+        SilKitLinManager.InitLinController(vRefOut, LinControllerMode.Master, DefaultLinBaudRate);
+        SilKitLinManager.AddFrameStatusHandler(
+          vRefOut,
+          vRefIn,
+          SilKitLinManager.FuncLinFrameStatusHandler);
+
+        linControllerId++;
+      }
+    }
+  }
+
   private static int rpcClientId = 1;
   private void ProcessRpcClientVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
@@ -647,6 +691,10 @@ public class FmuImporter
     var outputEthernet = FmuEthernetManager.GetEthernetData();
     SilKitEthernetManager.SendAllFrames(outputEthernet);
 
+    // retrieve and send LIN frames
+    var outputLin = FmuLinManager.GetLinData();
+    SilKitLinManager.SendAllFrames(outputLin);
+
     // retrieve RPC server results from the FMU and submit them
     var rpcServerResults = FmuRpcServerManager.GetOperations();
     SilKitRpcServerManager.SubmitResult(rpcServerResults);
@@ -674,6 +722,10 @@ public class FmuImporter
     // handle received Ethernet frames
     var receivedSilKitEthernetData = SilKitEthernetManager.RetrieveReceivedEthernetData(_lastSimStep!.Value);
     FmuEthernetManager.SetEthernetData(receivedSilKitEthernetData);
+
+    // handle received LIN frames
+    var receivedSilKitLinData = SilKitLinManager.RetrieveReceivedLinData(_lastSimStep!.Value);
+    FmuLinManager.SetLinData(receivedSilKitLinData);
 
     // handle client RPC results
     var recvRpcResults = SilKitRpcClientManager.RetrieveReceivedRpcEvents(_lastSimStep!.Value);

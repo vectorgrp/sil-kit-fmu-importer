@@ -50,6 +50,7 @@ Its behavior is configured by configuration files that are passed during launch.
      2. [FMI-LS-BUS support](#fmi-ls-bus-support)
         1. [CAN](#fmi-ls-bus-can)
         2. [Ethernet](#fmi-ls-bus-ethernet)
+        3. [LIN (experimental and LIN Commander only)](#fmi-ls-bus-lin-experimental-and-lin-commander-only)
      3. [Client Server Communication support](#client-server-communication-support)
   8. [Error Handling](#error-handling)
 
@@ -671,6 +672,9 @@ The SIL Kit FMU Importer supports CAN and CAN FD Communications via the LS-BUS O
 
 #### **FMI-LS-BUS Ethernet**
 The SIL Kit FMU Importer supports Ethernet Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-ethernet-operations).
+
+#### **FMI-LS-BUS LIN (experimental and LIN Commander only)**
+The SIL Kit FMU Importer supports experimental LIN Communication via the LS-BUS Operation with OP Code 0x10 and a basic Format Error handling for FMUs which act as a LIN Commander/Master. For more details on the operations please refer to [the layered standard](https://modelica.github.io/fmi-ls-bus/main/#low-cut-lin-operations).
 
 
 ### **Client Server Communication support**
