@@ -101,7 +101,7 @@ jobs:
     needs: [build-linux, build-windows]
     uses: ptv/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationWindows.yaml@main
     with:
-      fmu-importer-version: 1.7.1
+      fmu-importer-version: 1.8.0
       sil-kit-version: 5.0.7
       branch-name: ${{ github.head_ref }}
       runner-labels: '["Windows", "ska", "docker"]'                 # build/support jobs → ska
@@ -114,7 +114,7 @@ jobs:
     needs: [build-linux]
     uses: ptv/sil-kit-fmu-importer-supplements/.github/workflows/testAutomationLinux.yaml@main
     with:
-      fmu-importer-version: 1.7.1
+      fmu-importer-version: 1.8.0
       sil-kit-version: 5.0.7
       branch-name: ${{ github.head_ref }}
     secrets: inherit
