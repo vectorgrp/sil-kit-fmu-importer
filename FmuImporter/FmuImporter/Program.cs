@@ -111,6 +111,13 @@ internal class Program
     getDefaultValue: () => false);
     rootCommand.AddOption(useClockPubSubElementsOption);
 
+    var legacyThreadModeOption = new Option<bool>(
+      "--legacy-thread-mode",
+      description: "Use the legacy threading behavior, where FMU calls may be issued from different threads " +
+        "(e.g., thread-pool or SIL Kit worker threads). By default, all FMU calls run on one dedicated thread.",
+      getDefaultValue: () => false);
+    rootCommand.AddOption(legacyThreadModeOption);
+
     rootCommand.SetHandler((context) =>
     {
       var fmuPath = context.ParseResult.GetValueForOption(fmuPathOption);
@@ -123,6 +130,7 @@ internal class Program
       var createPersitentFmu = context.ParseResult.GetValueForOption(createPersistedFmuOption);
       var usePersistedFmu = context.ParseResult.GetValueForOption(usePersistedFmuOption);
       var useClockPubSubElements = context.ParseResult.GetValueForOption(useClockPubSubElementsOption);
+      var legacyThreadMode = context.ParseResult.GetValueForOption(legacyThreadModeOption);
 
       try
       {
@@ -207,7 +215,8 @@ internal class Program
             parsedLifecycleMode,
             parsedTimeSyncMode,
             usePersistedFmu,
-            useClockPubSubElements
+            useClockPubSubElements,
+            legacyThreadMode
             );
 
           instance.StartSimulation();

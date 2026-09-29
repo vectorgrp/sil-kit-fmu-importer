@@ -33,15 +33,16 @@ public class SilKitEntity : IDisposable
     string configurationPath,
     string participantName,
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
-    TimeSyncModes timeSyncMode)
+    TimeSyncModes timeSyncMode,
+    FmuExecutionThread? fmuExecutionThread)
   {
     TimeSyncMode = timeSyncMode;
 
     var wrapper = SilKitWrapper.Instance;
     ParticipantConfiguration config;
-    
+
     config = wrapper.GetConfigurationFromFile(configurationPath);
-    
+
     var lc = new LifecycleService.LifecycleConfiguration(lifecycleMode);
 
     _participant = wrapper.CreateParticipant(config, participantName);
@@ -52,7 +53,10 @@ public class SilKitEntity : IDisposable
         _timeSyncService = _lifecycleService.CreateTimeSyncService();
         break;
       case TimeSyncModes.Unsynchronized:
-        _timeSyncService = new RealTimeService();
+        var realTimeService = new RealTimeService(fmuExecutionThread);
+        _timeSyncService = realTimeService;
+        // End the step loop also if the simulation is stopped externally
+        _lifecycleService.SetStopHandler(realTimeService.Stop);
         break;
       default:
         throw new ArgumentOutOfRangeException(nameof(timeSyncMode), timeSyncMode, "Invalid time synchronization mode.");

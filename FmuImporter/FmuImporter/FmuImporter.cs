@@ -55,6 +55,9 @@ public class FmuImporter
   private readonly Dictionary<string, Parameter>? _configuredParameters;
   private readonly Dictionary<string, Parameter>? _configuredStructuralParameters;
 
+  // Runs all FMU calls on one thread (some FMUs are thread-affine); null in legacy thread mode
+  private readonly FmuExecutionThread? _fmuExecutionThread;
+
 
   public FmuImporter(
     string fmuPath,
@@ -65,7 +68,8 @@ public class FmuImporter
     LifecycleService.LifecycleConfiguration.Modes lifecycleMode,
     TimeSyncModes timeSyncMode,
     bool usePersistedFmu,
-    bool useClockPubSubElements)
+    bool useClockPubSubElements,
+    bool legacyThreadMode)
   {
     AppDomain.CurrentDomain.UnhandledException +=
       (sender, e) =>
@@ -90,6 +94,12 @@ public class FmuImporter
         Console.ResetColor();
       };
 
+    // Created before the FMU is loaded so that it is instantiated on this thread
+    if (!legacyThreadMode)
+    {
+      _fmuExecutionThread = new FmuExecutionThread();
+    }
+
     try
     {
       if (string.IsNullOrEmpty(fmuImporterConfigFilePath))
@@ -106,6 +116,8 @@ public class FmuImporter
     catch (Exception e)
     {
       LogErrorToConsole(e);
+      // the caller never gets an instance to dispose, so stop the FMU thread here
+      _fmuExecutionThread?.Dispose();
       throw;
     }
 
@@ -120,6 +132,7 @@ public class FmuImporter
     catch (Exception e)
     {
       Console.WriteLine(e);
+      _fmuExecutionThread?.Dispose();
       throw;
     }
 
@@ -127,7 +140,9 @@ public class FmuImporter
     {
       FmuEntity_OnFmuLogToConsole(LogSeverity.Information, $"Loading the FMU '{fmuPath}'.");
 
-      FmuEntity = new FmuEntity(fmuPath, usePersistedFmu, FmuEntity_OnFmuLogToConsole);
+      // Load/instantiate the FMU on the dedicated FMU thread (if any) so that all subsequent
+      // native FMU calls - instantiation, stepping and teardown - happen on that same thread.
+      FmuEntity = RunOnFmuThread(() => new FmuEntity(fmuPath, usePersistedFmu, FmuEntity_OnFmuLogToConsole));
 
       _configuredParameters = _fmuImporterConfig.GetParameters();
       _configuredStructuralParameters = new Dictionary<string, Parameter>();
@@ -163,8 +178,8 @@ public class FmuImporter
         FmuEntity.ModelDescription.DefaultExperiment.StopTime = _fmuImporterConfig.StopTime;
       }
 
-      // Initialize FMU
-      FmuEntity.PrepareFmu(FmuConfigurationAction, FmuInitializationAction);
+      // Initialize FMU (on the dedicated FMU thread, if any)
+      RunOnFmuThread(() => FmuEntity.PrepareFmu(FmuConfigurationAction, FmuInitializationAction));
 
       FmuEntity_OnFmuLogToConsole(LogSeverity.Information, $"The FMU '{Path.GetFileNameWithoutExtension(fmuPath)}' was loaded.");
     }
@@ -177,6 +192,7 @@ public class FmuImporter
       }
 
       ExitFmuImporter();
+      _fmuExecutionThread?.Dispose();
       throw;
     }
 
@@ -187,7 +203,8 @@ public class FmuImporter
         silKitConfigurationPath,
         participantName,
         lifecycleMode,
-        timeSyncMode);
+        timeSyncMode,
+        _fmuExecutionThread);
 
       // The SIL Kit logger is now available and used instead of the console
       FmuEntity.OnFmuLog -= FmuEntity_OnFmuLogToConsole;
@@ -208,6 +225,7 @@ public class FmuImporter
       }
 
       ExitFmuImporter();
+      _fmuExecutionThread?.Dispose();
       throw;
     }
 
@@ -299,6 +317,7 @@ public class FmuImporter
       }
 
       ExitFmuImporter();
+      _fmuExecutionThread?.Dispose();
       throw;
     }
   }
@@ -788,7 +807,8 @@ public class FmuImporter
   {
     try
     {
-      OnSimulationStep(nowInNs, durationInNs);
+      // In synchronized mode, this moves the step from the SIL Kit worker thread to the FMU thread
+      RunOnFmuThread(() => OnSimulationStep(nowInNs, durationInNs));
     }
     catch (Exception e)
     {
@@ -1037,6 +1057,24 @@ public class FmuImporter
            (CurrentSilKitStatus == SilKitStatus.ShutDown);
   }
 
+  // Runs on the FMU thread, or inline in legacy thread mode
+  private void RunOnFmuThread(Action action)
+  {
+    if (_fmuExecutionThread != null)
+    {
+      _fmuExecutionThread.Invoke(action);
+    }
+    else
+    {
+      action();
+    }
+  }
+
+  private T RunOnFmuThread<T>(Func<T> func)
+  {
+    return _fmuExecutionThread != null ? _fmuExecutionThread.Invoke(func) : func();
+  }
+
   public void ExitFmuImporter()
   {
     if (FmuEntity == null)
@@ -1051,7 +1089,7 @@ public class FmuImporter
       // The SIL Kit managers do not exist yet if the FMU Importer failed to join the simulation
       SilKitCanManager?.StopCanControllers();
       SilKitEthernetManager?.DeactivateEthernetControllers();
-      FmuEntity.Terminate();
+      RunOnFmuThread(() => FmuEntity.Terminate());
       // FreeInstance will be called by the dispose pattern
     }
 
@@ -1098,20 +1136,31 @@ public class FmuImporter
   {
     if (!_disposedValue)
     {
+      // set first, so that a retry after a throwing FMU cleanup does not dispose the FMU thread twice
+      _disposedValue = true;
+
       if (disposing)
       {
         // dispose managed objects
 
-        // cleanup SIL Kit
-        SilKitDataManager.Dispose();
-        SilKitEntity.Dispose();
+        try
+        {
+          // cleanup FMU - on the FMU thread, this is queued behind any work still running there
+          // (e.g. a step that is unwinding after the FMU requested termination)
+          RunOnFmuThread(() => FmuEntity.Dispose());
+        }
+        finally
+        {
+          // stop and join the FMU thread before SIL Kit is torn down, which it may still be using
+          _fmuExecutionThread?.Dispose();
 
-        // cleanup FMU
-        FmuEntity.Dispose();
+          // cleanup SIL Kit
+          SilKitDataManager.Dispose();
+          SilKitEntity.Dispose();
+        }
       }
 
       ReleaseUnmanagedResources();
-      _disposedValue = true;
     }
   }
 

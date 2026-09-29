@@ -7,11 +7,19 @@ namespace FmuImporter.SilKit;
 
 public class RealTimeService : ITimeSyncService
 {
+  // Set by default; null in legacy thread mode (--legacy-thread-mode)
+  private readonly FmuExecutionThread? _fmuExecutionThread;
+
   private ulong _stepSize;
   private SimulationStepHandler? _stepHandler;
-  private bool _isRunning;
+  private volatile bool _isRunning;
 
   private ulong _targetSimTime;
+
+  public RealTimeService(FmuExecutionThread? fmuExecutionThread)
+  {
+    _fmuExecutionThread = fmuExecutionThread;
+  }
 
   public void SetSimulationStepHandler(SimulationStepHandler simulationStepHandler, ulong initialStepSize)
   {
@@ -28,12 +36,27 @@ public class RealTimeService : ITimeSyncService
 
     _isRunning = true;
 
-    return Task.Run(
-      async () =>
+    if (_fmuExecutionThread == null)
+    {
+      // Legacy thread mode: each step runs on a thread-pool thread
+      return Task.Run(
+        async () =>
+        {
+          while (_isRunning)
+          {
+            await DoStep();
+          }
+        });
+    }
+
+    // Default: the whole step loop runs on the FMU thread
+    return _fmuExecutionThread.Post(
+      () =>
       {
         while (_isRunning)
         {
-          await DoStep();
+          _stepHandler!.Invoke(_targetSimTime, _stepSize);
+          _targetSimTime += _stepSize;
         }
       });
   }
