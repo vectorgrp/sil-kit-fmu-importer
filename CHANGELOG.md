@@ -4,6 +4,17 @@ All notable changes to the SIL Kit FMU Importer project shall be documented in t
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.8.0] - 2026-10-02
+
+### Added
+* Support for FMI-LS-BUS LIN (LIN Commander only)
+
+### Changed
+* Switched over to a single-threaded implementation as the new default to be compatible with FMUs that enforce this
+
+### Fixed
+* Changed calling order to be compatible with strict FMUs
+
 ## [1.7.1] - 2026-08-18
 
 ### Changed
