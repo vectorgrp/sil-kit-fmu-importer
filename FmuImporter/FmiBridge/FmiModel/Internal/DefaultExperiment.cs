@@ -10,6 +10,13 @@ public class DefaultExperiment
   public double? Tolerance { get; set; }
   public double? StepSize { get; set; }
 
+  // Default values when the model description has no DefaultExperiment element
+  // StopTime, Tolerance and StepSize stay unset
+  public DefaultExperiment()
+  {
+    StartTime = 0;
+  }
+
   public DefaultExperiment(Fmi3.fmiModelDescriptionDefaultExperiment input)
   {
     StartTime = input.startTime;

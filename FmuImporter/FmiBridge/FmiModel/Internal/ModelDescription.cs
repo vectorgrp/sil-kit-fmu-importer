@@ -78,7 +78,15 @@ public class ModelDescription
     // Node init
     CoSimulation = new CoSimulation(input.CoSimulation);
 
-    DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
+    if (input.DefaultExperiment != null)
+    {
+      DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
+    }
+    else
+    {
+      DefaultExperiment = new DefaultExperiment();
+    }
+
     if (input.UnitDefinitions.Count > 0)
     {
       InitUnitMap(input.UnitDefinitions);
@@ -129,7 +137,15 @@ public class ModelDescription
     }
 
     CoSimulation = new CoSimulation(input.CoSimulation[0]);
-    DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
+
+    if (input.DefaultExperiment != null)
+    {
+      DefaultExperiment = new DefaultExperiment(input.DefaultExperiment);
+    }
+    else
+    {
+      DefaultExperiment = new DefaultExperiment();
+    }
 
     if (input.UnitDefinitions.Count > 0)
     {

@@ -253,9 +253,21 @@ It is also possible to change the default name and type mapping.
 See [Configuring the FMU and the FMU Importer](#configuring-the-fmu-and-the-fmu-importer) for details.
 
 ### **Time and Lifecycle Management**
-The FMU Importer uses the simulation step size provided by the FMU's model description as simulation step size for the FMU, if it is available.
-In case the simulation step size is not available, the FMU Importer requires users to provide the simulation step size via the FMU Importer configuration file.
-If neither the FMU nor the configuration file provide a step size, the FMU Importer will exit and show an error message.
+The FMU Importer determines the simulation step size of the FMU in the following order:
+1. `StepSize` in the FMU Importer configuration file (if provided)
+2. `stepSize` of the `DefaultExperiment` element in the FMU's model description (if provided)
+3. `fixedInternalStepSize` of the `CoSimulation` element in the FMU's model description (FMI 3.0 only, if provided)
+4. A default step size of 1ms
+
+The `DefaultExperiment` element is optional according to the FMI standard.
+If the FMU's model description does not provide it, the FMU Importer uses the following default values:
+
+| Attribute   | Default value                                                                                             |
+|-------------|-----------------------------------------------------------------------------------------------------------|
+| `startTime` | `0`                                                                                                       |
+| `stopTime`  | Not set: the simulation runs until it is stopped, unless `StopTime` is set in the FMU Importer configuration file |
+| `tolerance` | Not set: no tolerance is passed to the FMU                                                                |
+| `stepSize`  | Not set: the step size is determined as described above                                                   |
 
 The FMU Importer provides time synchronization modes that allows users to choose, how virtual time shall be handled by the FMU Importer:
 * `Synchronized` (default): The FMU Importer's simulation time will be synchronized with other SIL Kit participants through SIL Kit's _virtual time synchronization_.
