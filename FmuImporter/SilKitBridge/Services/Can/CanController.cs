@@ -158,21 +158,30 @@ internal class CanController : ICanController
     [In] UInt32 fdRate,
     [In] UInt32 xlRate);
 
-  public void SendFrame(CanFrame msg, IntPtr userContext)
+  public unsafe void SendFrame(CanFrame msg, ReadOnlySpan<byte> data, IntPtr userContext)
   {
-    var canFramePtr = Marshal.AllocHGlobal(Marshal.SizeOf<CanFrame>());
-    Marshal.StructureToPtr(msg, canFramePtr, false);
-    try
+    // SIL Kit copies the frame during the call, so the payload only has to stay pinned until it returns
+    fixed (byte* dataPtr = data)
     {
-      Helpers.ProcessReturnCode(
-       (Helpers.SilKit_ReturnCodes)SilKit_CanController_SendFrame(
-         _dataControllerPtr,
-         canFramePtr,
-         userContext));
-    }
-    finally
-    {
-      Marshal.FreeHGlobal(canFramePtr);
+      msg.data = new ByteVector
+      {
+        data = (IntPtr)dataPtr,
+        size = (IntPtr)data.Length
+      };
+      var canFramePtr = Marshal.AllocHGlobal(Marshal.SizeOf<CanFrame>());
+      try
+      {
+        Marshal.StructureToPtr(msg, canFramePtr, false);
+        Helpers.ProcessReturnCode(
+         (Helpers.SilKit_ReturnCodes)SilKit_CanController_SendFrame(
+           _dataControllerPtr,
+           canFramePtr,
+           userContext));
+      }
+      finally
+      {
+        Marshal.FreeHGlobal(canFramePtr);
+      }
     }
   }
 

@@ -156,7 +156,9 @@ public class DataConverter
 
     ushort dataSize = (ushort)silkitCanFrame.data.size;
 
-    CanTransmitOperation canTransmitOp = new CanTransmitOperation(dataSize);
+    // Data points to the SIL Kit frame buffer (set below), so do not allocate an own buffer that would leak
+    CanTransmitOperation canTransmitOp = new CanTransmitOperation();
+    canTransmitOp.SetDataLength(dataSize);
     canTransmitOp.SetOPCode((int)CanOperations.CAN_Transmit);
     canTransmitOp.SetLength((uint)16 + dataSize); // 16 : header fields (without data)
     canTransmitOp.SetID(silkitCanFrame.id);
@@ -171,7 +173,9 @@ public class DataConverter
   {
     ushort dataSize = (ushort)silkitCanFrame.data.size;
 
-    CanFdTransmitOperation canFdTransmitOp = new CanFdTransmitOperation(dataSize);
+    // Data points to the SIL Kit frame buffer (set below), so do not allocate an own buffer that would leak
+    CanFdTransmitOperation canFdTransmitOp = new CanFdTransmitOperation();
+    canFdTransmitOp.SetDataLength(dataSize);
     canFdTransmitOp.SetOPCode((int)CanOperations.CAN_FD_Transmit);
     canFdTransmitOp.SetLength((uint)17 + dataSize); // 17 : header fields (without data)
     canFdTransmitOp.SetID(silkitCanFrame.id);
@@ -191,7 +195,8 @@ public class DataConverter
       throw new ArgumentOutOfRangeException("Invalid Ethernet frame size: " + dataSize);
     }
 
-    EthernetTransmitOperation ethernetTransmitOp = new EthernetTransmitOperation(dataSize);
+    EthernetTransmitOperation ethernetTransmitOp = new EthernetTransmitOperation();
+    ethernetTransmitOp.SetDataLength(dataSize);
     ethernetTransmitOp.SetOPCode((int)EthernetOperations.Transmit);
     ethernetTransmitOp.SetLength(29 + (uint)dataSize); // Length = 29 (fixed header size) + Data Length
     ethernetTransmitOp.SetDestinationAddress(silkitEthernetFrame.GetDestinationAddress());
@@ -199,7 +204,8 @@ public class DataConverter
     var fmuEtherType = SwapEtherTypeEndianness(silkitEthernetFrame.GetEtherType()); // big to little endian
     WarnOnPotentialEtherTypeEndiannessIssue(fmuEtherType, logger);
     ethernetTransmitOp.SetTypeLength(fmuEtherType);
-    ethernetTransmitOp.SetData(silkitEthernetFrame.GetPayload());
+    // Data points to the SIL Kit frame buffer (valid during the frame handler), so no own buffer is needed
+    ethernetTransmitOp.SetData(silkitEthernetFrame.raw.data + EthernetFrame.EthernetHeaderSize);
 
     return ethernetTransmitOp.GetBytes();
   }
@@ -642,7 +648,8 @@ public class DataConverter
                                    (ushort)0xFFFF;
   }
 
-  public CanFrame LsCanTransmitOperationToSilKitCanFrame(byte[] LsCanFrame, ILogger Logger)
+  // returns null if the operation is invalid (the reason is logged)
+  public (CanFrame Frame, byte[] Data)? LsCanTransmitOperationToSilKitCanFrame(byte[] LsCanFrame, ILogger Logger)
   {
     // copy only the fixed header
     int headerSize = Marshal.SizeOf(typeof(CanTransmitOperation)) - IntPtr.Size;
@@ -650,7 +657,7 @@ public class DataConverter
     if (LsCanFrame.Length < headerSize)
     {
       Logger.Log(LogLevel.Error, $"CAN frame too short ({LsCanFrame.Length} bytes). Expected at least {headerSize} bytes.");
-      return new CanFrame();
+      return null;
     }
 
     IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CanTransmitOperation)));
@@ -662,7 +669,7 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"Error while casting CAN transmit operation to SIL Kit CAN frame. Retrieved bytes:" +
         $"{LsCanFrame}");
-      return new CanFrame();
+      return null;
     }
 
     CanTransmitOperation canTransmitOp = (CanTransmitOperation)ptrToStruct;
@@ -674,11 +681,8 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"CAN frame size mismatch. Header indicates {dataLength} data bytes, " +
         $"but only {LsCanFrame.Length - headerSize} are available.");
-      return new CanFrame();
+      return null;
     }
-
-    canTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
-    Marshal.Copy(LsCanFrame, headerSize, canTransmitOp.Data, dataLength);
 
     CanFrame silkitCanFrame = new CanFrame();
 
@@ -696,23 +700,19 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"Error while processing the CAN frame dlc. The frame is ignored due to inconsistent " +
         $"frame size. DataLength is: {dataLength}");
-      return new CanFrame();
+      return null;
     }
     // 3 next fields only used for can XL
     silkitCanFrame.sdt = 0;
     silkitCanFrame.vcid = 0;
     silkitCanFrame.af = 0;
 
-    silkitCanFrame.data = new ByteVector
-    {
-      data = canTransmitOp.Data,
-      size = (IntPtr)dataLength
-    };
-    
-    return silkitCanFrame;
+    // the payload stays managed, the CAN controller pins it while sending
+    return (silkitCanFrame, LsCanFrame[headerSize..(headerSize + dataLength)]);
   }
 
-  public CanFrame LsCanFdTransmitOperationToSilKitCanFrame(byte[] LsCanFdFrame, ILogger Logger)
+  // returns null if the operation is invalid (the reason is logged)
+  public (CanFrame Frame, byte[] Data)? LsCanFdTransmitOperationToSilKitCanFrame(byte[] LsCanFdFrame, ILogger Logger)
   {
     // copy only the fixed header
     int headerSize = Marshal.SizeOf(typeof(CanFdTransmitOperation)) - IntPtr.Size;
@@ -720,7 +720,7 @@ public class DataConverter
     if (LsCanFdFrame.Length < headerSize)
     {
       Logger.Log(LogLevel.Error, $"CAN FD frame too short ({LsCanFdFrame.Length} bytes). Expected at least {headerSize} bytes.");
-      return new CanFrame();
+      return null;
     }
 
     IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CanFdTransmitOperation)));
@@ -732,7 +732,7 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"Error while casting CAN FD transmit operation to SIL Kit CAN frame. Retrieved bytes:" +
         $"{LsCanFdFrame}");
-      return new CanFrame();
+      return null;
     }
 
     CanFdTransmitOperation canFdTransmitOp = (CanFdTransmitOperation)ptrToStruct;
@@ -744,11 +744,8 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"CAN FD frame size mismatch. Header indicates {dataLength} data bytes, " +
         $"but only {LsCanFdFrame.Length - headerSize} are available.");
-      return new CanFrame();
+      return null;
     }
-
-    canFdTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
-    Marshal.Copy(LsCanFdFrame, headerSize, canFdTransmitOp.Data, dataLength);
 
     CanFrame silkitCanFrame = new CanFrame();
 
@@ -771,22 +768,18 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"Error while processing the CAN FD frame dlc. The frame is ignored due to inconsistent " +
         $"frame size. DataLength is: {dataLength}");
-      return new CanFrame();
+      return null;
     }
     silkitCanFrame.sdt = 0;
     silkitCanFrame.vcid = 0;
     silkitCanFrame.af = 0;
 
-    silkitCanFrame.data = new ByteVector
-    {
-      data = canFdTransmitOp.Data,
-      size = (IntPtr)dataLength
-    };
-
-    return silkitCanFrame;
+    // the payload stays managed, the CAN controller pins it while sending
+    return (silkitCanFrame, LsCanFdFrame[headerSize..(headerSize + dataLength)]);
   }
 
-  public EthernetFrame LsEthernetTransmitOperationToSilKitEthernetFrame(byte[] LsEthernetFrame, ILogger Logger)
+  // returns null if the operation is invalid (the reason is logged)
+  public byte[]? LsEthernetTransmitOperationToSilKitEthernetFrame(byte[] LsEthernetFrame, ILogger Logger)
   {
     // copy only the fixed header
     int headerSize = Marshal.SizeOf(typeof(EthernetTransmitOperation)) - IntPtr.Size;
@@ -794,7 +787,7 @@ public class DataConverter
     if (LsEthernetFrame.Length < headerSize)
     {
       Logger.Log(LogLevel.Error, $"Ethernet frame too short ({LsEthernetFrame.Length} bytes). Expected at least {headerSize} bytes.");
-      return new EthernetFrame();
+      return null;
     }
 
     IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(EthernetTransmitOperation)));
@@ -806,7 +799,7 @@ public class DataConverter
     {
       Logger.Log(LogLevel.Error, $"Error while casting Ethernet transmit operation to SIL Kit Ethernet frame. Retrieved bytes:" +
         $"{LsEthernetFrame}");
-      return new EthernetFrame();
+      return null;
     }
 
     EthernetTransmitOperation ethernetTransmitOp = (EthernetTransmitOperation)ptrToStruct;
@@ -814,17 +807,13 @@ public class DataConverter
     // populate the Data field from the remaining bytes
     var dataLength = ethernetTransmitOp.GetDataLength();
 
-    if (LsEthernetFrame.Length < headerSize + dataLength)
+    // the data length is signed, so a malformed operation can announce a negative size
+    if (dataLength < 0 || dataLength > LsEthernetFrame.Length - headerSize)
     {
       Logger.Log(LogLevel.Error, $"Ethernet frame size mismatch. Header indicates {dataLength} data bytes, " +
         $"but only {LsEthernetFrame.Length - headerSize} are available.");
-      return new EthernetFrame();
+      return null;
     }
-
-    ethernetTransmitOp.Data = Marshal.AllocHGlobal(dataLength);
-    Marshal.Copy(LsEthernetFrame, headerSize, ethernetTransmitOp.Data, dataLength);
-
-    EthernetFrame silkitEthernetFrame = new EthernetFrame();
 
     List<byte> rawBytes = new List<byte>();
     rawBytes.AddRange(ethernetTransmitOp.GetDestinationAddress());
@@ -832,7 +821,7 @@ public class DataConverter
     var fmuEtherType = ethernetTransmitOp.GetTypeLength();
     WarnOnPotentialEtherTypeEndiannessIssue(fmuEtherType, Logger);
     rawBytes.AddRange(SwapEtherTypeEndianness(fmuEtherType)); // little to big endian
-    rawBytes.AddRange(ethernetTransmitOp.GetData());
+    rawBytes.AddRange(new ArraySegment<byte>(LsEthernetFrame, headerSize, dataLength));
 
     // Pad the frame with zeros if it is shorter before sending it to the SIL Kit network
     if (rawBytes.Count < EthernetFrame.MinFrameSize)
@@ -840,17 +829,8 @@ public class DataConverter
       rawBytes.AddRange(new byte[EthernetFrame.MinFrameSize - rawBytes.Count]);
     }
 
-    int rawBytesSize = rawBytes.Count;
-    var dataptr = Marshal.AllocHGlobal(rawBytesSize);
-    Marshal.Copy(rawBytes.ToArray(), 0, dataptr, rawBytesSize);
-
-    silkitEthernetFrame.raw = new ByteVector
-    {
-      data = dataptr,
-      size = (IntPtr)rawBytesSize
-    };
-
-    return silkitEthernetFrame;
+    // the frame stays managed, the Ethernet controller pins it while sending
+    return rawBytes.ToArray();
   }
 
   #endregion FMU -> SIL Kit (plain)

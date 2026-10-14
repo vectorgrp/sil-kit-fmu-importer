@@ -50,12 +50,6 @@ public class EthernetTransmitOperation
     DataLength = new byte[4];
   }
 
-  public EthernetTransmitOperation(int dataSize) : this()
-  {
-    Data = Marshal.AllocHGlobal(dataSize);
-    SetDataLength(dataSize);
-  }
-
   public void SetOPCode(Int32 opCode)
   {
     BinaryPrimitives.WriteInt32LittleEndian(OPCode, opCode);
@@ -112,6 +106,11 @@ public class EthernetTransmitOperation
   public Int32 GetDataLength()
   {
     return BinaryPrimitives.ReadInt32LittleEndian(DataLength);
+  }
+
+  public void SetData(IntPtr data)
+  {
+    Data = data;
   }
 
   public void SetData(byte[] bytes)

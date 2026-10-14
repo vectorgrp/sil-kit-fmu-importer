@@ -11,7 +11,8 @@ public interface ICanController
   public UInt64 AddFrameHandler(IntPtr context, CanFrameHandler handler, byte directionMask);
   public UInt64 AddFrameTransmitHandler(IntPtr context, CanFrameTransmitHandler handler, Int32 statusMask);
   public void SetBaudRate(UInt32 rate, UInt32 fdRate, UInt32 xlRate);
-  public void SendFrame(CanFrame msg, IntPtr userContext);
+  // msg.data is replaced by data, which only has to stay valid for the duration of the call
+  public void SendFrame(CanFrame msg, ReadOnlySpan<byte> data, IntPtr userContext);
   public void Start();
   public void Stop();
 }

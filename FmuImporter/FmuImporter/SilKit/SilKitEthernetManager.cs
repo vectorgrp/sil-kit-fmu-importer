@@ -194,7 +194,13 @@ public class SilKitEthernetManager
         $"reference {vRef}");
       return;
     }
-    ethController.SendFrame(_dc.LsEthernetTransmitOperationToSilKitEthernetFrame(data, _silKitEntity.Logger), (IntPtr)ethController.TransmitId);
+    var rawFrame = _dc.LsEthernetTransmitOperationToSilKitEthernetFrame(data, _silKitEntity.Logger);
+    if (rawFrame == null)
+    {
+      // invalid operation (already logged by the converter): send nothing
+      return;
+    }
+    ethController.SendFrame(rawFrame, (IntPtr)ethController.TransmitId);
     ethController.TransmitId++;
   }
   #endregion service creation

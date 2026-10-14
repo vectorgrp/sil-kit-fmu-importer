@@ -89,12 +89,6 @@ public class CanTransmitOperation : TransmitOperation
     DataLength = new byte[2];
   }
 
-  public CanTransmitOperation(int dataSize) : this()
-  {
-    Data = Marshal.AllocHGlobal(dataSize);
-    SetDataLength((UInt16)dataSize);
-  }
-
   public void SetDataLength(UInt16 dataLength)
   {
     BinaryPrimitives.WriteUInt16LittleEndian(DataLength, dataLength);
@@ -167,12 +161,6 @@ public class CanFdTransmitOperation : TransmitOperation
   public CanFdTransmitOperation() : base()
   {
     DataLength = new byte[2];
-  }
-
-  public CanFdTransmitOperation(int dataSize) : this()
-  {
-    Data = Marshal.AllocHGlobal(dataSize);
-    SetDataLength((UInt16)dataSize);
   }
 
   public void SetDataLength(UInt16 dataLength)

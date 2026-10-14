@@ -131,21 +131,33 @@ internal class EthernetController : IEthernetController
     [In] UInt32 transmitStatusMask,
     [In] IntPtr outHandlerId);
 
-  public void SendFrame(EthernetFrame frame, IntPtr userContext)
+  public unsafe void SendFrame(ReadOnlySpan<byte> rawFrame, IntPtr userContext)
   {
-    var ethernetFramePtr = Marshal.AllocHGlobal(Marshal.SizeOf<EthernetFrame>());
-    Marshal.StructureToPtr(frame, ethernetFramePtr, false);
-    try
+    // SIL Kit copies the frame during the call, so the frame bytes only have to stay pinned until it returns
+    fixed (byte* rawFramePtr = rawFrame)
     {
-      Helpers.ProcessReturnCode(
-       (Helpers.SilKit_ReturnCodes)SilKit_EthernetController_SendFrame(
-         _dataControllerPtr,
-         ethernetFramePtr,
-         userContext));
-    }
-    finally
-    {
-      Marshal.FreeHGlobal(ethernetFramePtr);
+      var frame = new EthernetFrame
+      {
+        raw = new ByteVector
+        {
+          data = (IntPtr)rawFramePtr,
+          size = (IntPtr)rawFrame.Length
+        }
+      };
+      var ethernetFramePtr = Marshal.AllocHGlobal(Marshal.SizeOf<EthernetFrame>());
+      try
+      {
+        Marshal.StructureToPtr(frame, ethernetFramePtr, false);
+        Helpers.ProcessReturnCode(
+         (Helpers.SilKit_ReturnCodes)SilKit_EthernetController_SendFrame(
+           _dataControllerPtr,
+           ethernetFramePtr,
+           userContext));
+      }
+      finally
+      {
+        Marshal.FreeHGlobal(ethernetFramePtr);
+      }
     }
   }
 

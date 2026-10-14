@@ -10,7 +10,8 @@ public interface IEthernetController
   public uint TransmitId { get; set; }
   public UInt64 AddFrameHandler(IntPtr context, EthernetFrameHandler handler, byte directionMask);
   public UInt64 AddFrameTransmitHandler(IntPtr context, EthernetFrameTransmitHandler handler, UInt32 transmitStatusMask);
-  public void SendFrame(EthernetFrame frame, IntPtr userContext);
+  // the raw frame only has to stay valid for the duration of the call
+  public void SendFrame(ReadOnlySpan<byte> rawFrame, IntPtr userContext);
   public void Activate();
   public void Deactivate();
 }

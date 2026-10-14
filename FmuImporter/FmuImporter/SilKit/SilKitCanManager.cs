@@ -208,7 +208,13 @@ public class SilKitCanManager
         $"reference {vRef}");
       return;
     }
-    canController.SendFrame(_dc.LsCanTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger), (IntPtr)canController.transmitId);
+    var converted = _dc.LsCanTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger);
+    if (converted == null)
+    {
+      // invalid operation (already logged by the converter): send nothing
+      return;
+    }
+    canController.SendFrame(converted.Value.Frame, converted.Value.Data, (IntPtr)canController.transmitId);
     canController.transmitId++;
   }
 
@@ -231,7 +237,13 @@ public class SilKitCanManager
         $"reference {vRef}");
       return;
     }
-    canController.SendFrame(_dc.LsCanFdTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger), (IntPtr)canController.transmitId);
+    var converted = _dc.LsCanFdTransmitOperationToSilKitCanFrame(data, _silKitEntity.Logger);
+    if (converted == null)
+    {
+      // invalid operation (already logged by the converter): send nothing
+      return;
+    }
+    canController.SendFrame(converted.Value.Frame, converted.Value.Data, (IntPtr)canController.transmitId);
     canController.transmitId++;
   }
 #endregion service creation
