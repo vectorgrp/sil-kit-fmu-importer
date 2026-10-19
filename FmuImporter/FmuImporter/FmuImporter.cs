@@ -48,6 +48,7 @@ public class FmuImporter
   private FmuLinManager FmuLinManager { get; set; }
   private FmuRpcManager FmuRpcClientManager { get; set; }
   private FmuRpcManager FmuRpcServerManager { get; set; }
+  private Dictionary<uint /*vRef*/, bool /*isActive*/> InputTxClocks { get; } = new(); // Tx_Clocks for all FMI-LS-BUS
 
   private readonly Configuration _fmuImporterConfig = null!;
   private readonly CommunicationInterfaceInternal? _fmuImporterCommInterface;
@@ -304,6 +305,7 @@ public class FmuImporter
       SilKitRpcServerManager ??= new SilKitRpcServerManager();
 
       PrepareConfiguredVariables(modelDescriptionVariables.Values.ToList());
+      CreateSubscribersForInputTxClocks();
 
       SilKitCanManager.StartCanControllers();
     }
@@ -542,7 +544,7 @@ public class FmuImporter
 
   private void ProcessCanVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
-    FmuCanManager.Initialize(ref modelDescriptionVariables);
+    FmuCanManager.Initialize(ref modelDescriptionVariables, InputTxClocks);
 
     // if any, get the terminal names with their respective vRef in/out  
     var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
@@ -582,7 +584,7 @@ public class FmuImporter
 
   private void ProcessEthernetVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
-    FmuEthernetManager.Initialize(ref modelDescriptionVariables);
+    FmuEthernetManager.Initialize(ref modelDescriptionVariables, InputTxClocks);
 
     // if any, get the terminal names with their respective vRef in/out  
     var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
@@ -626,7 +628,7 @@ public class FmuImporter
 
   private void ProcessLinVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
-    FmuLinManager.Initialize(ref modelDescriptionVariables);
+    FmuLinManager.Initialize(ref modelDescriptionVariables, InputTxClocks);
 
     var networkNamesValueRefs = FmuEntity.GetTerminalsValueRefs();
     if (networkNamesValueRefs.Count == 0)
@@ -657,7 +659,7 @@ public class FmuImporter
   private static int rpcClientId = 1;
   private void ProcessRpcClientVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
-    FmuRpcClientManager.Initialize(ref modelDescriptionVariables);
+    FmuRpcClientManager.Initialize(ref modelDescriptionVariables, InputTxClocks);
 
     foreach (var idVar in FmuRpcClientManager.InputIdVariables)
     {
@@ -674,7 +676,7 @@ public class FmuImporter
   private static int rpcServerId = 1;
   private void ProcessRpcServerVariables(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
   {
-    FmuRpcServerManager.Initialize(ref modelDescriptionVariables);
+    FmuRpcServerManager.Initialize(ref modelDescriptionVariables, InputTxClocks);
 
     foreach (var idVar in FmuRpcServerManager.InputIdVariables)
     {
@@ -703,24 +705,69 @@ public class FmuImporter
     SilKitDataManager.PublishAll(outputClockedStructures);
 
     // retrieve and send CAN frames
-    var outputCan = FmuCanManager.GetCanData();
+    var outputCan = FmuCanManager.GetCanData(InputTxClocks);
     SilKitCanManager.SendAllFrames(outputCan);
 
     // retrieve and send Ethernet frames
-    var outputEthernet = FmuEthernetManager.GetEthernetData();
+    var outputEthernet = FmuEthernetManager.GetEthernetData(InputTxClocks);
     SilKitEthernetManager.SendAllFrames(outputEthernet);
 
     // retrieve and send LIN frames
-    var outputLin = FmuLinManager.GetLinData();
+    var outputLin = FmuLinManager.GetLinData(InputTxClocks);
     SilKitLinManager.SendAllFrames(outputLin);
 
     // retrieve RPC server results from the FMU and submit them
-    var rpcServerResults = FmuRpcServerManager.GetOperations();
+    var rpcServerResults = FmuRpcServerManager.GetOperations(InputTxClocks);
     SilKitRpcServerManager.SubmitResult(rpcServerResults);
 
     // retrieve RPC client calls from the FMU and send them
-    var rpcClientCalls = FmuRpcClientManager.GetOperations();
+    var rpcClientCalls = FmuRpcClientManager.GetOperations(InputTxClocks);
     SilKitRpcClientManager.Call(rpcClientCalls);
+  }
+
+  private void CreateSubscribersForInputTxClocks()
+  {
+    var variableConfigurations = _fmuImporterConfig.GetVariables();
+
+    foreach (var clockValueRef in InputTxClocks.Keys)
+    {
+      var clockName = FmuEntity.ModelDescription.Variables[clockValueRef].Name;
+      var topicName =
+        variableConfigurations.TryGetValue(clockName, out var variableConfiguration) &&
+        !string.IsNullOrEmpty(variableConfiguration.TopicName)
+          ? variableConfiguration.TopicName
+          : clockName;
+
+      SilKitDataManager.CreateSubscriber(
+        clockName,
+        topicName,
+        _fmuImporterConfig.Instance,
+        _fmuImporterConfig.Namespace,
+        new IntPtr(clockValueRef),
+        DataCategory.InputTxClock);
+    }
+  }
+
+  private bool HasPendingInputTxClocks()
+  {
+    return SilKitDataManager.LookupActiveClocks(_lastSimStep!.Value, DataCategory.InputTxClock).Count > 0;
+  }
+
+  private void ApplyInputTxClocks()
+  {
+    var receivedSilKitTxClocks = SilKitDataManager.RetrieveReceivedData(_lastSimStep!.Value, DataCategory.InputTxClock);
+    SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.InputTxClock);
+
+    foreach (var (clockValueRef, data) in receivedSilKitTxClocks)
+    {
+      if (data.Length == 0 || data[0] == 0)
+      {
+        continue;
+      }
+
+      FmuEntity.Binding.SetValue((uint)clockValueRef, new byte[] { 1 });
+      InputTxClocks[(uint)clockValueRef] = true;
+    }
   }
 
   private void ApplyClocksAndClockedInputs()
@@ -880,6 +927,7 @@ public class FmuImporter
       if (FmuEntity.ModelDescription.CoSimulation.hasEventMode)
       {
         ApplyClocksAndClockedInputs();
+        ApplyInputTxClocks();
 
         RecordClocksAndClockedVariables();
 
@@ -970,8 +1018,9 @@ public class FmuImporter
         return;
       }
 
+      // enter the Event Mode if requested by the FMU or if input Tx clocks must be activated
       if (FmuEntity.ModelDescription.CoSimulation.hasEventMode &&
-          eventEncountered &&
+          (eventEncountered || HasPendingInputTxClocks()) &&
           (FmuEntity.Binding.CurrentState != InternalFmuStates.Terminated))
       {
         FmuEntity.EnterEventMode();
@@ -986,6 +1035,7 @@ public class FmuImporter
         SilKitDataManager.ClearDataUpTo(_lastSimStep!.Value, DataCategory.Variable, DataCategory.Structure);
 
         ApplyClocksAndClockedInputs();
+        ApplyInputTxClocks();
 
         RecordClocksAndClockedVariables(preStepActiveInputClocks);
 

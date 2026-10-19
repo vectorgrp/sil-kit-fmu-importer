@@ -11,7 +11,8 @@ public enum DataCategory
   Variable,
   ClockedVariable,
   Structure,
-  ClockedStructure
+  ClockedStructure,
+  InputTxClock // FMI-LS-BUS Tx clocks with causality input
 }
 
 public class SilKitDataManager : IDisposable
@@ -192,11 +193,12 @@ public void ClearDataUpTo(double pointInTime, params DataCategory[] categories)
   ///   A clock is considered active if its first byte is non-zero.
   /// </summary>
   /// <param name="currentTime">The time (included) up to which the data will be looked up.</param>
+  /// <param name="category">The clock category to look up.</param>
   /// <returns>The set of value references of active clocks.</returns>
-  public HashSet<long> LookupActiveClocks(ulong currentTime)
+  public HashSet<long> LookupActiveClocks(ulong currentTime, DataCategory category = DataCategory.Clock)
   {
     var activeClocks = new HashSet<long>();
-    var clocksBuffer = DataBuffers[DataCategory.Clock];
+    var clocksBuffer = DataBuffers[category];
 
     lock (_dataBuffersLock)
     {

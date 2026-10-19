@@ -31,7 +31,8 @@ public class FmuRpcManager
     Binding = binding;
   }
 
-  public void Initialize(ref Dictionary<uint /* vRef */, Variable> modelDescriptionVariables)
+  public void Initialize(ref Dictionary<uint /* vRef */, Variable> modelDescriptionVariables,
+    Dictionary<uint, bool> inputTxClocks)
   {
     var flatRx = VrefRxIdArgs.SelectMany(kvp => kvp.Value.HasValue ? new[] { kvp.Key, kvp.Value.Value } : new[] { kvp.Key }).ToHashSet();
     var flatTx = VrefTxIdArgs.SelectMany(kvp => kvp.Value.HasValue ? new[] { kvp.Key, kvp.Value.Value } : new[] { kvp.Key }).ToHashSet();
@@ -55,6 +56,10 @@ public class FmuRpcManager
           switch (modelDescriptionVariable.Causality)
           {
             case Variable.Causalities.Output:
+              if (Helpers.Helpers.IsInputTxClock(modelDescriptionVariable, modelDescriptionVariables))
+              {
+                inputTxClocks[correspondingClockValueRef] = false;
+              }
               OutputIdVariables.Add(modelDescriptionVariable);
               break;
             case Variable.Causalities.Input:
@@ -96,18 +101,16 @@ public class FmuRpcManager
     }
   }
 
-  public List<Tuple<uint /* vRef Tx_Id */, Tuple<ulong /* Tx_Id */, byte[]?>>> GetOperations()
+  public List<Tuple<uint /* vRef Tx_Id */, Tuple<ulong /* Tx_Id */, byte[]?>>> GetOperations(Dictionary<uint, bool> inputTxClocks)
   {
     var returnData = new List<Tuple<uint, Tuple<ulong, byte[]?>>>();
 
     foreach (var idVar in OutputIdVariables)
     {
-      // first get the value of the associated Tx clock
       // it is assumed that one RPC Tx_Id variable has only one associated Tx clock
-      Binding.GetValue(new uint[] { idVar.Clocks![0] }, out var clockResult, VariableTypes.TriggeredClock);
+      var clockRef = idVar.Clocks![0];
 
-      // if the associated clock has not been updated, don't get the Tx_Id & Tx_Args
-      if ((bool)clockResult.ResultArray[0].Values[0] == false)
+      if (!Helpers.Helpers.IsActiveClock(Binding, inputTxClocks, clockRef))
       {
         continue;
       }

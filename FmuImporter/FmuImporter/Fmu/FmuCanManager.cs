@@ -36,7 +36,8 @@ public class FmuCanManager
     InputCanVariables = new Dictionary<ulong, Variable>();
   }
 
-  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables,
+    Dictionary<uint, bool> inputTxClocks)
   {
     foreach (var (valueRef, modelDescriptionVariable) in modelDescriptionVariables)
     {
@@ -45,6 +46,12 @@ public class FmuCanManager
       {
         // other variables are handled in their own class
         continue;
+      }
+
+      if (modelDescriptionVariable.Causality == Variable.Causalities.Output &&
+          Helpers.Helpers.IsInputTxClock(modelDescriptionVariable, modelDescriptionVariables))
+      {
+        inputTxClocks[modelDescriptionVariable.Clocks![0]] = false;
       }
 
       // than the variable is handled here
@@ -80,18 +87,16 @@ public class FmuCanManager
     }
   }
 
-  public List<Tuple<uint, byte[]>> GetCanData()
+  public List<Tuple<uint, byte[]>> GetCanData(Dictionary<uint, bool> inputTxClocks)
   {
     var returnData = new List<Tuple<uint, byte[]>>();
 
     foreach (var canVariable in OutputCanVariables)
     {
-      // first get the value of the associated Tx_Clock
       // it is assumed that one CAN Tx_Data variable has only one associated Tx_Clock
-      Binding.GetValue(new uint[] { canVariable.Clocks![0] }, out var clockResult, VariableTypes.TriggeredClock);
+      var clockRef = canVariable.Clocks![0];
 
-      // if the associated clock has not been updated, don't get the Tx_Data
-      if ((bool)clockResult.ResultArray[0].Values[0] == false)
+      if (!Helpers.Helpers.IsActiveClock(Binding, inputTxClocks, clockRef))
       {
         continue;
       }

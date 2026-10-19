@@ -36,7 +36,8 @@ public class FmuEthernetManager
     InputEthernetVariables = new Dictionary<ulong, Variable>();
   }
 
-  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables,
+    Dictionary<uint, bool> inputTxClocks)
   {
     foreach (var (valueRef, modelDescriptionVariable) in modelDescriptionVariables)
     {
@@ -45,6 +46,12 @@ public class FmuEthernetManager
       {
         // other variables are handled in their own class
         continue;
+      }
+
+      if (modelDescriptionVariable.Causality == Variable.Causalities.Output &&
+          Helpers.Helpers.IsInputTxClock(modelDescriptionVariable, modelDescriptionVariables))
+      {
+        inputTxClocks[modelDescriptionVariable.Clocks![0]] = false;
       }
 
       // the variable is handled here
@@ -80,18 +87,16 @@ public class FmuEthernetManager
     }
   }
 
-  public List<Tuple<uint, byte[]>> GetEthernetData()
+  public List<Tuple<uint, byte[]>> GetEthernetData(Dictionary<uint, bool> inputTxClocks)
   {
     var returnData = new List<Tuple<uint, byte[]>>();
 
     foreach (var ethernetVariable in OutputEthernetVariables)
     {
-      // first get the value of the associated Tx_Clock
       // it is assumed that one Ethernet Tx_Data variable has only one associated Tx_Clock
-      Binding.GetValue(new uint[] { ethernetVariable.Clocks![0] }, out var clockResult, VariableTypes.TriggeredClock);
+      var clockRef = ethernetVariable.Clocks![0];
 
-      // if the associated clock has not been updated, don't get the Tx_Data
-      if ((bool)clockResult.ResultArray[0].Values[0] == false)
+      if (!Helpers.Helpers.IsActiveClock(Binding, inputTxClocks, clockRef))
       {
         continue;
       }

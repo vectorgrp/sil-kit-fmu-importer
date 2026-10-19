@@ -35,7 +35,8 @@ public class FmuLinManager
     InputLinVariables = new Dictionary<ulong, Variable>();
   }
 
-  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables)
+  public void Initialize(ref Dictionary<uint /* ValueReference */, Variable> modelDescriptionVariables,
+    Dictionary<uint, bool> inputTxClocks)
   {
     foreach (var (valueRef, modelDescriptionVariable) in modelDescriptionVariables)
     {
@@ -43,6 +44,12 @@ public class FmuLinManager
           modelDescriptionVariable.MimeType.Contains(Terminal.Constants.LinMimeType) == false)
       {
         continue;
+      }
+
+      if (modelDescriptionVariable.Causality == Variable.Causalities.Output &&
+          Helpers.Helpers.IsInputTxClock(modelDescriptionVariable, modelDescriptionVariables))
+      {
+        inputTxClocks[modelDescriptionVariable.Clocks![0]] = false;
       }
 
       modelDescriptionVariables.Remove(valueRef);
@@ -76,15 +83,16 @@ public class FmuLinManager
     }
   }
 
-  public List<Tuple<uint, byte[]>> GetLinData()
+  public List<Tuple<uint, byte[]>> GetLinData(Dictionary<uint, bool> inputTxClocks)
   {
     var returnData = new List<Tuple<uint, byte[]>>();
 
     foreach (var linVariable in OutputLinVariables)
     {
-      Binding.GetValue(new uint[] { linVariable.Clocks![0] }, out var clockResult, VariableTypes.TriggeredClock);
+      // it is assumed that one LIN Tx_Data variable has only one associated Tx_Clock
+      var clockRef = linVariable.Clocks![0];
 
-      if ((bool)clockResult.ResultArray[0].Values[0] == false)
+      if (!Helpers.Helpers.IsActiveClock(Binding, inputTxClocks, clockRef))
       {
         continue;
       }

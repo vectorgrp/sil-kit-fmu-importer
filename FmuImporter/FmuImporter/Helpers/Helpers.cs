@@ -2,6 +2,8 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using Fmi;
+using Fmi.Binding;
+using Fmi.FmiModel.Internal;
 using FmuImporter.Config;
 using SilKit.Services.Logger;
 
@@ -223,5 +225,59 @@ public static class Helpers
       nameof(type),
       type,
       $"The provided type '{type}' cannot be changed using a factor or offset");
+  }
+
+  /// <summary>
+  ///   Checks whether the Tx clock of a FMI-LS-BUS Tx variable (e.g., Tx_Data or Tx_Id) is an input clock.
+  ///   Must be called before the clock is removed from the model description variables.
+  /// </summary>
+  /// <exception cref="NotSupportedException">Thrown if the Tx clock is not a triggered clock.</exception>
+  public static bool IsInputTxClock(Variable txVariable, Dictionary<uint, Variable> modelDescriptionVariables)
+  {
+    // it is assumed that one Tx variable has only one associated Tx clock
+    var clockValueRef = txVariable.Clocks!.FirstOrDefault();
+
+    // non-triggered clocks (periodic, countdown, ...) are discarded while parsing the model description
+    if (!modelDescriptionVariables.TryGetValue(clockValueRef, out var clockVariable) ||
+        clockVariable.VariableType != VariableTypes.TriggeredClock)
+    {
+      throw new NotSupportedException(
+        $"The Tx clock (value reference {clockValueRef}) of variable '{txVariable.Name}' is not a triggered clock. " +
+        $"Only triggered Tx clocks are supported.");
+    }
+
+    return clockVariable.Causality == Variable.Causalities.Input;
+  }
+
+  /// <summary>
+  ///   Checks whether the Tx clock of a FMI-LS-BUS Tx variable is active in the current step.
+  /// </summary>
+  /// <param name="binding">The FMI binding used to query output Tx clocks.</param>
+  /// <param name="inputTxClocks">Activation state of the input Tx clocks, keyed by clock value reference.</param>
+  /// <param name="clockRef">The value reference of the Tx clock to check.</param>
+  /// <returns>True if the Tx clock is active, false otherwise.</returns>
+  public static bool IsActiveClock(IFmiBindingCommon binding, Dictionary<uint, bool> inputTxClocks, uint clockRef)
+  {
+    // input Tx clocks are activated when a value is received via SIL Kit, output Tx clocks by the FMU
+    if (inputTxClocks.TryGetValue(clockRef, out var isInputTxClockActive))
+    {
+      if (!isInputTxClockActive)
+      {
+        return false;
+      }
+
+      // retrieve the Tx data only once per activation
+      inputTxClocks[clockRef] = false;
+    }
+    else
+    {
+      binding.GetValue(new uint[] { clockRef }, out var clockResult, VariableTypes.TriggeredClock);
+      if ((bool)clockResult.ResultArray[0].Values[0] == false)
+      {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
