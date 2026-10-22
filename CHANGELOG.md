@@ -4,6 +4,13 @@ All notable changes to the SIL Kit FMU Importer project shall be documented in t
 
 The format is based on `Keep a Changelog (http://keepachangelog.com/en/1.0.0/) <http://keepachangelog.com/en/1.0.0/>`.
 
+## [1.8.1] - 2026-10-22
+
+### Fixed
+* Fixed memory leak for LS-BUS CAN and Ethernet communication
+* DefaultExperiment is not mandatory in the model description anymore
+* Triggered input Tx_Clocks are now handled correctly
+
 ## [1.8.0] - 2026-10-02
 
 ### Added
