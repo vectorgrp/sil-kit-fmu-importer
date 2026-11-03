@@ -125,14 +125,12 @@ public class ModelLoader
     }
   }
 
-  private static string LoadAndNormalizeModelDescriptionXml(string modelDescriptionPath)
+  private static string NormalizeModelDescriptionXml(string xml)
   {
     // Normalize empty dependencies / dependenciesKind attributes (e.g. dependencies="")
     // which some generated XML classes cannot handle for collection-backed attributes.
-    var xml = File.ReadAllText(modelDescriptionPath);
-    xml = xml.Replace(" dependencies=\"\"", string.Empty)
-             .Replace(" dependenciesKind=\"\"", string.Empty);
-    return xml;
+    return xml.Replace(" dependencies=\"\"", string.Empty)
+              .Replace(" dependenciesKind=\"\"", string.Empty);
   }
 
   internal static ModelDescription LoadModelFromExtractedPath(
@@ -144,15 +142,37 @@ public class ModelLoader
       throw new FileNotFoundException("ModelDescription.xml is missing.");
     }
 
-    var fmiVersion = FindFmiVersion(modelDescriptionPath);
+    return LoadModelFromXml(
+      File.ReadAllText(modelDescriptionPath),
+      FindFmiVersion(modelDescriptionPath),
+      logCallback);
+  }
 
+  // Reads the model description directly from the FMU archive.
+  // The FMU is neither extracted nor is its binary loaded, so this works for FMUs built for any platform.
+  public static ModelDescription LoadModelFromFmu(string fmuPath, Action<LogSeverity, string> logCallback)
+  {
+    using var zip = ZipFile.OpenRead(fmuPath);
+    var zipEntry = zip.GetEntry("modelDescription.xml");
+    if (zipEntry == null)
+    {
+      throw new FileNotFoundException("ModelDescription.xml is missing.");
+    }
+
+    using var reader = new StreamReader(zipEntry.Open());
+    return LoadModelFromXml(reader.ReadToEnd(), FindFmiVersion(fmuPath), logCallback);
+  }
+
+  private static ModelDescription LoadModelFromXml(
+    string modelDescriptionXml, FmiVersions fmiVersion, Action<LogSeverity, string> logCallback)
+  {
     ModelDescription? commonDescription = null;
 
     switch (fmiVersion)
     {
       case FmiVersions.Fmi2:
       {
-        var xml = LoadAndNormalizeModelDescriptionXml(modelDescriptionPath);
+        var xml = NormalizeModelDescriptionXml(modelDescriptionXml);
         using var stringReader = new StringReader(xml);
         var ser = new XmlSerializer(typeof(Fmi2.fmiModelDescription));
         var fmiModelDescription = ser.Deserialize(stringReader) as Fmi2.fmiModelDescription;
@@ -165,7 +185,7 @@ public class ModelLoader
       }
       case FmiVersions.Fmi3:
       {
-        var xml = LoadAndNormalizeModelDescriptionXml(modelDescriptionPath);
+        var xml = NormalizeModelDescriptionXml(modelDescriptionXml);
         using var stringReader = new StringReader(xml);
         var ser = new XmlSerializer(typeof(fmiModelDescription));
         var fmiModelDescription = ser.Deserialize(stringReader) as Fmi3.fmiModelDescription;

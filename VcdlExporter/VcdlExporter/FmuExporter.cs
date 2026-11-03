@@ -1,9 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
+using System.IO.Compression;
 using System.Text;
 using Fmi;
-using Fmi.Binding;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Models.Helpers;
@@ -22,19 +22,13 @@ public class FmuExporter : BaseExporter
   }
 
 
-  public static string? FindVcdlFile(string directory)
+  // Returns the first .vcdl file located in the FMU's "resources" folder (or any of its subfolders), if any
+  private static ZipArchiveEntry? FindVcdlEntry(ZipArchive fmuArchive)
   {
-    // Search for .vcdl files in the "/resources" FMU subfolder
-    var resourcesPath = Path.Combine(directory, "resources");
-    
-    foreach (string file in Directory.EnumerateFiles(resourcesPath, "*.vcdl", SearchOption.AllDirectories))
-    {
-      return file; // Return the first .vcdl file found
-    }
-
-    return null; // Return null if no .vcdl file is found
+    return fmuArchive.Entries.FirstOrDefault(
+      entry => entry.FullName.Replace('\\', '/').StartsWith("resources/", StringComparison.Ordinal) &&
+               entry.FullName.EndsWith(".vcdl", StringComparison.OrdinalIgnoreCase));
   }
-
 
   public void Export(bool useClockPubSubElements)
   {
@@ -42,29 +36,33 @@ public class FmuExporter : BaseExporter
     var interfaceSb = new StringBuilder();
     var objectsSb = new StringBuilder();
 
-    var FmiVersion = ModelLoader.FindFmiVersion(FmuPath);
-
-    var Binding = BindingFactory.CreateBinding(FmiVersion, FmuPath, false, FmiLogCallback);
-    
-    ModelDescription modelDescription;
-    switch (FmiVersion)
+    var fmiVersion = ModelLoader.FindFmiVersion(FmuPath);
+    if (fmiVersion is not (FmiVersions.Fmi2 or FmiVersions.Fmi3))
     {
-      case FmiVersions.Fmi2:
-        modelDescription = ((IFmi2Binding)Binding).ModelDescription;
-        break;
-      case FmiVersions.Fmi3:
-        modelDescription = ((IFmi3Binding)Binding).ModelDescription;
-        break;
-      case FmiVersions.Invalid:
-      default:
-        throw new InvalidDataException("The FMU uses an unsupported FMU version.");
+      throw new InvalidDataException("The FMU uses an unsupported FMU version.");
     }
 
-    // Check GenerationTool before parsing, if Vector vVIRTUALtarget FMU, copy-paste it instead of parsing 
+    // Only the model description is needed: the FMU binary is not loaded, so FMUs of any platform can be exported
+ModelDescription modelDescription;
+try
+{
+  modelDescription = ModelLoader.LoadModelFromFmu(FmuPath, FmiLogCallback);
+}
+catch
+{
+  if (Environment.ExitCode == ExitCodes.Success)
+  {
+    Environment.ExitCode = ExitCodes.FailedToReadModelDescription;
+  }
+  throw;
+}
+
+    // Check GenerationTool before parsing, if Vector vVIRTUALtarget FMU, copy-paste it instead of parsing
     if (modelDescription.GenerationTool == ModelDescription.GenerationTools.Vector_vVIRTUALtarget)
     {
-      string? FmuVcdlPath = FindVcdlFile(Binding.ExtractedFolderPath);
-      if (File.Exists(FmuVcdlPath))
+      using var fmuArchive = ZipFile.OpenRead(FmuPath);
+      var vcdlEntry = FindVcdlEntry(fmuArchive);
+      if (vcdlEntry != null)
       {
         Console.WriteLine("The imported FMU has been identified as a Vector vVIRTUALtarget FMU. The .vCDL file included in this FMU will be extracted to the defined output path.");
         if (useClockPubSubElements)
@@ -73,7 +71,7 @@ public class FmuExporter : BaseExporter
         }
 
         // Copy FMU vCDL file instead of parsing
-        File.Copy(FmuVcdlPath, VcdlPath, overwrite: true);
+        vcdlEntry.ExtractToFile(VcdlPath, overwrite: true);
         return;
       }
       Console.WriteLine("The provided Vector vVIRTUALtarget FMU does not contain a .vCDL file. A .vCDL file will be exported to the defined output path.");
@@ -82,7 +80,7 @@ public class FmuExporter : BaseExporter
     // Proceed with parsing
     AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
 
-    switch (FmiVersion)
+    switch (fmiVersion)
     {
       case FmiVersions.Fmi2:
         ParseFmi2(modelDescription, interfaceSb, objectsSb);
