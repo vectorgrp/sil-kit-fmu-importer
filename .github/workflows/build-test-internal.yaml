@@ -4,6 +4,13 @@ name: Build & test the SIL Kit FMU Importer (internal)
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_dispatch:
+    inputs:
+      fmu-architecture:
+        description: 'Architectures of VTT groups 1-3 (TEG_ETH_Demo always runs in x86); FMU sets are generated in vtt-test-fmus-tmp/<run id> and deleted afterwards'
+        type: choice
+        default: 'x64,x86'
+        options: ['x64,x86', x64, x86]
 
 concurrency:
   group: build-fmu-importer
@@ -103,10 +110,12 @@ jobs:
     with:
       fmu-importer-version: 1.8.1
       sil-kit-version: 5.0.7
-      supplements-branch-name: ${{ github.head_ref }}
+      supplements-branch-name: ${{ github.head_ref || github.ref_name }}
       runner-labels: '["Windows", "ska", "docker"]'                 # build/support jobs → ska
       test-runner-labels: '["Windows", "medium", "docker-windows"]' # 3 group playlists → org
       run-vtt-tests: true
+      fmu-architecture: ${{ inputs.fmu-architecture || 'x64' }}    # pull_request runs → x64
+      vtt-fmu-tmp: ${{ github.event_name == 'workflow_dispatch' }}  # manual runs → per-run tmp FMU folder
     secrets: inherit
 
   run-linux-integration-tests:
@@ -115,5 +124,5 @@ jobs:
     with:
       fmu-importer-version: 1.8.1
       sil-kit-version: 5.0.7
-      branch-name: ${{ github.head_ref }}
+      branch-name: ${{ github.head_ref || github.ref_name }}
     secrets: inherit
