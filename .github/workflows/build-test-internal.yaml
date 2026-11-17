@@ -125,4 +125,5 @@ jobs:
       fmu-importer-version: 1.8.1
       sil-kit-version: 5.0.7
       branch-name: ${{ github.head_ref || github.ref_name }}
+      vtt-fmu-tmp: ${{ github.event_name == 'workflow_dispatch' }}  # manual runs → per-run tmp FMU folder
     secrets: inherit
