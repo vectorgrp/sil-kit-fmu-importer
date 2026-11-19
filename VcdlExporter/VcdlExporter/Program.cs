@@ -2,14 +2,16 @@
 // Copyright (c) Vector Informatik GmbH. All rights reserved.
 
 using System.CommandLine;
-using System.Diagnostics;
 using System.Globalization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using VcdlExporter.Helpers;
 
 namespace VcdlExporter;
 
 internal class Program
 {
-  private static async Task Main(string[] args)
+  private static async Task<int> Main(string[] args)
   {
     // Set output to be OS language independent
     CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -17,6 +19,12 @@ internal class Program
 
     var rootCommand = new RootCommand(
       "vCDL Exporter for FMI 2.0 / 3.0 FMUs, and FMU Importer communication interface description files.");
+
+    var verboseOption = new Option<bool>(
+      "--verbose",
+      "Print debug and trace messages, and full error details (including stack traces).");
+    verboseOption.AddAlias("-v");
+    rootCommand.AddGlobalOption(verboseOption);
 
     var fmuCommand = new Command("fmu", "Export vCDL based on FMI 2.0 / 3.0 FMUs.");
     rootCommand.AddCommand(fmuCommand);
@@ -64,47 +72,99 @@ internal class Program
     fmuCommand.AddOption(useClockPubSubElementsOption);
 
     fmuCommand.SetHandler(
-      (fmuPath, vcdlPath, useClockPubSubElements) =>
+      context =>
       {
-        try
-        {
-          var fmuExporter = new FmuExporter(fmuPath, vcdlPath);
-          fmuExporter.Export(useClockPubSubElements);
-        }
-        catch (Exception e)
-        {
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine(
-            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
-          Debug.WriteLine($"Encountered exception: {e}.");
-          Console.ResetColor();
-        }
-      },
-      fmuPathOption,
-      vcdlPathOption,
-      useClockPubSubElementsOption);
+        var parseResult = context.ParseResult;
+        context.ExitCode = RunExport(
+          parseResult.GetValueForOption(verboseOption),
+          logger =>
+          {
+            var fmuExporter = new FmuExporter(
+              parseResult.GetValueForOption(fmuPathOption)!,
+              parseResult.GetValueForOption(vcdlPathOption)!,
+              logger);
+            fmuExporter.Export(parseResult.GetValueForOption(useClockPubSubElementsOption));
+          });
+      });
 
     communicationInterfaceCommand.SetHandler(
-      (commInterfacePath, vcdlPath, interfaceName) =>
+      context =>
       {
-        try
-        {
-          var fmuExporter = new CommInterfaceExporter(commInterfacePath, vcdlPath, interfaceName);
-          fmuExporter.Export();
-        }
-        catch (Exception e)
-        {
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine(
-            $"Encountered exception: {e.Message}.\nMore information was written to the debug console.");
-          Debug.WriteLine($"Encountered exception: {e}.");
-          Console.ResetColor();
-        }
-      },
-      commInterfacePathOption,
-      vcdlPathOption,
-      interfaceNameOption);
+        var parseResult = context.ParseResult;
+        context.ExitCode = RunExport(
+          parseResult.GetValueForOption(verboseOption),
+          logger =>
+          {
+            var commInterfaceExporter = new CommInterfaceExporter(
+              parseResult.GetValueForOption(commInterfacePathOption)!,
+              parseResult.GetValueForOption(vcdlPathOption)!,
+              parseResult.GetValueForOption(interfaceNameOption)!,
+              logger);
+            commInterfaceExporter.Export();
+          });
+      });
 
-    await rootCommand.InvokeAsync(args);
+    return await rootCommand.InvokeAsync(args);
+  }
+
+  private static int RunExport(bool verbose, Action<ILogger> export)
+  {
+    // Disposing the factory flushes the console logger's queue before the process exits
+    using var loggerFactory = CreateLoggerFactory(verbose);
+    var logger = loggerFactory.CreateLogger("VcdlExporter");
+
+    try
+    {
+      export(logger);
+      return ExitCodes.Success;
+    }
+    catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+    {
+      LogException(logger, e, verbose);
+      return ExitCodes.FileNotFound;
+    }
+    catch (InvalidIdentifierException e)
+    {
+      LogException(logger, e, verbose);
+      return ExitCodes.InvalidIdentifier;
+    }
+    catch (ModelDescriptionException e)
+    {
+      LogException(logger, e, verbose);
+      return ExitCodes.FailedToReadModelDescription;
+    }
+    catch (Exception e)
+    {
+      LogException(logger, e, verbose);
+      return ExitCodes.ExportFailed;
+    }
+  }
+
+  private static ILoggerFactory CreateLoggerFactory(bool verbose)
+  {
+    return LoggerFactory.Create(
+      builder => builder
+                 .AddConsole(
+                   options =>
+                   {
+                     options.FormatterName = LogFormatter.FormatterName;
+                     // Keep stdout free of log messages
+                     options.LogToStandardErrorThreshold = LogLevel.Trace;
+                   })
+                 .AddConsoleFormatter<LogFormatter, ConsoleFormatterOptions>(
+                   options => options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff")
+                 .SetMinimumLevel(verbose ? LogLevel.Trace : LogLevel.Information));
+  }
+
+  private static void LogException(ILogger logger, Exception e, bool verbose)
+  {
+    if (verbose)
+    {
+      logger.LogError(e, "Export failed: {Message}", e.Message);
+    }
+    else
+    {
+      logger.LogError("Export failed: {Message} Run with --verbose for more details.", e.Message);
+    }
   }
 }

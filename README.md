@@ -143,6 +143,19 @@ To export a vCDL based on a communication interface description, you can run the
 
 All provided paths must include the file's extensions (e.g., .vcdl, .fmu, .yaml).
 
+Log messages are written to the standard error stream. Pass `--verbose` (or `-v`) to also print debug and trace messages and the full error details, including stack traces.
+
+The vCDL Exporter returns the following exit codes:
+
+| Exit code | Meaning                                                    |
+|-----------|------------------------------------------------------------|
+| 0         | The vCDL was exported successfully                         |
+| 1         | Invalid command line arguments                             |
+| 2         | The export failed (e.g., invalid FMU or communication interface description) |
+| 3         | A file or directory was not found (input file or output directory) |
+| 4         | A name in the model description or communication interface description is not a valid vCDL identifier |
+| 5         | The model description of the FMU could not be read         |
+
 ---
 
 #### **Communication Interface Exporter**

@@ -7,18 +7,34 @@ using Fmi;
 using Fmi.FmiModel;
 using Fmi.FmiModel.Internal;
 using FmuImporter.Models.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace VcdlExporter;
+
+public class ModelDescriptionException : Exception
+{
+  public ModelDescriptionException(string message, Exception innerException) : base(message, innerException)
+  {
+  }
+}
 
 public class FmuExporter : BaseExporter
 {
   public string FmuPath { get; }
   public string VcdlPath { get; }
 
-  public FmuExporter(string fmuPath, string vcdlPath)
+  private readonly ILogger _logger;
+  private readonly IdentifierValidator _identifierValidator = new(
+    "model description",
+    "Names containing '.' follow the structured naming convention: generate a communication " +
+    "interface description with the CommInterfaceExporter and export it with the " +
+    "'communicationInterface' command instead.");
+
+  public FmuExporter(string fmuPath, string vcdlPath, ILogger logger)
   {
     FmuPath = fmuPath;
     VcdlPath = vcdlPath;
+    _logger = logger;
   }
 
 
@@ -36,26 +52,21 @@ public class FmuExporter : BaseExporter
     var interfaceSb = new StringBuilder();
     var objectsSb = new StringBuilder();
 
-    var fmiVersion = ModelLoader.FindFmiVersion(FmuPath);
+    if (!File.Exists(FmuPath))
+    {
+      throw new FileNotFoundException($"The FMU '{FmuPath}' does not exist.", FmuPath);
+    }
+
+    var fmiVersion = ReadModelDescription(() => ModelLoader.FindFmiVersion(FmuPath));
     if (fmiVersion is not (FmiVersions.Fmi2 or FmiVersions.Fmi3))
     {
       throw new InvalidDataException("The FMU uses an unsupported FMU version.");
     }
 
+    _logger.LogDebug("Detected FMI version: {FmiVersion}", fmiVersion);
+
     // Only the model description is needed: the FMU binary is not loaded, so FMUs of any platform can be exported
-ModelDescription modelDescription;
-try
-{
-  modelDescription = ModelLoader.LoadModelFromFmu(FmuPath, FmiLogCallback);
-}
-catch
-{
-  if (Environment.ExitCode == ExitCodes.Success)
-  {
-    Environment.ExitCode = ExitCodes.FailedToReadModelDescription;
-  }
-  throw;
-}
+    var modelDescription = ReadModelDescription(() => ModelLoader.LoadModelFromFmu(FmuPath, FmiLogCallback));
 
     // Check GenerationTool before parsing, if Vector vVIRTUALtarget FMU, copy-paste it instead of parsing
     if (modelDescription.GenerationTool == ModelDescription.GenerationTools.Vector_vVIRTUALtarget)
@@ -64,20 +75,27 @@ catch
       var vcdlEntry = FindVcdlEntry(fmuArchive);
       if (vcdlEntry != null)
       {
-        Console.WriteLine("The imported FMU has been identified as a Vector vVIRTUALtarget FMU. The .vCDL file included in this FMU will be extracted to the defined output path.");
+        _logger.LogInformation(
+          "The imported FMU has been identified as a Vector vVIRTUALtarget FMU. " +
+          "The .vCDL file included in this FMU ('{FmuVcdlPath}') will be copied to '{VcdlPath}'.",
+          vcdlEntry.FullName,
+          VcdlPath);
         if (useClockPubSubElements)
         {
-          Console.WriteLine("The \"--use-clock-pub-sub-elements\" option will be ignored.");
+          _logger.LogWarning("The \"--use-clock-pub-sub-elements\" option is ignored for Vector vVIRTUALtarget FMUs.");
         }
 
         // Copy FMU vCDL file instead of parsing
         vcdlEntry.ExtractToFile(VcdlPath, overwrite: true);
         return;
       }
-      Console.WriteLine("The provided Vector vVIRTUALtarget FMU does not contain a .vCDL file. A .vCDL file will be exported to the defined output path.");
+      _logger.LogWarning(
+        "The provided Vector vVIRTUALtarget FMU does not contain a .vCDL file. " +
+        "The vCDL will be generated from the model description instead.");
     }
 
     // Proceed with parsing
+    _identifierValidator.Check(modelDescription.CoSimulation.ModelIdentifier, "Model identifier");
     AddVcdlHeader(commonTextSb, modelDescription.CoSimulation.ModelIdentifier);
 
     switch (fmiVersion)
@@ -95,13 +113,38 @@ catch
 
     AddVcdlFooter(commonTextSb);
 
-    Console.WriteLine("Writing vCDL to " + VcdlPath);
+    // Fail before writing anything, so that no invalid vCDL file is left behind
+    _identifierValidator.ThrowIfInvalid(_logger);
+
+    _logger.LogInformation("Writing vCDL to '{VcdlPath}'.", VcdlPath);
     File.WriteAllText(VcdlPath, commonTextSb.ToString());
+  }
+
+  // Wraps any failure while reading the model description into a ModelDescriptionException
+  private T ReadModelDescription<T>(Func<T> read)
+  {
+    try
+    {
+      return read();
+    }
+    catch (Exception e)
+    {
+      throw new ModelDescriptionException($"Failed to read the model description of '{FmuPath}': {e.Message}", e);
+    }
   }
 
   private void FmiLogCallback(LogSeverity severity, string message)
   {
-    Console.WriteLine(message);
+    var logLevel = severity switch
+    {
+      LogSeverity.Error => LogLevel.Error,
+      LogSeverity.Warning => LogLevel.Warning,
+      LogSeverity.Information => LogLevel.Information,
+      LogSeverity.Debug => LogLevel.Debug,
+      LogSeverity.Trace => LogLevel.Trace,
+      _ => LogLevel.Information
+    };
+    _logger.Log(logLevel, "{Message}", message);
   }
 
   private void ParseFmi2(ModelDescription modelDescription, StringBuilder interfaceSb, StringBuilder objectsSb)
@@ -148,6 +191,8 @@ catch
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
+
+      _identifierValidator.Check(vValue.Name, $"{vValue.Causality} variable");
     }
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
@@ -219,6 +264,8 @@ catch
         default:
           throw new InvalidDataException($"The variable '{vValue.Name}' has an unknown causality.");
       }
+
+      _identifierValidator.Check(vValue.Name, $"{vValue.Causality} variable");
     }
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
@@ -248,7 +295,8 @@ catch
   private OptionalType BuildVariableType(Variable variable)
   {
     var leafTypeName = variable.VariableType is VariableTypes.EnumFmi2 or VariableTypes.EnumFmi3
-                         ? variable.TypeDefinition!.Name
+                         // Same renaming as in AddEnumerationDefinitions, so the variable references the written enum
+                         ? variable.TypeDefinition!.Name.Replace(' ', '_')
                          : GetVarTypeString(variable.VariableType);
 
     OptionalType type = new OptionalType(isOptional: false, isList: false, customTypeName: leafTypeName);
@@ -283,15 +331,61 @@ catch
 
   private void AddEnumerationDefinitions(ModelDescription modelDescription, StringBuilder sb)
   {
+    // Only the enumeration types used by exported variables are needed in the vCDL,
+    // so unused types are skipped (and not validated), like unused variables
+    var usedTypeNames = modelDescription.Variables.Values
+      .Where(v => v.Causality is Variable.Causalities.Input or Variable.Causalities.Output)
+      .Select(v => v.TypeDefinition?.Name)
+      .OfType<string>()
+      .ToHashSet();
+
+    // Spaces are replaced by '_', so distinct types (e.g. 'A B' and 'A_B') can end up with the same name
+    // Such duplicates are reported as invalid identifiers, so the export fails
+    var originalTypeNames = new Dictionary<string, string>();
     foreach (var typedefinition in modelDescription.TypeDefinitions)
     {
-      if (typedefinition.Value.EnumerationValues != null)
+      if (typedefinition.Value.EnumerationValues != null && usedTypeNames.Contains(typedefinition.Key))
       {
-        sb.AppendLine($"  enum {typedefinition.Key.Replace(' ', '_')} : int64");
+        var typeName = typedefinition.Value.Name.Replace(' ', '_');
+        if (typeName != typedefinition.Value.Name)
+        {
+          _logger.LogInformation(
+            "Enumeration type '{OriginalName}' has been renamed to '{TypeName}'.",
+            typedefinition.Value.Name,
+            typeName);
+        }
+
+        _identifierValidator.Check(typeName, "Enumeration type");
+        if (!originalTypeNames.TryAdd(typeName, typedefinition.Value.Name))
+        {
+          _identifierValidator.ReportDuplicate(
+            typeName, originalTypeNames[typeName], typedefinition.Value.Name, "Enumeration type");
+        }
+
+        sb.AppendLine($"  enum {typeName} : int64");
         sb.AppendLine("  {");
+
+        var originalNames = new Dictionary<string, string>();
         foreach (var val in typedefinition.Value.EnumerationValues)
         {
-          sb.AppendLine($"    {val.Item1.Replace(' ', '_')} = {val.Item2},");
+          var itemName = val.Item1.Replace(' ', '_');
+          if (itemName != val.Item1)
+          {
+            _logger.LogInformation(
+              "Item '{OriginalName}' of enumeration type '{TypeName}' has been renamed to '{ItemName}'.",
+              val.Item1,
+              typedefinition.Value.Name,
+              itemName);
+          }
+
+          var itemKind = $"Item of enumeration type '{typedefinition.Value.Name}'";
+          _identifierValidator.Check(itemName, itemKind);
+          if (!originalNames.TryAdd(itemName, val.Item1))
+          {
+            _identifierValidator.ReportDuplicate(itemName, originalNames[itemName], val.Item1, itemKind);
+          }
+
+          sb.AppendLine($"    {itemName} = {val.Item2},");
         }
 
         sb.AppendLine("  }\n");

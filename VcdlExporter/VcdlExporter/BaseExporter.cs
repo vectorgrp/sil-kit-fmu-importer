@@ -95,8 +95,15 @@ public abstract class BaseExporter
       return $"list<{CreateVariableType(optionalType.InnerType!)}>";
     }
 
-    return optionalType.CustomTypeName ??
-           CanonizeTokenTypeName(optionalType.Type!.Name); //TODO CHECK regular type name export
+    return optionalType.CustomTypeName != null
+             ? GetCustomTypeName(optionalType.CustomTypeName)
+             : CanonizeTokenTypeName(optionalType.Type!.Name); //TODO CHECK regular type name export
+  }
+
+  // Returns the name under which a custom type (enum or struct) is written to the vCDL
+  internal virtual string GetCustomTypeName(string customTypeName)
+  {
+    return customTypeName;
   }
 
   public static string CanonizeTokenTypeName(string input)
