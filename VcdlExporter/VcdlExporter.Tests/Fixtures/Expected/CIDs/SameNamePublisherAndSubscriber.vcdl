@@ -1,0 +1,15 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  [Binding="SilKit"]
+  interface ISample
+  {
+    provided data double Loopback;
+    provided data double OnlySubscribed;
+
+    consumed data double OnlyPublished;
+  }
+  ISample FmuInstance;
+}

@@ -1,0 +1,14 @@
+version 2.0;
+import module "SilKit";
+
+namespace Causalities
+{
+  [Binding="SilKit"]
+  interface ICausalities
+  {
+    provided data double input;
+
+    consumed data double output;
+  }
+  ICausalities Causalities;
+}

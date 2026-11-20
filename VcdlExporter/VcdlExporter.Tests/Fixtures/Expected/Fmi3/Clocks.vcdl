@@ -1,0 +1,15 @@
+version 2.0;
+import module "SilKit";
+
+namespace Clocks
+{
+  [Binding="SilKit"]
+  interface IClocks
+  {
+    provided data int32 clocked_input;
+
+    consumed data double unclocked_output;
+    consumed data int32 clocked_output;
+  }
+  IClocks Clocks;
+}

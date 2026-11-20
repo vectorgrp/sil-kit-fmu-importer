@@ -90,7 +90,7 @@ public class CommInterfaceExporter : BaseExporter
     }
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
-    vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
+    RemoveProvidedVariables(vcdlConsumerVariables, vcdlProviderVariables);
 
     // Add interface for providers
     AddInterfaceHeader(_interfaceName, null, sb);

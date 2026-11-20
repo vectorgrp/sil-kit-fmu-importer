@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="InvalidName_Dot" generationTool="VcdlExporter.Tests" guid="{00000000-0000-0000-0000-000000000002}">
+  <CoSimulation modelIdentifier="InvalidName_Dot" canHandleVariableCommunicationStepSize="true"/>
+  <ModelVariables>
+    <ScalarVariable name="valid_input" valueReference="1" causality="input">
+      <Real start="0"/>
+    </ScalarVariable>
+    <ScalarVariable name="vehicle.speed" valueReference="2" causality="input">
+      <Real start="0"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

@@ -1,0 +1,14 @@
+version 2.0;
+import module "SilKit";
+
+namespace MyNamespace
+{
+  [Binding="SilKit"]
+  interface ISample
+  {
+    provided data double In;
+
+    consumed data double Out;
+  }
+  ISample MyInstance;
+}

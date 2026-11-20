@@ -76,6 +76,11 @@ public class ModelDescription
         : VariableNamingConventions.Flat;
 
     // Node init
+    if (input.CoSimulation == null)
+    {
+      throw new ModelDescriptionException("The model description does not provide a CoSimulation description.");
+    }
+
     CoSimulation = new CoSimulation(input.CoSimulation);
 
     if (input.DefaultExperiment != null)

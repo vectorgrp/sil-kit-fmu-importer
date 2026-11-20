@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="AllTypes" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="AllTypes" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <TypeDefinitions>
+    <EnumerationType name="Option">
+      <Item name="Option 1" value="1"/>
+      <Item name="Option2" value="2"/>
+    </EnumerationType>
+  </TypeDefinitions>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float32 name="Float32_input" valueReference="1" causality="input" start="0"/>
+    <Float64 name="Float64_input" valueReference="2" causality="input" start="0"/>
+    <Int8 name="Int8_input" valueReference="3" causality="input" variability="discrete" start="0"/>
+    <UInt8 name="UInt8_input" valueReference="4" causality="input" variability="discrete" start="0"/>
+    <Int16 name="Int16_input" valueReference="5" causality="input" variability="discrete" start="0"/>
+    <UInt16 name="UInt16_input" valueReference="6" causality="input" variability="discrete" start="0"/>
+    <Int32 name="Int32_input" valueReference="7" causality="input" variability="discrete" start="0"/>
+    <UInt32 name="UInt32_input" valueReference="8" causality="input" variability="discrete" start="0"/>
+    <Int64 name="Int64_input" valueReference="9" causality="input" variability="discrete" start="0"/>
+    <UInt64 name="UInt64_input" valueReference="10" causality="input" variability="discrete" start="0"/>
+    <Boolean name="Boolean_input" valueReference="11" causality="input" variability="discrete" start="false"/>
+    <String name="String_input" valueReference="12" causality="input" variability="discrete">
+      <Start value="a"/>
+    </String>
+    <Binary name="Binary_input" valueReference="13" causality="input" variability="discrete">
+      <Start value="00"/>
+    </Binary>
+    <Enumeration name="Enumeration_input" declaredType="Option" valueReference="14" causality="input" variability="discrete" start="1"/>
+    <Float32 name="Float32_output" valueReference="101" causality="output"/>
+    <Float64 name="Float64_output" valueReference="102" causality="output"/>
+    <Int8 name="Int8_output" valueReference="103" causality="output" variability="discrete"/>
+    <UInt8 name="UInt8_output" valueReference="104" causality="output" variability="discrete"/>
+    <Int16 name="Int16_output" valueReference="105" causality="output" variability="discrete"/>
+    <UInt16 name="UInt16_output" valueReference="106" causality="output" variability="discrete"/>
+    <Int32 name="Int32_output" valueReference="107" causality="output" variability="discrete"/>
+    <UInt32 name="UInt32_output" valueReference="108" causality="output" variability="discrete"/>
+    <Int64 name="Int64_output" valueReference="109" causality="output" variability="discrete"/>
+    <UInt64 name="UInt64_output" valueReference="110" causality="output" variability="discrete"/>
+    <Boolean name="Boolean_output" valueReference="111" causality="output" variability="discrete"/>
+    <String name="String_output" valueReference="112" causality="output" variability="discrete"/>
+    <Binary name="Binary_output" valueReference="113" causality="output" variability="discrete"/>
+    <Enumeration name="Enumeration_output" declaredType="Option" valueReference="114" causality="output" variability="discrete"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="101"/>
+    <Output valueReference="102"/>
+    <Output valueReference="103"/>
+    <Output valueReference="104"/>
+    <Output valueReference="105"/>
+    <Output valueReference="106"/>
+    <Output valueReference="107"/>
+    <Output valueReference="108"/>
+    <Output valueReference="109"/>
+    <Output valueReference="110"/>
+    <Output valueReference="111"/>
+    <Output valueReference="112"/>
+    <Output valueReference="113"/>
+    <Output valueReference="114"/>
+  </ModelStructure>
+</fmiModelDescription>

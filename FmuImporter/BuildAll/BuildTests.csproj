@@ -24,6 +24,10 @@
         <Exec
             Command="dotnet build $(BuildPath)FmuImporter.Tests/FmuImporter.Tests.csproj $(DefaultProperties) -p:BuildProjectReferences=false -p:Platform=x64 -p:PlatformTarget=x64 $(CrossPlatformBuild)"
         />
+        <!-- The vCDL Exporter is not part of Build.csproj, so its project references are built here -->
+        <Exec
+            Command="dotnet build $(BuildPath)../VcdlExporter/VcdlExporter.Tests/VcdlExporter.Tests.csproj $(DefaultProperties) -p:Platform=x64 -p:PlatformTarget=x64 $(CrossPlatformBuild)"
+        />
     </Target>
     
 </Project>

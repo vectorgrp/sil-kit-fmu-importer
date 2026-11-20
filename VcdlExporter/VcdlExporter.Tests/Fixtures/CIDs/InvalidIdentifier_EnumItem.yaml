@@ -1,0 +1,11 @@
+Version: 1
+
+EnumDefinitions:
+  - Name: EnumSample
+    IndexType: int32
+    Items:
+      - EnumValue1 : 1
+      - '3' : 3
+
+Publishers:
+  - PubEnum : EnumSample

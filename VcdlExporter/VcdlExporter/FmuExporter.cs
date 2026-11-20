@@ -196,7 +196,7 @@ public class FmuExporter : BaseExporter
     }
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
-    vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
+    RemoveProvidedVariables(vcdlConsumerVariables, vcdlProviderVariables);
 
     AddInterfaceHeader(modelDescription.CoSimulation.ModelIdentifier, null, interfaceSb);
 
@@ -269,7 +269,7 @@ public class FmuExporter : BaseExporter
     }
 
     // Remove all variables that are already part of the provider list (feedback loops can only be observed)
-    vcdlConsumerVariables.ExceptWith(vcdlProviderVariables);
+    RemoveProvidedVariables(vcdlConsumerVariables, vcdlProviderVariables);
 
     AddInterfaceHeader($"{modelDescription.CoSimulation.ModelIdentifier}", null, interfaceSb);
 

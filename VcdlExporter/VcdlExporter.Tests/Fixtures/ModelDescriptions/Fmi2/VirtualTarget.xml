@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="VirtualTarget" generationTool="Vector vVIRTUALtarget 9.0" guid="{00000000-0000-0000-0000-000000000002}">
+  <CoSimulation modelIdentifier="VirtualTarget" canHandleVariableCommunicationStepSize="true"/>
+  <ModelVariables>
+    <ScalarVariable name="input" valueReference="1" causality="input">
+      <Real start="0"/>
+    </ScalarVariable>
+    <ScalarVariable name="output" valueReference="2" causality="output" initial="calculated">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="2"/>
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

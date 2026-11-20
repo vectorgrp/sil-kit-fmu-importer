@@ -1,0 +1,30 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  enum EnumSample : int64
+  {
+    EnumValue1 = 1,
+  }
+
+  struct StructSample
+  {
+    int32 Member1;
+  }
+
+  [Binding="SilKit"]
+  interface ISample
+  {
+    provided data list<list<list<int32>>> SubInt_L_L_L;
+
+    consumed data list<double> PubDouble_L_D;
+    consumed data list<double> PubDouble_L_Dopt;
+    consumed data list<double> PubDouble_Lopt_D;
+    consumed data list<list<double>> PubDouble_L_L_D;
+    consumed data list<list<double>> PubDouble_Lopt_Lopt_D;
+    consumed data list<EnumSample> PubEnum;
+    consumed data list<StructSample> PubStruct;
+  }
+  ISample FmuInstance;
+}

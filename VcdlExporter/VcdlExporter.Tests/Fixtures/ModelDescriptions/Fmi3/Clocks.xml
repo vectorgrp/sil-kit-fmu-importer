@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Clocks" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="Clocks" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Clock name="inTriggeredClock" valueReference="1" causality="input" intervalVariability="triggered"/>
+    <Clock name="outTriggeredClock" valueReference="2" causality="output" intervalVariability="triggered" clocks="1"/>
+    <Clock name="inPeriodicClock" valueReference="3" causality="input" intervalVariability="constant" intervalDecimal="1.0"/>
+    <Int32 name="clocked_input" valueReference="10" causality="input" variability="discrete" clocks="1" start="0"/>
+    <Int32 name="clocked_output" valueReference="11" causality="output" variability="discrete" clocks="1"/>
+    <Float64 name="unclocked_output" valueReference="12" causality="output"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="2"/>
+    <Output valueReference="11"/>
+    <Output valueReference="12"/>
+  </ModelStructure>
+</fmiModelDescription>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Causalities" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="Causalities" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <UInt64 name="structural_parameter" valueReference="1" causality="structuralParameter" variability="fixed" start="2"/>
+    <Float64 name="parameter" valueReference="2" causality="parameter" variability="fixed" start="1"/>
+    <Float64 name="tunable_parameter" valueReference="3" causality="parameter" variability="tunable" start="1"/>
+    <Float64 name="calculated_parameter" valueReference="4" causality="calculatedParameter" variability="fixed"/>
+    <Float64 name="local" valueReference="5" causality="local"/>
+    <Float64 name="input" valueReference="6" causality="input" start="0"/>
+    <Float64 name="output" valueReference="7" causality="output"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="7"/>
+  </ModelStructure>
+</fmiModelDescription>

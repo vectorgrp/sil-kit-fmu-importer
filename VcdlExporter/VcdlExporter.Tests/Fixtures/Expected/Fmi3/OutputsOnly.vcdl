@@ -1,0 +1,13 @@
+version 2.0;
+import module "SilKit";
+
+namespace OutputsOnly
+{
+  [Binding="SilKit"]
+  interface IOutputsOnly
+  {
+    consumed data double a_output;
+    consumed data double b_output;
+  }
+  IOutputsOnly OutputsOnly;
+}

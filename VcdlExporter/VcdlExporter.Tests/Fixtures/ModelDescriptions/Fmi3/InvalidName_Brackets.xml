@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="InvalidName_Brackets" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="InvalidName_Brackets" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="valid_input" valueReference="1" causality="input" start="0"/>
+    <Float64 name="speed[1]" valueReference="2" causality="output"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="2"/>
+  </ModelStructure>
+</fmiModelDescription>

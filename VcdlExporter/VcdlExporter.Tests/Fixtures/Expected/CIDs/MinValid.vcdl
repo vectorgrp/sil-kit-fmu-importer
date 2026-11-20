@@ -1,0 +1,11 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  [Binding="SilKit"]
+  interface ISample
+  {
+  }
+  ISample FmuInstance;
+}

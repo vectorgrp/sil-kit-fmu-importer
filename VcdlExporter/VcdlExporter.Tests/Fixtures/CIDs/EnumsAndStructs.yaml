@@ -1,0 +1,37 @@
+Version: 1
+
+EnumDefinitions:
+  - Name: Gear
+    IndexType: int32
+    Items:
+      - Park : 0
+      - Reverse Gear : -1
+      - Drive : 1
+  - Name: Mode
+    IndexType: uint8
+    Items:
+      - Off : 0
+      - On : 1
+
+StructDefinitions:
+  - Name: Wheel
+    Members:
+      - Pressure: double
+      - Temperature: float?
+  - Name: Vehicle
+    Members:
+      - Speed: double
+      - CurrentGear: Gear
+      - CurrentMode: Mode?
+      - FrontLeft: Wheel
+      - Wheels: List<Wheel>
+      - OptionalWheels: List<Wheel>?
+      - Name: string
+
+Publishers:
+  - VehicleState : Vehicle
+  - GearState : Gear
+
+Subscribers:
+  - VehicleCommand : Vehicle?
+  - ModeCommand : Mode

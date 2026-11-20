@@ -1,0 +1,13 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  [Binding="SilKit"]
+  interface ISample
+  {
+    consumed data int32 OutA;
+    consumed data double OutB;
+  }
+  ISample FmuInstance;
+}

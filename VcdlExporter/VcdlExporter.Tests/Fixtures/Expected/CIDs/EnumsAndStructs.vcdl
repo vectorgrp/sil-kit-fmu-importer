@@ -1,0 +1,49 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  enum Gear : int64
+  {
+    Park = 0,
+    Reverse_Gear = -1,
+    Drive = 1,
+  }
+
+  enum Mode : int64
+  {
+    Off = 0,
+    On = 1,
+  }
+
+  struct Wheel
+  {
+    double Pressure;
+    [Optional]
+    float Temperature;
+  }
+
+  struct Vehicle
+  {
+    double Speed;
+    Gear CurrentGear;
+    [Optional]
+    Mode CurrentMode;
+    Wheel FrontLeft;
+    list<Wheel> Wheels;
+    [Optional]
+    list<Wheel> OptionalWheels;
+    string Name;
+  }
+
+  [Binding="SilKit"]
+  interface ISample
+  {
+    provided data Vehicle VehicleCommand;
+    provided data Mode ModeCommand;
+
+    consumed data Vehicle VehicleState;
+    consumed data Gear GearState;
+  }
+  ISample FmuInstance;
+}

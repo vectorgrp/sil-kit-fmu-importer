@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="InvalidEnumTypeName" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="InvalidEnumTypeName" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <TypeDefinitions>
+    <EnumerationType name="My Option">
+      <Item name="Option1" value="1"/>
+    </EnumerationType>
+  </TypeDefinitions>
+  <ModelVariables>
+    <Enumeration name="Enumeration_input" declaredType="My Option" valueReference="1" causality="input" variability="discrete" start="1"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

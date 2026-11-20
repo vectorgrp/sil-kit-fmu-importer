@@ -1,0 +1,46 @@
+version 2.0;
+import module "SilKit";
+
+namespace AllTypes
+{
+  enum Option : int64
+  {
+    Option_1 = 1,
+    Option2 = 2,
+  }
+
+  [Binding="SilKit"]
+  interface IAllTypes
+  {
+    provided data float Float32_input;
+    provided data double Float64_input;
+    provided data int8 Int8_input;
+    provided data uint8 UInt8_input;
+    provided data int16 Int16_input;
+    provided data uint16 UInt16_input;
+    provided data int32 Int32_input;
+    provided data uint32 UInt32_input;
+    provided data int64 Int64_input;
+    provided data uint64 UInt64_input;
+    provided data bool Boolean_input;
+    provided data string String_input;
+    provided data bytes Binary_input;
+    provided data Option Enumeration_input;
+
+    consumed data float Float32_output;
+    consumed data double Float64_output;
+    consumed data int8 Int8_output;
+    consumed data uint8 UInt8_output;
+    consumed data int16 Int16_output;
+    consumed data uint16 UInt16_output;
+    consumed data int32 Int32_output;
+    consumed data uint32 UInt32_output;
+    consumed data int64 Int64_output;
+    consumed data uint64 UInt64_output;
+    consumed data bool Boolean_output;
+    consumed data string String_output;
+    consumed data bytes Binary_output;
+    consumed data Option Enumeration_output;
+  }
+  IAllTypes AllTypes;
+}

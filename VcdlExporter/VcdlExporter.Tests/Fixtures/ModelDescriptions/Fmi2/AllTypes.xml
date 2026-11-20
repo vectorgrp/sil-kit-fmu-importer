@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="AllTypes" generationTool="VcdlExporter.Tests" guid="{00000000-0000-0000-0000-000000000002}">
+  <CoSimulation modelIdentifier="AllTypes" canHandleVariableCommunicationStepSize="true"/>
+  <TypeDefinitions>
+    <SimpleType name="Option">
+      <Enumeration>
+        <Item name="Option 1" value="1"/>
+        <Item name="Option2" value="2"/>
+      </Enumeration>
+    </SimpleType>
+  </TypeDefinitions>
+  <ModelVariables>
+    <ScalarVariable name="time" valueReference="0" causality="independent" variability="continuous">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="Real_input" valueReference="1" causality="input">
+      <Real start="0"/>
+    </ScalarVariable>
+    <ScalarVariable name="Integer_input" valueReference="2" causality="input" variability="discrete">
+      <Integer start="0"/>
+    </ScalarVariable>
+    <ScalarVariable name="Boolean_input" valueReference="3" causality="input" variability="discrete">
+      <Boolean start="false"/>
+    </ScalarVariable>
+    <ScalarVariable name="String_input" valueReference="4" causality="input" variability="discrete">
+      <String start="a"/>
+    </ScalarVariable>
+    <ScalarVariable name="Enumeration_input" valueReference="5" causality="input" variability="discrete">
+      <Enumeration declaredType="Option" start="1"/>
+    </ScalarVariable>
+    <ScalarVariable name="Real_output" valueReference="11" causality="output" initial="calculated">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="Integer_output" valueReference="12" causality="output" variability="discrete" initial="calculated">
+      <Integer/>
+    </ScalarVariable>
+    <ScalarVariable name="Boolean_output" valueReference="13" causality="output" variability="discrete" initial="calculated">
+      <Boolean/>
+    </ScalarVariable>
+    <ScalarVariable name="String_output" valueReference="14" causality="output" variability="discrete">
+      <String/>
+    </ScalarVariable>
+    <ScalarVariable name="Enumeration_output" valueReference="15" causality="output" variability="discrete" initial="calculated">
+      <Enumeration declaredType="Option"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="7"/>
+      <Unknown index="8"/>
+      <Unknown index="9"/>
+      <Unknown index="10"/>
+      <Unknown index="11"/>
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="InvalidName_Dash" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="InvalidName_Dash" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="valid_input" valueReference="1" causality="input" start="0"/>
+    <Float64 name="speed-kmh" valueReference="2" causality="input" start="0"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

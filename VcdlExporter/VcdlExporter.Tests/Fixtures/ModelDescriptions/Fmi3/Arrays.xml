@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Arrays" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="Arrays" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <TypeDefinitions>
+    <EnumerationType name="Option">
+      <Item name="Option1" value="1"/>
+    </EnumerationType>
+  </TypeDefinitions>
+  <ModelVariables>
+    <UInt64 name="size" valueReference="1" causality="structuralParameter" variability="fixed" start="3"/>
+    <Float64 name="Fixed1D_input" valueReference="2" causality="input" start="0 0 0">
+      <Dimension start="3"/>
+    </Float64>
+    <Float64 name="Fixed2D_input" valueReference="3" causality="input" start="0 0 0 0">
+      <Dimension start="2"/>
+      <Dimension start="2"/>
+    </Float64>
+    <Int32 name="StructuralParameter1D_input" valueReference="4" causality="input" variability="discrete" start="0 0 0">
+      <Dimension valueReference="1"/>
+    </Int32>
+    <Float64 name="Mixed2D_output" valueReference="5" causality="output">
+      <Dimension start="2"/>
+      <Dimension valueReference="1"/>
+    </Float64>
+    <Float64 name="Fixed3D_output" valueReference="6" causality="output">
+      <Dimension start="1"/>
+      <Dimension start="2"/>
+      <Dimension start="2"/>
+    </Float64>
+    <String name="String1D_output" valueReference="7" causality="output" variability="discrete">
+      <Dimension start="2"/>
+    </String>
+    <Binary name="Binary1D_output" valueReference="8" causality="output" variability="discrete">
+      <Dimension start="2"/>
+    </Binary>
+    <Enumeration name="Enumeration1D_output" declaredType="Option" valueReference="9" causality="output" variability="discrete">
+      <Dimension start="2"/>
+    </Enumeration>
+    <Boolean name="Boolean1D_output" valueReference="10" causality="output" variability="discrete">
+      <Dimension start="2"/>
+    </Boolean>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="5"/>
+    <Output valueReference="6"/>
+    <Output valueReference="7"/>
+    <Output valueReference="8"/>
+    <Output valueReference="9"/>
+    <Output valueReference="10"/>
+  </ModelStructure>
+</fmiModelDescription>

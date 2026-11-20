@@ -1,0 +1,24 @@
+Version: 1
+
+EnumDefinitions:
+  - Name: EnumSample
+    IndexType: int32
+    Items:
+      - EnumValue1 : 1
+
+StructDefinitions:
+  - Name: StructSample
+    Members:
+      - Member1: int
+
+Publishers:
+  - PubDouble_L_D         : List<Double>
+  - PubDouble_L_Dopt      : List<Double?>
+  - PubDouble_Lopt_D      : List<Double>?
+  - PubDouble_L_L_D       : List<List<Double>>
+  - PubDouble_Lopt_Lopt_D : List<List<Double>?>?
+  - PubEnum               : List<EnumSample>
+  - PubStruct             : List<StructSample>
+
+Subscribers:
+  - SubInt_L_L_L          : List<List<List<Int>>>

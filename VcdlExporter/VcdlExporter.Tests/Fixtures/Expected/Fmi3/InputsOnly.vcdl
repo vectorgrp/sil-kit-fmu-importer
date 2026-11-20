@@ -1,0 +1,13 @@
+version 2.0;
+import module "SilKit";
+
+namespace InputsOnly
+{
+  [Binding="SilKit"]
+  interface IInputsOnly
+  {
+    provided data double a_input;
+    provided data double b_input;
+  }
+  IInputsOnly InputsOnly;
+}

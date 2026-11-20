@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="OutputsOnly" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="OutputsOnly" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="a_output" valueReference="1" causality="output"/>
+    <Float64 name="b_output" valueReference="2" causality="output"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="1"/>
+    <Output valueReference="2"/>
+  </ModelStructure>
+</fmiModelDescription>

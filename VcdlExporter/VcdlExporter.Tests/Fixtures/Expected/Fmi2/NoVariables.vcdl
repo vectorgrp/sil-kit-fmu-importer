@@ -1,0 +1,11 @@
+version 2.0;
+import module "SilKit";
+
+namespace NoVariables
+{
+  [Binding="SilKit"]
+  interface INoVariables
+  {
+  }
+  INoVariables NoVariables;
+}

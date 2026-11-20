@@ -1,0 +1,9 @@
+Version: 1
+
+Publishers:
+  - Loopback : double
+  - OnlyPublished : double
+
+Subscribers:
+  - Loopback : double
+  - OnlySubscribed : double

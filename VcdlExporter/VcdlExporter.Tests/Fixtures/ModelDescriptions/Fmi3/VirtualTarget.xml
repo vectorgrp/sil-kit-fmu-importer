@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="VirtualTarget" generationTool="Vector vVIRTUALtarget 9.0" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <CoSimulation modelIdentifier="VirtualTarget" canHandleVariableCommunicationStepSize="true" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="input" valueReference="1" causality="input" start="0"/>
+    <Float64 name="output" valueReference="2" causality="output"/>
+    <Clock name="inTriggeredClock" valueReference="3" causality="input" intervalVariability="triggered"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="2"/>
+  </ModelStructure>
+</fmiModelDescription>

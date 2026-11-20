@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="ModelExchangeOnly" generationTool="VcdlExporter.Tests" instantiationToken="{00000000-0000-0000-0000-000000000003}">
+  <ModelExchange modelIdentifier="ModelExchangeOnly"/>
+  <ModelVariables>
+    <Float64 name="input" valueReference="1" causality="input" start="0"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

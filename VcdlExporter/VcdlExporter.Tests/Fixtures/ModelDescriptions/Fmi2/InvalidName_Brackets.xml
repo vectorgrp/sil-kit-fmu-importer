@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="InvalidName_Brackets" generationTool="VcdlExporter.Tests" guid="{00000000-0000-0000-0000-000000000002}">
+  <CoSimulation modelIdentifier="InvalidName_Brackets" canHandleVariableCommunicationStepSize="true"/>
+  <ModelVariables>
+    <ScalarVariable name="valid_input" valueReference="1" causality="input">
+      <Real start="0"/>
+    </ScalarVariable>
+    <ScalarVariable name="speed[1]" valueReference="2" causality="output" initial="calculated">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="2"/>
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

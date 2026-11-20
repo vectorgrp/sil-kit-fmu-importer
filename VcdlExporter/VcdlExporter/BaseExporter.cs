@@ -20,6 +20,16 @@ public abstract class BaseExporter
     Consumer
   }
 
+  // Removes the consumers that have the same name as a provider.
+  // VcdlVariable has reference equality, so the names are compared instead of the objects.
+  internal static void RemoveProvidedVariables(
+    HashSet<VcdlVariable> consumerVariables,
+    IEnumerable<VcdlVariable> providerVariables)
+  {
+    var providerNames = providerVariables.Select(v => v.Name).ToHashSet();
+    consumerVariables.RemoveWhere(v => providerNames.Contains(v.Name));
+  }
+
   internal void AddVcdlHeader(StringBuilder sb)
   {
     AddVcdlHeader(sb, typeof(Program).Namespace!);

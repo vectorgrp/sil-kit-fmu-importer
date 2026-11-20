@@ -1,0 +1,39 @@
+version 2.0;
+import module "SilKit";
+
+namespace FMU
+{
+  [Binding="SilKit"]
+  interface ISample
+  {
+    provided data bool SubBool;
+    provided data int32 SubInt32;
+    provided data double SubDouble;
+    provided data string SubString;
+
+    consumed data bool PubBool;
+    consumed data bool PubBoolean;
+    consumed data int8 PubSByte;
+    consumed data int8 PubInt8;
+    consumed data int16 PubShort;
+    consumed data int16 PubInt16;
+    consumed data int32 PubInt;
+    consumed data int32 PubInt32;
+    consumed data int64 PubLong;
+    consumed data int64 PubInt64;
+    consumed data uint8 PubByte;
+    consumed data uint8 PubUInt8;
+    consumed data uint16 PubUShort;
+    consumed data uint16 PubUInt16;
+    consumed data uint32 PubUInt;
+    consumed data uint32 PubUInt32;
+    consumed data uint64 PubULong;
+    consumed data uint64 PubUInt64;
+    consumed data float PubFloat;
+    consumed data float PubFloat32;
+    consumed data double PubDouble;
+    consumed data double PubFloat64;
+    consumed data string PubString;
+  }
+  ISample FmuInstance;
+}

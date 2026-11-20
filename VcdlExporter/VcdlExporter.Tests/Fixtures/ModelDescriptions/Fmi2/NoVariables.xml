@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="NoVariables" generationTool="VcdlExporter.Tests" guid="{00000000-0000-0000-0000-000000000002}">
+  <CoSimulation modelIdentifier="NoVariables" canHandleVariableCommunicationStepSize="true"/>
+  <ModelVariables>
+    <ScalarVariable name="time" valueReference="0" causality="independent" variability="continuous">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

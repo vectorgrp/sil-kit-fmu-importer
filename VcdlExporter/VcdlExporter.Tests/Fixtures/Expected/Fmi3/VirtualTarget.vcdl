@@ -1,0 +1,14 @@
+version 2.0;
+import module "SilKit";
+
+namespace VirtualTarget
+{
+  [Binding="SilKit"]
+  interface IVirtualTarget
+  {
+    provided data double input;
+
+    consumed data double output;
+  }
+  IVirtualTarget VirtualTarget;
+}

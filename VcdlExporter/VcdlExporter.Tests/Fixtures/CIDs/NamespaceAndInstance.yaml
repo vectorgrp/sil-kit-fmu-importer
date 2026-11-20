@@ -1,0 +1,9 @@
+Version: 1
+Namespace: MyNamespace
+Instance: MyInstance
+
+Publishers:
+  - Out : double
+
+Subscribers:
+  - In : double

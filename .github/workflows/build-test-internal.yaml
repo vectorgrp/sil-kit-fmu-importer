@@ -33,7 +33,10 @@ jobs:
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
-    
+    - name: Run vCDL Exporter Tests
+      if: success() || failure()
+      run: dotnet test ./VcdlExporter/_build/crossplatform-x64-Release/VcdlExporter.Tests.dll --results-directory ./VcdlExporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+
     - name: Upload test results
       uses: actions/upload-artifact@v3
       env:
@@ -43,6 +46,17 @@ jobs:
         name: fmu-importer-win-x64-test-result
         retention-days: 1
         path: ./FmuImporter/_testResults
+
+    - name: Upload vCDL Exporter test results
+      if: success() || failure()
+      uses: actions/upload-artifact@v3
+      env:
+        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        https_proxy: ""  # Explicitly disable the proxy for Node.js
+      with:
+        name: vcdl-exporter-win-x64-test-result
+        retention-days: 1
+        path: ./VcdlExporter/_testResults
 
   # Build the project, then remove the built artifacts
   build-linux:
@@ -80,7 +94,10 @@ jobs:
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m --no-restore -p:RestoreDuringBuild=false -p:Restore=false
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll --results-directory ./FmuImporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
-    
+    - name: Run vCDL Exporter Tests
+      if: success() || failure()
+      run: dotnet test ./VcdlExporter/_build/crossplatform-x64-Release/VcdlExporter.Tests.dll --results-directory ./VcdlExporter/_testResults --logger:"html;LogFilePrefix=testResults;verbosity=detailed"
+
     - name: Upload build artifact
       uses: actions/upload-artifact@v3
       env:
@@ -100,6 +117,17 @@ jobs:
         name: fmu-importer-linux-x64-test-result
         retention-days: 1
         path: ./FmuImporter/_testResults
+
+    - name: Upload vCDL Exporter test results
+      if: success() || failure()
+      uses: actions/upload-artifact@v3
+      env:
+        http_proxy: ""  # Explicitly disable the proxy for Node.js
+        https_proxy: ""  # Explicitly disable the proxy for Node.js
+      with:
+        name: vcdl-exporter-linux-x64-test-result
+        retention-days: 1
+        path: ./VcdlExporter/_testResults
     
     - if: always()
       run: rm -rfv * .??*

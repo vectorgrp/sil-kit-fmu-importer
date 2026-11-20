@@ -1,0 +1,28 @@
+version 2.0;
+import module "SilKit";
+
+namespace AllTypes
+{
+  enum Option : int64
+  {
+    Option_1 = 1,
+    Option2 = 2,
+  }
+
+  [Binding="SilKit"]
+  interface IAllTypes
+  {
+    provided data double Real_input;
+    provided data int32 Integer_input;
+    provided data bool Boolean_input;
+    provided data string String_input;
+    provided data Option Enumeration_input;
+
+    consumed data double Real_output;
+    consumed data int32 Integer_output;
+    consumed data bool Boolean_output;
+    consumed data string String_output;
+    consumed data Option Enumeration_output;
+  }
+  IAllTypes AllTypes;
+}

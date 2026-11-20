@@ -21,6 +21,9 @@ jobs:
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+    - name: Run vCDL Exporter Tests
+      if: success() || failure()
+      run: dotnet test ./VcdlExporter/_build/crossplatform-x64-Release/VcdlExporter.Tests.dll
 
 
   # Get environment variable for docker image URI and provide it to next build step
@@ -56,3 +59,6 @@ jobs:
       run: dotnet build ./FmuImporter/BuildAll/BuildTests.csproj -v:m
     - name: Run Tests
       run: dotnet test ./FmuImporter/_build/crossplatform-x64-Release/FmuImporter.Tests.dll
+    - name: Run vCDL Exporter Tests
+      if: success() || failure()
+      run: dotnet test ./VcdlExporter/_build/crossplatform-x64-Release/VcdlExporter.Tests.dll

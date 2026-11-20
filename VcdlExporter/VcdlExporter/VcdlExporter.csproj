@@ -26,4 +26,8 @@
         <ProjectReference Include="..\..\FmuImporter\FmuImporter.Models\FmuImporter.Models.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="VcdlExporter.Tests" />
+    </ItemGroup>
+
 </Project>

@@ -1,0 +1,26 @@
+version 2.0;
+import module "SilKit";
+
+namespace Arrays
+{
+  enum Option : int64
+  {
+    Option1 = 1,
+  }
+
+  [Binding="SilKit"]
+  interface IArrays
+  {
+    provided data list<double> Fixed1D_input;
+    provided data list<list<double>> Fixed2D_input;
+    provided data list<int32> StructuralParameter1D_input;
+
+    consumed data list<list<double>> Mixed2D_output;
+    consumed data list<list<list<double>>> Fixed3D_output;
+    consumed data list<bool> Boolean1D_output;
+    consumed data list<string> String1D_output;
+    consumed data list<bytes> Binary1D_output;
+    consumed data list<Option> Enumeration1D_output;
+  }
+  IArrays Arrays;
+}
