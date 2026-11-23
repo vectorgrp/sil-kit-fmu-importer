@@ -136,6 +136,10 @@ To export a vCDL based on an FMU, you can run the following command from the fol
 > By default the VcdlExporter does not export the clocks associated with the clocked variables. To export them you can pass the following argument: --use-clock-pub-sub-elements
 > This argument only applies to the VcdlExporter based on an FMU. VcdlExporter based on a communication interface description always exports all variables, including clocks.
 
+> Note: If the FMU contains a `terminalsAndIcons/terminalsAndIcons.xml` file, the variables of CAN, Ethernet and LIN terminals are not exported to the vCDL file because bus communication is not represented by vCDL data members and is handled by the network configuration in CANoe instead. \
+> Exporting RPC terminals as vCDL methods is currently **not supported** by the vCDL Exporter.
+> Variables of all other terminals are exported as regular data members.
+
 > Note: An FMU with a model description that includes variables named according to the structured naming convention (i.e. containing a `.`) will generate an incorrect vCDL file. To generate a proper one, use a matching communication interface description (e.g. generated with the [Communication Interface Exporter](#communication-interface-exporter) below) and use the following feature to generate the vCDL from it:
 
 To export a vCDL based on a communication interface description, you can run the following command from the folder where your vCDL Exporter binary resides:
@@ -155,6 +159,7 @@ The vCDL Exporter returns the following exit codes:
 | 3         | A file or directory was not found (input file or output directory) |
 | 4         | A name in the model description or communication interface description is not a valid vCDL identifier |
 | 5         | The model description of the FMU could not be read         |
+| 6         | The terminals and icons of the FMU could not be read       |
 
 ---
 

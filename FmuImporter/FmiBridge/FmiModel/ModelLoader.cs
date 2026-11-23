@@ -211,40 +211,57 @@ public class ModelLoader
   internal static TerminalsAndIcons? LoadTerminalsAndIconsFromExtractedPath(
     string extractedFmuPath, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
   {
-    var terminalsAndIconsPath = $"{extractedFmuPath}/terminalsAndIcons/terminalsAndIcons.xml";
-
-    TerminalsAndIcons? TerminalsAndIcons = null;
-
-    if (File.Exists(terminalsAndIconsPath))
+    var terminalsAndIconsPath = $"{extractedFmuPath}/{TerminalsAndIconsEntryPath}";
+    if (!File.Exists(terminalsAndIconsPath))
     {
-      using var fileStreamTerminals = File.Open(terminalsAndIconsPath, FileMode.Open);
-      XmlSerializer serTerminals;
-      serTerminals = new XmlSerializer(typeof(fmiTerminalsAndIcons));
-      var terminalsAndIcons = serTerminals.Deserialize(fileStreamTerminals) as fmiTerminalsAndIcons;
-      if (terminalsAndIcons != null)
-      {
-        TerminalsAndIcons = new TerminalsAndIcons(terminalsAndIcons, modelDescription, logCallback);
-      }
-
-      if (TerminalsAndIcons == null)
-      {
-        throw new NullReferenceException("Failed to initialize terminal and icons object.");
-      }
+      return null;
     }
 
-    return TerminalsAndIcons;
+    using var fileStreamTerminals = File.Open(terminalsAndIconsPath, FileMode.Open);
+    return LoadTerminalsAndIconsFromStream(fileStreamTerminals, modelDescription, logCallback);
+  }
+
+  // Reads the terminals and icons directly from the FMU archive (if it contains any).
+  // The FMU is neither extracted nor is its binary loaded, so this works for FMUs built for any platform.
+  public static TerminalsAndIcons? LoadTerminalsAndIconsFromFmu(
+    string fmuPath, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
+  {
+    using var zip = ZipFile.OpenRead(fmuPath);
+    var zipEntry = zip.GetEntry(TerminalsAndIconsEntryPath);
+    if (zipEntry == null)
+    {
+      return null;
+    }
+
+    using var stream = zipEntry.Open();
+    return LoadTerminalsAndIconsFromStream(stream, modelDescription, logCallback);
+  }
+
+  private const string TerminalsAndIconsEntryPath = "terminalsAndIcons/terminalsAndIcons.xml";
+
+  private static TerminalsAndIcons LoadTerminalsAndIconsFromStream(
+    Stream stream, ModelDescription modelDescription, Action<LogSeverity, string> logCallback)
+  {
+    var serTerminals = new XmlSerializer(typeof(fmiTerminalsAndIcons));
+    if (serTerminals.Deserialize(stream) is not fmiTerminalsAndIcons terminalsAndIcons)
+    {
+      throw new NullReferenceException("Failed to initialize terminal and icons object.");
+    }
+
+    return new TerminalsAndIcons(terminalsAndIcons, modelDescription, logCallback);
   }
 
   public static FmiVersions FindFmiVersion(string fmuPath)
   {
     Stream stream;
+    ZipArchive? zip = null;
     if (Path.GetExtension(fmuPath) == ".xml")
     {
       stream = File.Open(fmuPath, FileMode.Open);
     }
     else
     {
-      var zip = ZipFile.Open(fmuPath, ZipArchiveMode.Read);
+      zip = ZipFile.Open(fmuPath, ZipArchiveMode.Read);
       var zipEntry = zip.GetEntry("modelDescription.xml");
       if (zipEntry == null)
       {
@@ -264,6 +281,7 @@ public class ModelLoader
 
     stream.Close();
     stream.Dispose();
+    zip?.Dispose();
 
     switch (returnValue)
     {

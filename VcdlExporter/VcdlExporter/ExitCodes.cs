@@ -13,4 +13,5 @@ public class ExitCodes
   public const int FileNotFound = 3;
   public const int InvalidIdentifier = 4;
   public const int FailedToReadModelDescription = 5;
+  public const int FailedToReadTerminalsAndIcons = 6;
 }

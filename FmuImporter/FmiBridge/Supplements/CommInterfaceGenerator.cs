@@ -104,13 +104,16 @@ public class CommInterfaceGenerator
     // This contains the *actual* name (modified with GenerateStructNameFromPath) of structs. Same keys as 'structsDictionnary'
     var generatedStructName = new Dictionary<string, string>();
 
-    FindLsBusTerminalValueRefs(terminalsAndIcons, out var valueRefsUsedForLsBusTerminals);
+    // Same set of variables as excluded by the vCDL Exporter: network (CAN, Ethernet, LIN) and RPC terminal
+    // variables, including those of nested terminals and the clocks of these variables
+    var valueRefsUsedForLsBusTerminals =
+      terminalsAndIcons?.GetNetworkAndRpcTerminalValueReferences(modelDescription) ?? new HashSet<uint>();
 
     foreach (var variable in modelDescription.Variables)
     {
       if (valueRefsUsedForLsBusTerminals.Contains(variable.Key))
       {
-        // Skip variables that are used for LS-Bus terminals (CAN, Ethernet, RPC)
+        // Skip variables that are used for LS-Bus terminals (CAN, Ethernet, LIN) and RPC terminals
         continue;
       }
 
@@ -237,28 +240,6 @@ public class CommInterfaceGenerator
     if (subscribers.Length > 0)
     {
       result.AppendLine(subscribers.ToString());
-    }
-  }
-
-  private static void FindLsBusTerminalValueRefs(
-    TerminalsAndIcons? terminalsAndIcons, out List<uint> modelVariablesUsedForLsBusTerminals)
-  {
-    modelVariablesUsedForLsBusTerminals = new List<uint>();
-
-    var valuesToAdd = terminalsAndIcons?.Terminals
-                                       .Where(t => t.Value.InternalTerminalKind is InternalTerminalKind.CAN
-                                                   or InternalTerminalKind.ETHERNET
-                                                   or InternalTerminalKind.LIN
-                                                   or InternalTerminalKind.RPC_CLIENT
-                                                   or InternalTerminalKind.RPC_SERVER)
-                                       .SelectMany(
-                                         t => t.Value.TerminalMemberVariables
-                                               .Where(m => m.Value.CorrespondingValueReference != null)
-                                               .Select(m => m.Value.CorrespondingValueReference!.Value));
-
-    if (valuesToAdd != null)
-    {
-      modelVariablesUsedForLsBusTerminals.AddRange(valuesToAdd);
     }
   }
 

@@ -18,6 +18,13 @@ public class ModelDescriptionException : Exception
   }
 }
 
+public class TerminalsAndIconsReadException : Exception
+{
+  public TerminalsAndIconsReadException(string message, Exception innerException) : base(message, innerException)
+  {
+  }
+}
+
 public class FmuExporter : BaseExporter
 {
   public string FmuPath { get; }
@@ -104,7 +111,8 @@ public class FmuExporter : BaseExporter
         ParseFmi2(modelDescription, interfaceSb, objectsSb);
         break;
       case FmiVersions.Fmi3:
-        ParseFmi3(modelDescription, interfaceSb, objectsSb, useClockPubSubElements);
+        var excludedValueRefs = GetTerminalValueReferences(modelDescription);
+        ParseFmi3(modelDescription, interfaceSb, objectsSb, useClockPubSubElements, excludedValueRefs);
         break;
     }
 
@@ -145,6 +153,38 @@ public class FmuExporter : BaseExporter
       _ => LogLevel.Information
     };
     _logger.Log(logLevel, "{Message}", message);
+  }
+
+  // Returns the value references of all variables that are part of a network (FMI-LS-BUS CAN, Ethernet, LIN) or
+  // RPC terminal. These variables are not exported: network terminals are not represented by vCDL data members
+  // and RPC terminals are currently not supported by the vCDL Exporter.
+  private HashSet<uint> GetTerminalValueReferences(ModelDescription modelDescription)
+  {
+    TerminalsAndIcons? terminalsAndIcons;
+    try
+    {
+      terminalsAndIcons = ModelLoader.LoadTerminalsAndIconsFromFmu(FmuPath, modelDescription, FmiLogCallback);
+    }
+    catch (Exception e)
+    {
+      throw new TerminalsAndIconsReadException(
+        $"Failed to read the terminals and icons of '{FmuPath}': {e.Message}", e);
+    }
+
+    if (terminalsAndIcons == null)
+    {
+      return new HashSet<uint>();
+    }
+
+    var excludedValueRefs = terminalsAndIcons.GetNetworkAndRpcTerminalValueReferences(modelDescription);
+    if (excludedValueRefs.Count > 0)
+    {
+      _logger.LogInformation(
+        "{Count} variable(s) of network (CAN, Ethernet, LIN) or RPC terminals will not be exported to the vCDL.",
+        excludedValueRefs.Count);
+    }
+
+    return excludedValueRefs;
   }
 
   private void ParseFmi2(ModelDescription modelDescription, StringBuilder interfaceSb, StringBuilder objectsSb)
@@ -216,7 +256,12 @@ public class FmuExporter : BaseExporter
       objectsSb);
   }
 
-  private void ParseFmi3(ModelDescription modelDescription, StringBuilder interfaceSb, StringBuilder objectsSb, bool useClockPubSubElements)
+  private void ParseFmi3(
+    ModelDescription modelDescription,
+    StringBuilder interfaceSb,
+    StringBuilder objectsSb,
+    bool useClockPubSubElements,
+    HashSet<uint> excludedValueRefs)
   {
     var vcdlProviderVariables = new HashSet<VcdlVariable>();
     var vcdlConsumerVariables = new HashSet<VcdlVariable>();
@@ -230,6 +275,12 @@ public class FmuExporter : BaseExporter
 
     foreach (var variable in modelDescription.Variables)
     {
+      if (excludedValueRefs.Contains(variable.Key))
+      {
+        // variables of network and RPC terminals (and their clocks) are not exported
+        continue;
+      }
+
       if (variable.Value.VariableType is VariableTypes.TriggeredClock && !useClockPubSubElements)
       {
         // TriggeredClocks are not bound to a pubSub topic when useClockPubSubElements is disabled

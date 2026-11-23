@@ -133,6 +133,11 @@ internal class Program
       LogException(logger, e, verbose);
       return ExitCodes.FailedToReadModelDescription;
     }
+    catch (TerminalsAndIconsReadException e)
+    {
+      LogException(logger, e, verbose);
+      return ExitCodes.FailedToReadTerminalsAndIcons;
+    }
     catch (Exception e)
     {
       LogException(logger, e, verbose);
